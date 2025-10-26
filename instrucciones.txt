@@ -1,0 +1,181 @@
+LYTE – INSTRUCCIONES PARA ARRANCAR EL PROYECTO EN LOCAL
+=======================================================
+
+REQUISITOS
+- Node.js 18+ (recomendado 20)
+- Python 3.10+ y pip
+- Git
+- (Opcional) Postman
+
+ESTRUCTURA DEL REPO
+lyte/
+  back/     -> API Node (auth + proxy a IA)
+  ai/       -> Servicio de IA (FastAPI)
+  front/    -> Front React (Vite)
+
+-------------------------------------------------------
+1) CLONAR EL REPOSITORIO
+-------------------------------------------------------
+Opción 1 – GitHub Desktop: File > Clone repository… > eligen el repo de Lyte.
+Opción 2 – Terminal:
+  git clone https://github.com/<ORG_O_USUARIO>/lyte.git
+  cd lyte
+
+-------------------------------------------------------
+2) SERVICIO DE IA (PYTHON) – CARPETA ai/
+-------------------------------------------------------
+2.1 Abrir terminal dentro de la carpeta ai/ y crear entorno virtual:
+- Windows:
+    py -m venv .venv
+    .\.venv\Scripts\Activate.ps1
+  (si marca restricción: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass)
+- macOS/Linux:
+    python3 -m venv .venv
+    source .venv/bin/activate
+
+2.2 Instalar dependencias:
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+  (si no existe requirements.txt, instalar:)
+    pip install fastapi "uvicorn[standard]"
+
+2.3 Ejecutar el servicio:
+    python -m uvicorn app:app --reload --port 8000
+
+2.4 Probar rápido (opcional):
+    POST http://localhost:8000/chat
+    Body JSON: { "message": "hola" }
+    Debe responder: { "reply": "..." }
+
+*Deja esta terminal abierta con el servicio corriendo.*
+
+-------------------------------------------------------
+3) BACKEND (NODE) – CARPETA back/
+-------------------------------------------------------
+3.1 Abrir otra terminal en back/ e instalar:
+    npm i
+
+3.2 Crear archivo .env (pueden copiar de .env.example si existe) con:
+    PORT=3000
+    DATABASE_URL=postgres://<usuario>:<password>@<host>:5432/<basedatos>
+    DB_SCHEMA=escom_aliz
+    USER_TABLE=usuario
+    JWT_SECRET=pon-un-secreto-largo
+    ACCESS_TTL=15m
+    ALLOWED_ORIGIN=http://localhost:5173
+    AI_URL=http://localhost:8000
+    CAPTCHA_DISABLED=true
+    RECAPTCHA_SECRET=
+
+3.3 Arrancar el backend:
+    npm run dev
+   Verán: "Auth API escuchando en http://localhost:3000"
+
+3.4 (Opcional) Usuario de prueba en Postgres (si no hay):
+    CREATE EXTENSION IF NOT EXISTS pgcrypto;
+    INSERT INTO escom_aliz.usuario (email, password_hash, rol, activo)
+    VALUES ('test@demo.com', crypt('Secr3t123', gen_salt('bf',10)), 'ADMIN', true);
+
+3.5 Endpoints útiles para probar (Postman/curl):
+    GET  http://localhost:3000/health
+    POST http://localhost:3000/auth/login
+      Body: { "login":"test@demo.com", "password":"Secr3t123", "captchaToken":"dummy" }
+    GET  http://localhost:3000/auth/me
+      Header: Authorization: Bearer <access_token>
+    POST http://localhost:3000/ai/chat
+      Body: { "message":"hola" }
+
+*Deja esta terminal abierta con el backend corriendo.*
+
+-------------------------------------------------------
+4) FRONTEND (REACT + VITE) – CARPETA front/
+-------------------------------------------------------
+4.1 Abrir una tercera terminal en front/ e instalar:
+    npm i
+
+4.2 Crear archivo front/.env con:
+    VITE_API_URL=http://localhost:3000
+
+4.3 Ejecutar:
+    npm run dev
+   Vite mostrará una URL (normalmente http://localhost:5173)
+
+4.4 Flujo de prueba:
+   - Abrir el front en el navegador.
+   - Ir a "Iniciar sesión", usar:
+       Usuario: test@demo.com
+       Contraseña: Secr3t123
+       (marcar el "captcha" demo)
+   - Tras el login, se mostrará la pantalla Alumno → Chat Bot.
+   - Escribir un mensaje y enviar; deben verse las respuestas del bot.
+
+-------------------------------------------------------
+5) ORDEN DE ARRANQUE (IMPORTANTE)
+-------------------------------------------------------
+1) IA (Python) en puerto 8000
+2) Backend (Node) en puerto 3000
+3) Front (Vite) en puerto 5173
+
+-------------------------------------------------------
+6) ERRORES FRECUENTES Y SOLUCIONES
+-------------------------------------------------------
+- CORS bloqueado:
+  Verificar en back/.env -> ALLOWED_ORIGIN=http://localhost:5173
+  Reiniciar el backend tras cambios.
+
+- "uvicorn no se reconoce":
+  No activaron el virtualenv. Activar y usar: python -m uvicorn app:app --reload --port 8000
+
+- 401 en /auth/login:
+  Credenciales incorrectas o el hash no coincide. Crear usuario de prueba con el SQL de la sección 3.4.
+
+- 401 en /auth/me:
+  Falta header Authorization o el token está expirado. Relogin.
+
+- Puerto en uso:
+  Cambiar el puerto (p. ej. IA a 8001) y actualizar AI_URL en el .env del back.
+
+- bcrypt falla al instalar en Windows:
+  Borrar node_modules y package-lock.json, luego "npm i".
+  Alternativa rápida: "npm i bcrypt --build-from-source"
+
+-------------------------------------------------------
+7) COMANDOS RÁPIDOS (RESUMEN)
+-------------------------------------------------------
+# IA
+cd ai
+py -m venv .venv && .\.venv\Scripts\Activate.ps1   (Windows)
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+python -m uvicorn app:app --reload --port 8000
+
+# Back
+cd back
+npm i
+npm run dev
+
+# Front
+cd front
+npm i
+npm run dev
+
+-------------------------------------------------------
+8) NOTAS PARA DESPLIEGUE EN RENDER (REFERENCIA)
+-------------------------------------------------------
+- Web Service 1 (AI – FastAPI):
+  Build: pip install -r requirements.txt
+  Start: uvicorn app:app --host 0.0.0.0 --port $PORT
+
+- Web Service 2 (Backend – Node):
+  Start: node server.js
+  ENVs:
+    DATABASE_URL=...
+    JWT_SECRET=...
+    AI_URL=https://<tu-ai>.onrender.com
+    ALLOWED_ORIGIN=https://<tu-front>.onrender.com
+
+- Static Site (Front – Vite):
+  Build: npm ci && npm run build
+  Publish directory: dist
+  front/.env.production:
+    VITE_API_URL=https://<tu-back>.onrender.com

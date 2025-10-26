@@ -87,6 +87,15 @@ async function detectUserColumns() {
   return { idCol, loginCols, passCol, roleCol, activeCol };
 }
 
+// --- Helpers ---
+function requireAuth(req, res, next){
+  const h = req.headers.authorization || ''
+  const t = h.startsWith('Bearer ') ? h.slice(7) : null
+  if(!t) return res.status(401).json({error:'No autorizado'})
+  try{ req.user = jwt.verify(t, JWT_SECRET); next() }
+  catch{ return res.status(401).json({error:'Token inválido'}) }
+}
+
 const userColsPromise = detectUserColumns();
 
 async function findUserByLogin(login) {
@@ -188,4 +197,87 @@ app.get('/auth/me', authMiddleware, async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Auth API escuchando en http://localhost:${PORT}`);
+});
+
+
+// --- Datos personales ---
+app.get('/alumno/profile', requireAuth, async (req, res) => {
+  const userId = req.user.sub;
+  const q = `
+    SELECT a.id_alumno,
+           a.boleta,
+           (u.nombre || ' ' || u.apellido) AS nombre_completo,
+           u.email,
+           c.nombre AS carrera,
+           c.clave  AS carrera_clave,
+           a.semestre
+    FROM ${DB_SCHEMA}.alumno a
+    JOIN ${DB_SCHEMA}.usuario u ON u.id_usuario = a.id_alumno
+    JOIN ${DB_SCHEMA}.carrera c ON c.id_carrera = a.id_carrera
+    WHERE a.id_alumno = $1
+    LIMIT 1;
+  `;
+  try {
+    const { rows } = await pool.query(q, [userId]);
+    if (!rows.length) return res.status(404).json({ error: 'Alumno no encontrado' });
+    res.json(rows[0]);
+  } catch (e) {
+    console.error('DB profile:', e);
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
+// --- Kardex ---
+app.get('/alumno/kardex', requireAuth, async (req, res) => {
+  const userId = req.user.sub;
+  const q = `
+    SELECT k.periodo,
+           k.materia_clave,
+           k.materia_nombre,
+           m.creditos,
+           k.calificacion_final AS calificacion,
+           k.estatus
+    FROM ${DB_SCHEMA}.vw_kardex k
+    JOIN ${DB_SCHEMA}.materia m ON m.clave = k.materia_clave
+    WHERE k.id_alumno = $1
+    ORDER BY k.periodo, k.materia_clave;
+  `;
+  try {
+    const { rows } = await pool.query(q, [userId]);
+    res.json(rows);
+  } catch (e) {
+    console.error('DB kardex:', e);
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
+
+// --- Horario (periodo opcional ?periodo=2025-1) ---
+app.get('/alumno/horario', requireAuth, async (req, res) => {
+  const userId = req.user.sub;
+  const { periodo = null } = req.query;
+
+  const q = `
+    SELECT h.dia_semana, h.hora_ini, h.hora_fin, h.aula,
+           m.clave AS materia_clave,
+           m.nombre AS materia_nombre,
+           (upu.nombre || ' ' || upu.apellido) AS profesor
+    FROM ${DB_SCHEMA}.alumno a
+    JOIN ${DB_SCHEMA}.inscripcion i ON i.id_alumno = a.id_alumno
+    JOIN ${DB_SCHEMA}.grupo g       ON g.id_grupo  = i.id_grupo
+    JOIN ${DB_SCHEMA}.horario h     ON h.id_grupo  = g.id_grupo
+    JOIN ${DB_SCHEMA}.materia m     ON m.id_materia= g.id_materia
+    LEFT JOIN ${DB_SCHEMA}.profesor p  ON p.id_profesor = g.id_profesor
+    LEFT JOIN ${DB_SCHEMA}.usuario  upu ON upu.id_usuario = p.id_profesor
+    WHERE a.id_alumno = $1
+      AND ($2::text IS NULL OR g.periodo = $2)
+    ORDER BY h.dia_semana, h.hora_ini;
+  `;
+  try {
+    const { rows } = await pool.query(q, [userId, periodo]);
+    res.json(rows);
+  } catch (e) {
+    console.error('DB horario:', e);
+    res.status(500).json({ error: String(e.message || e) });
+  }
 });

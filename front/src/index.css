@@ -75,3 +75,15 @@ a{color:inherit;text-decoration:none}
   .dashboard{grid-template-columns:1fr}
   .sb{display:none}
 }
+
+.chat{display:flex; flex-direction:column; height:calc(100% - 40px); gap:14px}
+.chat-scroll{
+  flex:1; border:1px solid #e6ebf6; border-radius:12px; padding:16px;
+  background:#fafbff; overflow-y:auto;  /* <- clave */
+  max-height:100%;           /* asegura scroll vertical */
+}
+
+.tableWrap{overflow:auto; border:1px solid #e6ebf6; border-radius:12px; background:#fff}
+.tbl{width:100%; border-collapse:collapse; font-size:14px}
+.tbl th,.tbl td{padding:10px 12px; border-bottom:1px solid #eef2fb}
+.tbl thead th{position:sticky; top:0; background:#f4f7ff; text-align:left}
