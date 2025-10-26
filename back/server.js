@@ -25,6 +25,7 @@ if (!JWT_SECRET)   throw new Error('Falta JWT_SECRET en .env');
 
 const app = express();
 const pool = new Pool({ connectionString: DATABASE_URL });
+const { AI_URL = 'http://localhost:8000' } = process.env;
 
 app.use(helmet());
 app.use(express.json());
@@ -136,6 +137,22 @@ function authMiddleware(req, res, next) {
     return res.status(401).json({ error: 'Token inválido o expirado' });
   }
 }
+
+// modelo de ia para comunicacion con front 
+app.post('/ai/chat', async (req, res) => {
+  try {
+    const r = await fetch(`${AI_URL}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: req.body.message || '' })
+    });
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    console.error('AI proxy error:', e.message);
+    res.status(502).json({ error: 'AI service unavailable' });
+  }
+});
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 

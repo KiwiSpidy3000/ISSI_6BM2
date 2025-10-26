@@ -24,3 +24,54 @@ a{color:inherit;text-decoration:none}
   .card,.formCard{grid-template-columns:1fr}
   .right,.formRight{height:220px}
 }
+
+
+/* ---- Dashboard Alumno ---- */
+.dashboard{
+  width:min(1200px,96vw);
+  height:min(78vh,800px);
+  margin:24px auto;
+  background:#fff;
+  border-radius:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.12);
+  display:grid;
+  grid-template-columns:260px 1fr;
+  overflow:hidden;
+}
+.sb{
+  background:#3a4b7c;
+  color:#eaf0ff;
+  display:flex; flex-direction:column; justify-content:space-between;
+  padding:20px;
+}
+.sb-header{display:flex; align-items:center; gap:12px; margin-bottom:8px}
+.avatar{width:48px;height:48px;border-radius:50%;background:#5f73a2;display:flex;align-items:center;justify-content:center;font-size:24px}
+.sb-title{font-weight:800; font-size:20px}
+.sb-nav,.sb-bottom{display:grid; gap:12px}
+.pill{
+  background:#e0e6fb; color:#2f3e5d; border:none; border-radius:24px;
+  padding:10px 14px; text-align:left; font-weight:600; cursor:pointer;
+}
+.pill.active{background:#2f4b7c; color:#fff}
+.main{padding:28px 32px; background:#fff}
+.chat{display:flex; flex-direction:column; height:calc(100% - 40px); gap:14px}
+.chat-scroll{
+  flex:1; border:1px solid #e6ebf6; border-radius:12px; padding:16px;
+  background:#fafbff; overflow:auto;
+}
+.msg{max-width:68%; padding:10px 14px; border-radius:14px; margin:6px 0; line-height:1.4}
+.msg.bot{background:#edf2ff; color:#27314f; border:1px solid #dae2ff}
+.msg.user{background:#e9f7f3; color:#124d3e; border:1px solid #cceee4; margin-left:auto}
+.chat-input{display:flex; gap:10px; align-items:center}
+.chat-input textarea{
+  flex:1; min-height:46px; max-height:120px; resize:vertical;
+  padding:12px 14px; border:1px solid #cdd3e1; border-radius:24px; outline:none
+}
+.send{
+  width:44px;height:44px;border:none;border-radius:50%;
+  background:#2f4b7c; color:#fff; font-weight:700; cursor:pointer;
+}
+@media (max-width:900px){
+  .dashboard{grid-template-columns:1fr}
+  .sb{display:none}
+}
