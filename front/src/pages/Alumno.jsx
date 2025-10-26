@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom' 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 export default function Alumno(){
+const nav = useNavigate();   
   const [view, setView] = useState('chat') // 'chat' | 'perfil' | 'kardex' | 'horario'
   const [messages, setMessages] = useState([{ from:'bot', text:'¡Hola! ¿En qué te puedo ayudar?' }])
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+
+function logout(){                             // <- NUEVO
+    localStorage.removeItem('access_token');
+    nav('/'); // te manda a la landing "Bienvenido"
+  }
 
   // ---- SCROLL CONTROL ----
   const scrollRef = useRef(null)
@@ -65,6 +72,7 @@ export default function Alumno(){
         </nav>
         <div className="sb-bottom">
           <button className={`pill ${view==='chat'?'active':''}`} onClick={()=>setView('chat')}>Chat Bot</button>
+            <button className="pill danger" onClick={logout}>Cerrar sesión</button>   {/* <- NUEVO */}
         </div>
       </aside>
 

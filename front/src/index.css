@@ -87,3 +87,8 @@ a{color:inherit;text-decoration:none}
 .tbl{width:100%; border-collapse:collapse; font-size:14px}
 .tbl th,.tbl td{padding:10px 12px; border-bottom:1px solid #eef2fb}
 .tbl thead th{position:sticky; top:0; background:#f4f7ff; text-align:left}
+
+.pill.danger{
+  background:#ffe8e8; color:#8a1f1f; font-weight:700;
+}
+.pill.danger:hover{ filter:brightness(.97); }
