@@ -92,3 +92,8 @@ a{color:inherit;text-decoration:none}
   background:#ffe8e8; color:#8a1f1f; font-weight:700;
 }
 .pill.danger:hover{ filter:brightness(.97); }
+
+.tableWrap{overflow:auto; border:1px solid #e6ebf6; border-radius:12px; background:#fff}
+.tbl{width:100%; border-collapse:collapse; font-size:14px}
+.tbl th,.tbl td{padding:10px 12px; border-bottom:1px solid #eef2fb}
+.tbl thead th{position:sticky; top:0; background:#f4f7ff; text-align:left}

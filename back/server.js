@@ -281,3 +281,185 @@ app.get('/alumno/horario', requireAuth, async (req, res) => {
     res.status(500).json({ error: String(e.message || e) });
   }
 });
+
+// === LISTA DE PERIODOS DEL ALUMNO ===
+app.get('/alumno/periodos', requireAuth, async (req, res) => {
+  const userId = req.user.sub;
+  const q = `
+    SELECT DISTINCT g.periodo
+    FROM ${DB_SCHEMA}.inscripcion i
+    JOIN ${DB_SCHEMA}.grupo g ON g.id_grupo = i.id_grupo
+    WHERE i.id_alumno = $1
+    ORDER BY g.periodo;
+  `;
+  try {
+    const { rows } = await pool.query(q, [userId]);
+    res.json(rows.map(r => r.periodo));
+  } catch (e) {
+    console.error('DB periodos:', e);
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
+// === HORARIO (con periodo opcional) ===
+app.get('/alumno/horario', requireAuth, async (req, res) => {
+  const userId = req.user.sub;
+  const { periodo = null } = req.query;
+  const q = `
+    SELECT h.dia_semana, h.hora_ini, h.hora_fin, h.aula,
+           m.clave AS materia_clave,
+           m.nombre AS materia_nombre,
+           (upu.nombre || ' ' || upu.apellido) AS profesor
+    FROM ${DB_SCHEMA}.inscripcion i
+    JOIN ${DB_SCHEMA}.grupo g       ON g.id_grupo  = i.id_grupo
+    JOIN ${DB_SCHEMA}.horario h     ON h.id_grupo  = g.id_grupo
+    JOIN ${DB_SCHEMA}.materia m     ON m.id_materia= g.id_materia
+    LEFT JOIN ${DB_SCHEMA}.profesor p   ON p.id_profesor = g.id_profesor
+    LEFT JOIN ${DB_SCHEMA}.usuario  upu ON upu.id_usuario = p.id_profesor
+    WHERE i.id_alumno = $1
+      AND ($2::text IS NULL OR g.periodo = $2)
+    ORDER BY h.dia_semana, h.hora_ini, m.clave;
+  `;
+  try {
+    const { rows } = await pool.query(q, [userId, periodo]);
+    res.json(rows);
+  } catch (e) {
+    console.error('DB horario:', e);
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
+// === CALIFICACIONES (mapea p1, p2, ordinario y final_calc) ===
+app.get('/alumno/calificaciones', requireAuth, async (req, res) => {
+  const userId = req.user.sub;
+  const { periodo = null } = req.query;
+  const q = `
+    SELECT g.periodo,
+           m.clave  AS materia_clave,
+           m.nombre AS materia_nombre,
+           c.p1, c.p2, c.ordinario, c.final_calc
+    FROM ${DB_SCHEMA}.inscripcion i
+    JOIN ${DB_SCHEMA}.grupo g       ON g.id_grupo  = i.id_grupo
+    JOIN ${DB_SCHEMA}.materia m     ON m.id_materia= g.id_materia
+    LEFT JOIN ${DB_SCHEMA}.calificacion c ON c.id_alumno = i.id_alumno AND c.id_grupo = g.id_grupo
+    WHERE i.id_alumno = $1
+      AND ($2::text IS NULL OR g.periodo = $2)
+    ORDER BY m.clave;
+  `;
+  try {
+    const { rows } = await pool.query(q, [userId, periodo]);
+    res.json(rows);
+  } catch (e) {
+    console.error('DB calificaciones:', e);
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
+// resumen: créditos totales y usados en un periodo
+app.get('/alumno/reins/resumen', requireAuth, async (req,res)=>{
+  const userId = req.user.sub;
+  const { periodo } = req.query;
+  const q = `
+    WITH usados AS (
+      SELECT COALESCE(SUM(m.creditos),0) AS cr
+      FROM ${DB_SCHEMA}.inscripcion i
+      JOIN ${DB_SCHEMA}.grupo g ON g.id_grupo=i.id_grupo
+      JOIN ${DB_SCHEMA}.materia m ON m.id_materia=g.id_materia
+      WHERE i.id_alumno=$1 AND g.periodo=$2 AND i.estado IN ('PREINSCRITO','INSCRITO')
+    ),
+    tot AS (
+      SELECT COALESCE(SUM(creditos),0) AS cr FROM ${DB_SCHEMA}.materia WHERE id_carrera = (
+        SELECT id_carrera FROM ${DB_SCHEMA}.alumno WHERE id_alumno=$1
+      )
+    )
+    SELECT tot.cr AS total_creditos, usados.cr AS creditos_usados FROM tot, usados;
+  `;
+  const { rows } = await pool.query(q,[userId,periodo]);
+  res.json(rows[0]);
+});
+
+// materias inscritas del alumno (periodo)
+app.get('/alumno/reins/inscritas', requireAuth, async (req,res)=>{
+  const userId = req.user.sub; const { periodo } = req.query;
+  const q = `
+    SELECT i.id_grupo, m.clave, m.nombre, m.creditos,
+           (u.nombre||' '||u.apellido) AS profesor
+    FROM ${DB_SCHEMA}.inscripcion i
+    JOIN ${DB_SCHEMA}.grupo g ON g.id_grupo=i.id_grupo
+    JOIN ${DB_SCHEMA}.materia m ON m.id_materia=g.id_materia
+    LEFT JOIN ${DB_SCHEMA}.profesor p ON p.id_profesor=g.id_profesor
+    LEFT JOIN ${DB_SCHEMA}.usuario u ON u.id_usuario=p.id_profesor
+    WHERE i.id_alumno=$1 AND g.periodo=$2 AND i.estado IN ('PREINSCRITO','INSCRITO')
+    ORDER BY m.clave;
+  `;
+  const { rows } = await pool.query(q,[userId,periodo]);
+  res.json(rows);
+});
+
+// oferta filtrable (periodo + opcional semestre, turno)
+app.get('/alumno/reins/oferta', requireAuth, async (req,res)=>{
+  const userId = req.user.sub;
+  const { periodo, semestre = null, turno = null } = req.query;
+  const q = `
+    SELECT g.id_grupo, m.clave, m.nombre, m.creditos,
+           (u.nombre||' '||u.apellido) AS profesor,
+           v.lugares_disponibles
+    FROM ${DB_SCHEMA}.grupo g
+    JOIN ${DB_SCHEMA}.materia m ON m.id_materia=g.id_materia
+    LEFT JOIN ${DB_SCHEMA}.profesor p ON p.id_profesor=g.id_profesor
+    LEFT JOIN ${DB_SCHEMA}.usuario u ON u.id_usuario=p.id_profesor
+    JOIN ${DB_SCHEMA}.vw_oferta_con_lugares v ON v.id_grupo=g.id_grupo
+    WHERE g.periodo=$1
+      AND ($2::int  IS NULL OR m.semestre=$2::int)
+      AND ($3::text IS NULL OR g.turno=$3::text)
+      AND NOT EXISTS ( -- excluir ya inscritas/preinscritas por el alumno
+        SELECT 1 FROM ${DB_SCHEMA}.inscripcion i2
+        WHERE i2.id_alumno=$4 AND i2.id_grupo=g.id_grupo
+      )
+    ORDER BY m.semestre, m.clave;
+  `;
+  const { rows } = await pool.query(q,[periodo, semestre, turno, userId]);
+  res.json(rows);
+});
+
+// validar choque antes de preinscribir
+app.get('/alumno/reins/conflictos', requireAuth, async (req,res)=>{
+  const userId = req.user.sub; const { id_grupo } = req.query;
+  const q = `SELECT * FROM ${DB_SCHEMA}.sp_validar_choque_horario($1,$2);`;
+  const { rows } = await pool.query(q,[userId, id_grupo]);
+  res.json(rows); // vacío = sin choque
+});
+
+// preinscribir (si no hay choque)
+app.post('/alumno/reins/preinscribir', requireAuth, async (req,res)=>{
+  const userId = req.user.sub; const { id_grupo } = req.body;
+  const chk = await pool.query(`SELECT * FROM ${DB_SCHEMA}.sp_validar_choque_horario($1,$2)`,[userId,id_grupo]);
+  if (chk.rows.length) return res.status(409).json({error:'Choque de horario', detalles: chk.rows});
+  await pool.query(`
+    INSERT INTO ${DB_SCHEMA}.inscripcion (id_alumno,id_grupo,estado)
+    VALUES ($1,$2,'PREINSCRITO')
+    ON CONFLICT (id_alumno,id_grupo) DO UPDATE SET estado='PREINSCRITO'`,
+    [userId,id_grupo]
+  );
+  res.json({ok:true});
+});
+
+// quitar preinscripción/inscripción del carrito
+app.delete('/alumno/reins/preinscribir/:id_grupo', requireAuth, async (req,res)=>{
+  const userId = req.user.sub; const id_grupo = req.params.id_grupo;
+  await pool.query(`DELETE FROM ${DB_SCHEMA}.inscripcion WHERE id_alumno=$1 AND id_grupo=$2 AND estado='PREINSCRITO'`,[userId,id_grupo]);
+  res.json({ok:true});
+});
+
+// confirmar (pasa todo PREINSCRITO -> INSCRITO del periodo)
+app.post('/alumno/reins/confirmar', requireAuth, async (req,res)=>{
+  const userId = req.user.sub; const { periodo } = req.body;
+  await pool.query(`
+    UPDATE ${DB_SCHEMA}.inscripcion i
+    SET estado='INSCRITO'
+    FROM ${DB_SCHEMA}.grupo g
+    WHERE i.id_grupo=g.id_grupo AND i.id_alumno=$1 AND g.periodo=$2 AND i.estado='PREINSCRITO'`,
+    [userId, periodo]
+  );
+  res.json({ok:true});
+});
