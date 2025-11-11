@@ -8,6 +8,7 @@ import bcrypt from 'bcrypt';
 import { Pool } from 'pg';
 import { z } from 'zod';
 
+
 const {
   PORT = 3000,
   DATABASE_URL,
@@ -148,18 +149,32 @@ function authMiddleware(req, res, next) {
 }
 
 // modelo de ia para comunicacion con front 
+// modelo de ia para comunicacion con front 
 app.post('/ai/chat', async (req, res) => {
   try {
-    const r = await fetch(`${AI_URL}/chat`, {
+    const text =
+      (req.body.pregunta || req.body.message || req.body.text || req.body.q || '').trim();
+
+    if (!text) {
+      return res.status(400).json({ error: "Falta 'pregunta' o 'message' en el body" });
+    }
+
+    // OJO: mejor pegamos al alias del backend que ya devuelve {reply,...}
+    const r = await fetch(`${AI_URL}/ai/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: req.body.message || '' })
+      body: JSON.stringify({ message: text })
     });
+
     const data = await r.json();
-    res.json(data);
+    // normaliza la respuesta para el front
+    return res.json({
+      reply: data.reply ?? data.respuesta ?? data.message ?? '',
+      categoria: data.categoria ?? null
+    });
   } catch (e) {
-    console.error('AI proxy error:', e.message);
-    res.status(502).json({ error: 'AI service unavailable' });
+    console.error('AI proxy error:', e);
+    return res.status(502).json({ error: 'AI service unavailable' });
   }
 });
 

@@ -40,13 +40,22 @@ function logout(){                             // <- NUEVO
     setText('')
     try{
       const token = localStorage.getItem('access_token') || ''
-      const res = await fetch(`${API}/ai/chat`, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json', ...(token? {Authorization:`Bearer ${token}`} : {}) },
-        body: JSON.stringify({ message: clean })
-      })
-      const data = await res.json()
-      setMessages(prev => [...prev, {from:'bot', text: data?.reply || 'Sin respuesta.'}])
+            const res = await fetch(`${API}/ai/chat`, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json', ...(token? {Authorization:`Bearer ${token}`} : {}) },
+            body: JSON.stringify({ pregunta: clean }) // ok: el back acepta "message"
+          });
+
+          if (!res.ok) {
+            const raw = await res.text();
+            throw new Error(`HTTP ${res.status} ${raw}`);
+          }
+
+          const data = await res.json();
+          const reply = data.reply ?? data.respuesta ?? 'Hay no se, siguiente pregunta';
+          setMessages(prev => [...prev, { from:'bot', text: reply }]);
+
+
     }catch{
       setMessages(prev => [...prev, {from:'bot', text:'AI service unavailable.'}])
     }finally{ setSending(false) }
