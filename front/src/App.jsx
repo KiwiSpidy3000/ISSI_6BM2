@@ -2,7 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import Landing from './pages/Landing.jsx'
 import Login from './pages/Login.jsx'
 import Alumno from './pages/Alumno.jsx' 
-import Admin  from './pages/Admin.jsx'  // <- cambia aquí
+import Admin  from './pages/Admin.jsx'
+import Profesor from './pages/Profesor.jsx'  // <- cambia aquí
 
 export default function App(){
   return (
@@ -12,6 +13,7 @@ export default function App(){
       <Route path="/me" element={<Alumno/>}/>   {/* antes era <Me/> */}
       <Route path="*" element={<Navigate to="/" replace/>}/>
       <Route path="/admin" element={<Admin/>}/>
+      <Route path="/profesor" element={<Profesor/>}/>
     </Routes>
   )
 }

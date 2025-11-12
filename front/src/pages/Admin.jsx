@@ -1,6 +1,164 @@
 import { useState, useEffect, useRef } from 'react'
 
-const API =import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
+// INYECCIÓN DE ESTILOS CSS PARA RESPONSIVIDAD
+const responsiveStyles = `
+/* Contenedor principal del Dashboard */
+.dashboard {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: row; /* Por defecto, en escritorio */
+}
+
+/* Sidebar (Barra Lateral) */
+.sb {
+  width: 250px; /* Ancho fijo para escritorio */
+  background-color: #4a5d85; /* Asumiendo el color del sidebar */
+  color: white;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* Contenido Principal */
+.main {
+  flex-grow: 1;
+  padding: 20px;
+  background-color: #f7f8fc;
+  overflow-x: hidden; /* Previene scroll horizontal no deseado */
+}
+
+.main-content-wrapper {
+  max-width: 1200px; /* Limita el ancho del contenido principal en pantallas muy grandes */
+  margin: 0 auto;
+}
+
+/* Responsividad para pantallas pequeñas (móviles y tabletas) */
+@media (max-width: 768px) {
+  .dashboard {
+    flex-direction: column; /* Cambia a columna en pantallas pequeñas */
+  }
+  
+  .sb {
+    width: 100%; /* Ocupa todo el ancho */
+    flex-direction: row; /* Coloca los elementos del sidebar en fila para ahorrar espacio */
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    height: auto; /* Altura automática */
+  }
+
+  .sb-header {
+    display: flex;
+    align-items: center;
+  }
+
+  .sb-nav {
+    display: none; /* Oculta la navegación principal en móviles, se recomienda un menú hamburguesa real */
+  }
+
+  .sb-bottom {
+    display: none; /* Oculta el chat/logout para simplificar la vista móvil o se reubica */
+  }
+  
+  /* Permite el scroll horizontal en tablas si el contenido es demasiado ancho */
+  .tableWrap {
+    overflow-x: auto;
+  }
+  
+  /* Ajuste de inputs y botones en GestiónUsuarios para vista móvil */
+  .flex-wrap-mobile {
+    flex-direction: column;
+    gap: 10px !important;
+  }
+  
+  .flex-wrap-mobile > div {
+    min-width: 100% !important;
+  }
+
+  .flex-wrap-mobile input, 
+  .flex-wrap-mobile select,
+  .flex-wrap-mobile button {
+    width: 100% !important;
+  }
+  
+  /* Ajuste en el chat para mejor experiencia móvil */
+  .chat {
+    height: 75vh; /* Ocupa más espacio vertical en móvil */
+  }
+
+  .msg {
+    max-width: 85%; /* Mensajes más anchos */
+  }
+
+}
+
+/* Estilos de tabla base para responsividad, si el contenido no cabe, permite scroll */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tbl th, .tbl td {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  white-space: nowrap; /* Evita que el contenido de la tabla se rompa */
+}
+
+.tbl th:nth-child(2), .tbl td:nth-child(2) {
+  min-width: 150px; /* Asegura que la columna de nombre tenga un ancho decente */
+}
+
+/* Botones del sidebar en línea si el nav está oculto, pero los reinsertaré debajo */
+@media (max-width: 768px) {
+  .sb-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  /* Mostrar la navegación en la parte inferior en móvil */
+  .sb-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+    margin-top: 10px;
+  }
+  
+  .sb {
+      flex-direction: column; /* Volver a columna para que nav y bottom estén uno bajo el otro */
+      align-items: flex-start;
+  }
+  
+  .sb-header {
+      width: 100%;
+      justify-content: flex-start;
+      margin-bottom: 10px;
+  }
+  
+  .sb .pill {
+      width: 100%;
+      text-align: left;
+  }
+}
+
+`
+
+// Función para inyectar CSS
+function injectStyles(css) {
+  const style = document.createElement('style');
+  style.type = 'text/css';
+  style.appendChild(document.createTextNode(css));
+  document.head.appendChild(style);
+}
+
+// Inyectar estilos al cargar el componente principal
+injectStyles(responsiveStyles);
 
 export default function Admin() {
   const [view, setView] = useState('perfil')
@@ -95,16 +253,16 @@ export default function Admin() {
         </div>
       </aside>
 
-  <main className="main">
-    <div className="main-content-wrapper">
-      {view === 'perfil' && <DatosPersonales profile={profile} />}
-      {view === 'usuarios' && <GestionUsuarios />}
-      {view === 'clases' && <GestionClases />}
-      {view === 'reinscripcion' && <GestionReinscripcion />}
-      {view === 'chat' && <ChatBot />}
-    </div>
-  </main>
-    </div>
+    <main className="main">
+      <div className="main-content-wrapper">
+        {view === 'perfil' && <DatosPersonales profile={profile} />}
+        {view === 'usuarios' && <GestionUsuarios />}
+        {view === 'clases' && <GestionClases />}
+        {view === 'reinscripcion' && <GestionReinscripcion />}
+        {view === 'chat' && <ChatBot />}
+      </div>
+    </main>
+      </div>
   )
 }
 
@@ -118,9 +276,10 @@ function DatosPersonales({ profile }) {
       </h2>
       <div style={{ 
         maxWidth: 600, 
+        width: '90%', /* Usar ancho relativo */
         margin: '0 auto', 
         background: '#f7f8fc', 
-        padding: 32, 
+        padding: 20, 
         borderRadius: 12 
       }}>
         <div style={{ marginBottom: 16 }}>
@@ -251,14 +410,14 @@ function GestionUsuarios() {
         Gestión de Usuarios
       </h2>
 
-      <div style={{ 
+      <div className="flex-wrap-mobile" style={{ // Clase para ajustes móviles
         display: 'flex', 
         gap: 16, 
         alignItems: 'center', 
         marginBottom: 20,
         flexWrap: 'wrap'
       }}>
-        <div style={{ flex: 1, minWidth: 250, position: 'relative' }}>
+        <div style={{ flex: 1, minWidth: '40%', position: 'relative' }}> {/* Usar minWidth relativo */}
           <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#999' }}>
             🔍
           </span>
@@ -268,15 +427,15 @@ function GestionUsuarios() {
             placeholder="Buscar por Nombre, ID....."
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
-            style={{ paddingLeft: 40 }}
+            style={{ paddingLeft: 40, width: '100%' }} // Asegurar ancho completo
           />
         </div>
-        <div>
+        <div style={{ flexGrow: 1, minWidth: '40%' }}>
           <select
             className="input"
             value={tipoFiltro}
             onChange={e => setTipoFiltro(e.target.value)}
-            style={{ width: 200 }}
+            style={{ width: '100%' }} // Asegurar ancho completo
           >
             <option value="">Tipo de Usuario</option>
             <option value="Alumno">Alumno</option>
@@ -287,12 +446,12 @@ function GestionUsuarios() {
         <button 
           className="btn" 
           onClick={() => abrirModal()}
-          style={{ whiteSpace: 'nowrap' }}
+          style={{ whiteSpace: 'nowrap', width: 'auto' }} // Ajustar ancho
         >
           Añadir Usuario
         </button>
       </div>
-     <div className="tableWrap">
+      <div className="tableWrap"> {/* Agregamos el div para manejar el scroll de la tabla */}
         <table className="tbl">
           <thead>
             <tr>
@@ -415,7 +574,7 @@ function ModalUsuario({ user, onClose, onSave }) {
         background: '#fff',
         borderRadius: 12,
         padding: 32,
-        width: 'min(500px, 90vw)',
+        width: 'min(500px, 90vw)', // Uso de 'min()' para responsividad
         maxHeight: '90vh',
         overflow: 'auto'
       }}>
@@ -435,6 +594,7 @@ function ModalUsuario({ user, onClose, onSave }) {
               onChange={e => handleChange('id', e.target.value)}
               required
               disabled={!!user}
+              style={{ width: '100%', boxSizing: 'border-box' }}
             />
           </div>
 
@@ -448,6 +608,7 @@ function ModalUsuario({ user, onClose, onSave }) {
               value={formData.nombre}
               onChange={e => handleChange('nombre', e.target.value)}
               required
+              style={{ width: '100%', boxSizing: 'border-box' }}
             />
           </div>
 
@@ -461,6 +622,7 @@ function ModalUsuario({ user, onClose, onSave }) {
               value={formData.email}
               onChange={e => handleChange('email', e.target.value)}
               required
+              style={{ width: '100%', boxSizing: 'border-box' }}
             />
           </div>
 
@@ -472,6 +634,7 @@ function ModalUsuario({ user, onClose, onSave }) {
               className="input"
               value={formData.tipo}
               onChange={e => handleChange('tipo', e.target.value)}
+              style={{ width: '100%', boxSizing: 'border-box' }}
             >
               <option value="Alumno">Alumno</option>
               <option value="Maestro">Maestro</option>
@@ -487,6 +650,7 @@ function ModalUsuario({ user, onClose, onSave }) {
               className="input"
               value={formData.estado}
               onChange={e => handleChange('estado', e.target.value)}
+              style={{ width: '100%', boxSizing: 'border-box' }}
             >
               <option value="Activo">Activo</option>
               <option value="Inactivo">Inactivo</option>
@@ -504,12 +668,13 @@ function ModalUsuario({ user, onClose, onSave }) {
                 value={formData.password}
                 onChange={e => handleChange('password', e.target.value)}
                 required={!user}
+                style={{ width: '100%', boxSizing: 'border-box' }}
               />
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-            <button type="submit" className="btn" style={{ flex: 1 }}>
+          <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}> {/* flexWrap para botones */}
+            <button type="submit" className="btn" style={{ flex: 1, minWidth: '100px' }}>
               {user ? 'Guardar Cambios' : 'Crear Usuario'}
             </button>
             {user && (
@@ -518,6 +683,7 @@ function ModalUsuario({ user, onClose, onSave }) {
                 onClick={handleDelete}
                 style={{
                   flex: 1,
+                  minWidth: '100px',
                   background: '#d32f2f',
                   color: '#fff',
                   border: 'none',
@@ -535,6 +701,7 @@ function ModalUsuario({ user, onClose, onSave }) {
               onClick={onClose}
               style={{
                 flex: 1,
+                minWidth: '100px',
                 background: '#e0e0e0',
                 color: '#333',
                 border: 'none',
@@ -600,14 +767,14 @@ function GestionClases() {
         Gestión de Clases
       </h2>
 
-      <div style={{ 
+      <div className="flex-wrap-mobile" style={{ // Clase para ajustes móviles
         display: 'flex', 
         gap: 16, 
         alignItems: 'center', 
         marginBottom: 20,
         flexWrap: 'wrap'
       }}>
-        <div style={{ flex: 1, minWidth: 250, position: 'relative' }}>
+        <div style={{ flex: 1, minWidth: '40%', position: 'relative' }}> {/* Usar minWidth relativo */}
           <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#999' }}>
             🔍
           </span>
@@ -617,15 +784,15 @@ function GestionClases() {
             placeholder="Buscar por Profesor, ID....."
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
-            style={{ paddingLeft: 40 }}
+            style={{ paddingLeft: 40, width: '100%' }} // Asegurar ancho completo
           />
         </div>
-        <div>
+        <div style={{ flexGrow: 1, minWidth: '40%' }}>
           <select
             className="input"
             value={materiaFiltro}
             onChange={e => setMateriaFiltro(e.target.value)}
-            style={{ width: 200 }}
+            style={{ width: '100%' }} // Asegurar ancho completo
           >
             <option value="">Materia</option>
             {materiasUnicas.map(m => (
@@ -636,13 +803,13 @@ function GestionClases() {
         <button 
           className="btn" 
           onClick={() => abrirModal()}
-          style={{ whiteSpace: 'nowrap' }}
+          style={{ whiteSpace: 'nowrap', width: 'auto' }} // Ajustar ancho
         >
           Añadir Clase
         </button>
       </div>
 
-      <div className="tableWrap">
+      <div className="tableWrap"> {/* Agregamos el div para manejar el scroll de la tabla */}
         <table className="tbl">
           <thead>
             <tr>
@@ -766,7 +933,7 @@ function ModalClase({ clase, onClose, onSave }) {
         background: '#fff',
         borderRadius: 12,
         padding: 32,
-        width: 'min(500px, 90vw)',
+        width: 'min(500px, 90vw)', // Uso de 'min()' para responsividad
         maxHeight: '90vh',
         overflow: 'auto'
       }}>
@@ -786,6 +953,7 @@ function ModalClase({ clase, onClose, onSave }) {
               onChange={e => handleChange('id', e.target.value)}
               required
               disabled={!!clase}
+              style={{ width: '100%', boxSizing: 'border-box' }}
             />
           </div>
 
@@ -799,6 +967,7 @@ function ModalClase({ clase, onClose, onSave }) {
               value={formData.materia}
               onChange={e => handleChange('materia', e.target.value)}
               required
+              style={{ width: '100%', boxSizing: 'border-box' }}
             />
           </div>
 
@@ -812,6 +981,7 @@ function ModalClase({ clase, onClose, onSave }) {
               value={formData.profesor}
               onChange={e => handleChange('profesor', e.target.value)}
               required
+              style={{ width: '100%', boxSizing: 'border-box' }}
             />
           </div>
 
@@ -826,6 +996,7 @@ function ModalClase({ clase, onClose, onSave }) {
               value={formData.creditos}
               onChange={e => handleChange('creditos', e.target.value)}
               required
+              style={{ width: '100%', boxSizing: 'border-box' }}
             />
           </div>
 
@@ -838,6 +1009,7 @@ function ModalClase({ clase, onClose, onSave }) {
               className="input"
               value={formData.grupo}
               onChange={e => handleChange('grupo', e.target.value)}
+              style={{ width: '100%', boxSizing: 'border-box' }}
             />
           </div>
 
@@ -851,6 +1023,7 @@ function ModalClase({ clase, onClose, onSave }) {
               placeholder="Ej: Lun-Mie 10:00-12:00"
               value={formData.horario}
               onChange={e => handleChange('horario', e.target.value)}
+              style={{ width: '100%', boxSizing: 'border-box' }}
             />
           </div>
 
@@ -863,11 +1036,12 @@ function ModalClase({ clase, onClose, onSave }) {
               className="input"
               value={formData.cupo}
               onChange={e => handleChange('cupo', e.target.value)}
+              style={{ width: '100%', boxSizing: 'border-box' }}
             />
           </div>
 
-          <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-            <button type="submit" className="btn" style={{ flex: 1 }}>
+          <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}> {/* flexWrap para botones */}
+            <button type="submit" className="btn" style={{ flex: 1, minWidth: '100px' }}>
               {clase ? 'Guardar Cambios' : 'Crear Clase'}
             </button>
             {clase && (
@@ -876,6 +1050,7 @@ function ModalClase({ clase, onClose, onSave }) {
                 onClick={handleDelete}
                 style={{
                   flex: 1,
+                  minWidth: '100px',
                   background: '#d32f2f',
                   color: '#fff',
                   border: 'none',
@@ -893,6 +1068,7 @@ function ModalClase({ clase, onClose, onSave }) {
               onClick={onClose}
               style={{
                 flex: 1,
+                minWidth: '100px',
                 background: '#e0e0e0',
                 color: '#333',
                 border: 'none',
@@ -992,6 +1168,7 @@ function GestionReinscripcion() {
 
       <div style={{
         maxWidth: 580,
+        width: '90%', // Uso de ancho relativo
         margin: '0 auto'
       }}>
         <form onSubmit={guardarHorarios}>
@@ -1013,7 +1190,8 @@ function GestionReinscripcion() {
                 borderRadius: 8,
                 background: '#fff',
                 fontSize: 14,
-                color: '#333'
+                color: '#333',
+                boxSizing: 'border-box' // Asegurar que el padding no cause desbordamiento
               }}
               value={periodo}
               onChange={e => setPeriodo(e.target.value)}
@@ -1045,7 +1223,8 @@ function GestionReinscripcion() {
                 borderRadius: 8,
                 background: '#fff',
                 fontSize: 14,
-                color: '#333'
+                color: '#333',
+                boxSizing: 'border-box' // Asegurar que el padding no cause desbordamiento
               }}
               value={horaInicio}
               onChange={e => setHoraInicio(e.target.value)}
@@ -1075,7 +1254,8 @@ function GestionReinscripcion() {
                 borderRadius: 8,
                 background: '#fff',
                 fontSize: 14,
-                color: '#333'
+                color: '#333',
+                boxSizing: 'border-box' // Asegurar que el padding no cause desbordamiento
               }}
               value={horaFin}
               onChange={e => setHoraFin(e.target.value)}
@@ -1105,7 +1285,7 @@ function GestionReinscripcion() {
             type="submit"
             style={{
               width: '100%',
-              padding: '14px 24px',
+              padding: '7px 17px',
               background: '#4a5d85',
               color: '#fff',
               border: 'none',
