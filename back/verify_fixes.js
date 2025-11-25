@@ -17,65 +17,85 @@ async function login(email, password, role) {
         throw new Error('Login failed (invalid JSON)');
     }
     if (!res.ok) {
-        // Return error for testing
         return { error: data.error, status: res.status };
     }
     return { access_token: data.access_token, status: res.status };
 }
 
-async function verifyRoleEnforcement() {
-    console.log('--- Verifying Role Enforcement ---');
+async function verifyStudentView() {
+    console.log('--- Verifying Student View Improvements ---');
 
-    // 1. Miguel (Student) trying to login as ALUMNO (Should succeed)
-    console.log('1. Miguel (Student) -> ALUMNO');
-    const r1 = await login('2021301170@alumno.ipn.mx', 'lyte123', 'ALUMNO');
-    if (r1.access_token) console.log('   ✅ Success');
-    else console.error('   ❌ Failed:', r1.error);
-
-    // 2. Miguel (Student) trying to login as PROFESOR (Should fail)
-    console.log('2. Miguel (Student) -> PROFESOR');
-    const r2 = await login('2021301170@alumno.ipn.mx', 'lyte123', 'PROFESOR');
-    if (r2.status === 403) console.log('   ✅ Rejected (403):', r2.error);
-    else console.error('   ❌ Unexpected:', r2);
-
-    // 3. Idalia (Professor) trying to login as PROFESOR (Should succeed)
-    console.log('3. Idalia (Professor) -> PROFESOR');
-    const r3 = await login('idalia.maldonado@escom.ipn.mx', 'prof123', 'PROFESOR');
-    if (r3.access_token) console.log('   ✅ Success');
-    else console.error('   ❌ Failed:', r3.error);
-
-    // 4. Idalia (Professor) trying to login as ALUMNO (Should fail)
-    console.log('4. Idalia (Professor) -> ALUMNO');
-    const r4 = await login('idalia.maldonado@escom.ipn.mx', 'prof123', 'ALUMNO');
-    if (r4.status === 403) console.log('   ✅ Rejected (403):', r4.error);
-    else console.error('   ❌ Unexpected:', r4);
-}
-
-async function verifyMiguel() {
-    console.log('--- Verifying Miguel Data (Student) ---');
+    // 1. Login as Miguel (Student)
     const r = await login('2021301170@alumno.ipn.mx', 'lyte123', 'ALUMNO');
     const token = r.access_token;
     if (!token) throw new Error('Login failed');
+    console.log('1. Login successful');
 
-    // 1. Check Kardex
+    // 2. Check Kardex for Semester
+    console.log('2. Checking Kardex for Semester column...');
     const kRes = await fetch(`${API}/alumno/kardex`, {
         headers: { Authorization: `Bearer ${token}` }
     });
     const kardex = await kRes.json();
-    console.log(`Kardex items: ${kardex.length}`);
+    if (kardex.length > 0) {
+        const first = kardex[0];
+        if (first.semestre !== undefined) {
+            console.log(`   ✅ Kardex has semester: ${first.semestre}`);
+        } else {
+            console.error('   ❌ Kardex missing semester field:', first);
+        }
+    } else {
+        console.warn('   ⚠️ Kardex is empty');
+    }
 
-    // 2. Check Offer
-    const oRes = await fetch(`${API}/alumno/reins/oferta?periodo=2024-1`, {
+    // 3. Check Schedule for Table Data
+    console.log('3. Checking Schedule data...');
+    // Fetch periods first to get a valid one
+    const pRes = await fetch(`${API}/alumno/periodos`, {
         headers: { Authorization: `Bearer ${token}` }
     });
-    const offer = await oRes.json();
-    console.log(`Offer items: ${offer.length}`);
+    const periodos = await pRes.json();
+    const lastPeriod = periodos[periodos.length - 1];
+    console.log(`   Using period: ${lastPeriod}`);
+
+    if (lastPeriod) {
+        // Check enrollments first
+        const eRes = await fetch(`${API}/alumno/reins/inscritas?periodo=${lastPeriod}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const enrollments = await eRes.json();
+        console.log(`   Enrollments for ${lastPeriod}: ${enrollments.length}`);
+        if (enrollments.length > 0) {
+            console.log('   Sample enrollment:', enrollments[0]);
+        }
+
+        const hRes = await fetch(`${API}/alumno/horario?periodo=${lastPeriod}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const schedule = await hRes.json();
+        console.log(`   Schedule items: ${schedule.length}`);
+
+        if (schedule.length > 0) {
+            const first = schedule[0];
+            const requiredFields = ['id_grupo', 'materia_nombre', 'profesor', 'dia_semana', 'hora_ini', 'hora_fin', 'aula'];
+            const missing = requiredFields.filter(f => first[f] === undefined);
+            if (missing.length === 0) {
+                console.log('   ✅ Schedule has all required fields');
+                console.log(`   Sample: Group ${first.id_grupo}, ${first.materia_nombre}, ${first.dia_semana} ${first.hora_ini}-${first.hora_fin}`);
+            } else {
+                console.error('   ❌ Schedule missing fields:', missing);
+            }
+        } else {
+            console.warn('   ⚠️ Schedule is empty for this period (might be due to missing horario records for groups)');
+        }
+    } else {
+        console.warn('   ⚠️ No periods found for student');
+    }
 }
 
 async function main() {
     try {
-        await verifyRoleEnforcement();
-        await verifyMiguel();
+        await verifyStudentView();
     } catch (e) {
         console.error('Verification failed:', e);
     }

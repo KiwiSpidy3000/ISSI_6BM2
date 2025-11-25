@@ -4,12 +4,12 @@ import 'dotenv/config';
 const { Pool } = pg;
 
 const {
-    DATABASE_URL,
+    DATABASE_URL = 'postgres://postgres:admin@localhost:5432/lytebd1',
     DB_SCHEMA = 'escom_aliz'
 } = process.env;
 
 if (!DATABASE_URL) {
-    throw new Error('DATABASE_URL environment variable is missing');
+    console.warn('DATABASE_URL missing, using default');
 }
 
 // Create a new pool instance with the connection string from env

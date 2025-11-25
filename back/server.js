@@ -330,6 +330,7 @@ app.get('/alumno/kardex', requireAuth, async (req, res) => {
     SELECT k.periodo,
            k.materia_clave,
            k.materia_nombre,
+           m.semestre, -- Added semester
            m.creditos,
            k.calificacion_final AS calificacion,
            k.estatus
@@ -349,34 +350,7 @@ app.get('/alumno/kardex', requireAuth, async (req, res) => {
 
 
 // --- Horario (periodo opcional ?periodo=2025-1) ---
-app.get('/alumno/horario', requireAuth, async (req, res) => {
-  const userId = req.user.sub;
-  const { periodo = null } = req.query;
-
-  const q = `
-    SELECT h.dia_semana, h.hora_ini, h.hora_fin, h.aula,
-           m.clave AS materia_clave,
-           m.nombre AS materia_nombre,
-           (upu.nombre || ' ' || upu.apellido) AS profesor
-    FROM ${DB_SCHEMA}.alumno a
-    JOIN ${DB_SCHEMA}.inscripcion i ON i.id_alumno = a.id_alumno
-    JOIN ${DB_SCHEMA}.grupo g       ON g.id_grupo  = i.id_grupo
-    JOIN ${DB_SCHEMA}.horario h     ON h.id_grupo  = g.id_grupo
-    JOIN ${DB_SCHEMA}.materia m     ON m.id_materia= g.id_materia
-    LEFT JOIN ${DB_SCHEMA}.profesor p  ON p.id_profesor = g.id_profesor
-    LEFT JOIN ${DB_SCHEMA}.usuario  upu ON upu.id_usuario = p.id_profesor
-    WHERE a.id_alumno = $1
-      AND ($2::text IS NULL OR g.periodo = $2)
-    ORDER BY h.dia_semana, h.hora_ini;
-  `;
-  try {
-    const { rows } = await pool.query(q, [userId, periodo]);
-    res.json(rows);
-  } catch (e) {
-    console.error('DB horario:', e);
-    res.status(500).json({ error: String(e.message || e) });
-  }
-});
+// --- Horario (duplicate removed) ---
 
 // === LISTA DE PERIODOS DEL ALUMNO ===
 app.get('/alumno/periodos', requireAuth, async (req, res) => {
@@ -402,7 +376,18 @@ app.get('/alumno/horario', requireAuth, async (req, res) => {
   const userId = req.user.sub;
   const { periodo = null } = req.query;
   const q = `
-    SELECT h.dia_semana, h.hora_ini, h.hora_fin, h.aula,
+    SELECT 
+           CASE 
+             WHEN h.dia_semana = 1 THEN 'Lunes'
+             WHEN h.dia_semana = 2 THEN 'Martes'
+             WHEN h.dia_semana = 3 THEN 'Miércoles'
+             WHEN h.dia_semana = 4 THEN 'Jueves'
+             WHEN h.dia_semana = 5 THEN 'Viernes'
+             WHEN h.dia_semana = 6 THEN 'Sábado'
+             ELSE 'Domingo'
+           END AS dia_semana,
+           h.hora_ini, h.hora_fin, h.aula,
+           g.id_grupo, -- Added id_grupo
            m.clave AS materia_clave,
            m.nombre AS materia_nombre,
            (upu.nombre || ' ' || upu.apellido) AS profesor
