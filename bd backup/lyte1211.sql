@@ -528,8 +528,41 @@ CREATE TABLE escom_aliz.profesor (
     id_profesor integer NOT NULL,
     num_empleado character varying(30) NOT NULL,
     departamento character varying(120)
+    nombre character varying(80),
+    apellido character varying(120)
 );
 
+-- llenar registros de la tabla profesor
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP001', 'Ciencias Matemáticas y Físicas', 'Crispin', 'Herrera Yañez');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP002', 'Ciencias Matemáticas', 'Cesar', 'Hernandez Vazquez');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP003', 'Ciencias Matemáticas', 'Ana Laura', 'Arredondo Sanchez');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP004', 'Ciencias Matemáticas', 'Eduardo', 'Rodriguez Flores');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP005', 'Ciencias Matemáticas', 'Tlatoani de Jesus', 'Reyes Bermejo');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP006', 'Ciencias Matemáticas', 'Jose Celestino Elias', 'Hernandez Secundino');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP007', 'Ciencias Matemáticas', 'Perla Cecilia', 'Lucio Peña');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP008', 'Ciencias Matemáticas', 'Marisol', 'Rodriguez Ordaz');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP009', 'Ciencias Matemáticas', 'Alicia Marcela', 'Ramirez Guzman');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0010', 'Ciencias Computacionales', 'Tonahtiu Arturo', 'Ramirez Romero');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0011', 'Ciencias Matemáticas y Físicas', 'Jose Gregorio', 'Rodriguez Villarreal');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0012', 'Ciencias Digitales', 'Josue Emanuel', 'Barron Vera');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0013', 'Ciencias Matemáticas y Físicas', 'Miguel Abel', 'Leon Hernandez');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0014', 'Ciencias Sociales', 'Lilian', 'Martinez Acosta');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0015', 'Ciencias Sociales', 'Alejandra', 'Ramos Porras');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0016', 'Ciencias Computacionales', 'Ana Belem', 'Juárez Mendez');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0017', 'Ciencias Computacionales', 'Sandra', 'Diaz Santiago');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0018', 'Ciencias Computacionales', 'Jose', 'Sanchez Juarez');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0019', 'Ciencias Matemáticas y Físicas', 'Juan Manuel', 'Carballo Jimenez');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0020', 'Ciencias Computacionales', 'Erika', 'Hernandez Rubio');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0021', 'Ciencias Digitales', 'Alexis', 'Tasta Nava');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0022', 'Ciencias Sociales', 'Gisela', 'Gonzalez Albarran');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0023', 'Ciencias Computacionales', 'Miguel Ángel', 'Rodriguez Castillo');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0024', 'Ciencias Computacionales', 'Andres', 'Cortes Davalos');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0025', 'Ciencias Matemáticas y Físicas', 'Jorge Alberto', 'Cruz Rojas');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0026', 'Ciencias Digitales', 'Jose Juan', 'Perez Perez');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0027', 'Ciencias Sociales', 'Elia Tzindejhe', 'Ramirez Martinez');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0028', 'Ciencias Computacionales', 'Ituriel Enrique', 'Flores Estrada');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0029', 'Ciencias Matemáticas y Físicas', 'Christian Rene', 'Leal Pacheco');
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento, nombre, apellido) VALUES (1, 'EMP0030', 'Ciencias Computacionales', 'Tonahtiu Arturo', 'Ramirez Romero');
 
 ALTER TABLE escom_aliz.profesor OWNER TO postgres;
 
@@ -723,27 +756,60 @@ INSERT INTO escom_aliz.inscripcion VALUES (7, 5, 7, 'INSCRITO', '2025-11-04 08:1
 -- Data for Name: materia; Type: TABLE DATA; Schema: escom_aliz; Owner: postgres
 --
 
-INSERT INTO escom_aliz.materia VALUES (1, 'BD1', 'Bases de Datos I', 8, 5, 2, NULL, NULL);
-INSERT INTO escom_aliz.materia VALUES (2, 'IA1', 'Fundamentos de IA', 8, 5, 2, NULL, NULL);
-INSERT INTO escom_aliz.materia VALUES (3, 'IIA101', 'Fundamentos de Programación', 8, 5, 2, NULL, 1);
-INSERT INTO escom_aliz.materia VALUES (4, 'IIA102', 'Matemáticas Discretas', 8, 5, 2, NULL, 1);
-INSERT INTO escom_aliz.materia VALUES (5, 'IIA103', 'Cálculo Diferencial', 8, 5, 2, NULL, 1);
-INSERT INTO escom_aliz.materia VALUES (6, 'IIA104', 'Comunicación Oral y Escrita', 6, 3, 2, NULL, 1);
-INSERT INTO escom_aliz.materia VALUES (7, 'IIA105', 'Mecánica y Electromagnetismo', 8, 5, 2, NULL, 1);
-INSERT INTO escom_aliz.materia VALUES (8, 'IIA106', 'Fundamentos Económicos', 6, 3, 2, NULL, 1);
-INSERT INTO escom_aliz.materia VALUES (9, 'IIA201', 'Programación Orientada a Objetos', 8, 5, 2, NULL, 2);
-INSERT INTO escom_aliz.materia VALUES (10, 'IIA202', 'Estructuras de Datos', 8, 5, 2, NULL, 2);
-INSERT INTO escom_aliz.materia VALUES (11, 'IIA203', 'Cálculo Integral', 8, 5, 2, NULL, 2);
-INSERT INTO escom_aliz.materia VALUES (12, 'IIA204', 'Álgebra Lineal', 8, 5, 2, NULL, 2);
-INSERT INTO escom_aliz.materia VALUES (13, 'IIA205', 'Probabilidad y Estadística', 8, 5, 2, NULL, 2);
-INSERT INTO escom_aliz.materia VALUES (14, 'IIA206', 'Taller de Ética', 4, 2, 2, NULL, 2);
-INSERT INTO escom_aliz.materia VALUES (17, 'IIA303', 'Lenguajes Formales y Autómatas', 8, 5, 2, NULL, 3);
-INSERT INTO escom_aliz.materia VALUES (18, 'IIA304', 'Señales y Sistemas', 8, 5, 2, NULL, 3);
-INSERT INTO escom_aliz.materia VALUES (19, 'IIA305', 'Metodología de la Investigación', 6, 3, 2, NULL, 3);
-INSERT INTO escom_aliz.materia VALUES (20, 'IIA401', 'Bases de Datos II', 8, 5, 2, NULL, 4);
-INSERT INTO escom_aliz.materia VALUES (21, 'IIA402', 'Aprendizaje Automático I', 8, 5, 2, NULL, 4);
-INSERT INTO escom_aliz.materia VALUES (22, 'IIA403', 'Sistemas Operativos', 8, 5, 2, NULL, 4);
-INSERT INTO escom_aliz.materia VALUES (23, 'IIA404', 'Arquitectura de Computadoras', 8, 5, 2, NULL, 4);
+
+-- Registros para la carrera de Ingeniería en Inteligencia Artificial (IIA)
+-- id_carrera asumido = 1
+-- Créditos y horas estimados según estándar IPN (4-6 créditos, 4-6 horas/semana)
+
+INSERT INTO escom_aliz.materia (id_materia, clave, nombre, creditos, horas_semana, id_carrera, id_prereq, semestre)
+VALUES
+-- Semestre 1
+(1, 'IIA101', 'Fundamentos de Programación', 6, 6, 1, NULL, 1),
+(2, 'IIA102', 'Matemáticas Discretas', 5, 5, 1, NULL, 1),
+(3, 'IIA103', 'Cálculo', 6, 6, 1, NULL, 1),
+(4, 'IIA104', 'Comunicación Oral y Escrita', 4, 4, 1, NULL, 1),
+(5, 'IIA105', 'Mecánica', 5, 5, 1, NULL, 1),
+(6, 'IIA106', 'Fundamentos Económicos', 4, 4, 1, NULL, 1),
+
+-- Semestre 2
+(7, 'IIA201', 'Álgebra Lineal', 5, 5, 1, NULL, 2),
+(8, 'IIA202', 'Programación Orientada a Objetos', 6, 6, 1, 1, 2),
+(9, 'IIA203', 'Probabilidad y Estadística', 5, 5, 1, NULL, 2),
+(10, 'IIA204', 'Ecuaciones Diferenciales', 5, 5, 1, 3, 2),
+(11, 'IIA205', 'Bases de Datos', 6, 6, 1, 1, 2),
+(12, 'IIA206', 'Liderazgo Personal', 3, 3, 1, NULL, 2),
+
+-- Semestre 3
+(13, 'IIA301', 'Análisis y Diseño de Algoritmos', 6, 6, 1, 8, 3),
+(14, 'IIA302', 'Programación Lógica y Funcional', 6, 6, 1, 8, 3),
+(15, 'IIA303', 'Ingeniería de Software', 5, 5, 1, 8, 3),
+(16, 'IIA304', 'Finanzas', 4, 4, 1, NULL, 3),
+
+-- Semestre 4
+(17, 'IIA401', 'Aprendizaje de Máquina', 6, 6, 1, 13, 4),
+(18, 'IIA402', 'Visión Artificial', 6, 6, 1, 13, 4),
+(19, 'IIA403', 'Teoría de la Computación', 5, 5, 1, 14, 4),
+(20, 'IIA404', 'Procesamiento de Lenguaje Natural', 6, 6, 1, 14, 4),
+
+-- Semestre 5
+(21, 'IIA501', 'Computación Paralela', 6, 6, 1, 13, 5),
+(22, 'IIA502', 'Optativa A', 5, 5, 1, NULL, 5),
+(23, 'IIA503', 'Optativa B', 5, 5, 1, NULL, 5),
+
+-- Semestre 6
+(24, 'IIA601', 'Reconocimiento de Voz', 6, 6, 1, 20, 6),
+(25, 'IIA602', 'Trabajo Terminal I', 4, 4, 1, NULL, 6),
+
+-- Semestre 7
+(26, 'IIA701', 'Trabajo Terminal II', 4, 4, 1, 25, 7),
+(27, 'IIA702', 'Optativa C', 5, 5, 1, NULL, 7),
+(28, 'IIA703', 'Optativa D', 5, 5, 1, NULL, 7),
+
+-- Semestre 8
+(29, 'IIA801', 'Estancia Profesional', 10, 10, 1, NULL, 8),
+
+-- Semestre 9
+(30, 'IIA901', 'Gestión Empresarial', 5, 5, 1, NULL, 9);
 
 
 --
@@ -1228,6 +1294,110 @@ ALTER TABLE ONLY escom_aliz.notificacion
 
 ALTER TABLE ONLY escom_aliz.profesor
     ADD CONSTRAINT profesor_id_profesor_fkey FOREIGN KEY (id_profesor) REFERENCES escom_aliz.usuario(id_usuario);
+
+INSERT INTO escom_aliz.alumno (id_alumno, boleta, id_carrera, semestre) VALUES
+(1, '20250001', 1, 1),
+(2, '20250002', 2, 2),
+(3, '20250003', 3, 3),
+(4, '20250004', 1, 4),
+(5, '20250005', 2, 5),
+(6, '20250006', 3, 6),
+(7, '20250007', 1, 7),
+(8, '20250008', 2, 8),
+(9, '20250009', 3, 1),
+(10, '20250010', 1, 2),
+(11, '20250011', 2, 3),
+(12, '20250012', 3, 4),
+(13, '20250013', 1, 5),
+(14, '20250014', 2, 6),
+(15, '20250015', 3, 7),
+(16, '20250016', 1, 8),
+(17, '20250017', 2, 1),
+(18, '20250018', 3, 2),
+(19, '20250019', 1, 3),
+(20, '20250020', 2, 4),
+(21, '20250021', 3, 5),
+(22, '20250022', 1, 6),
+(23, '20250023', 2, 7),
+(24, '20250024', 3, 8),
+(25, '20250025', 1, 1),
+(26, '20250026', 2, 2),
+(27, '20250027', 3, 3),
+(28, '20250028', 1, 4),
+(29, '20250029', 2, 5),
+(30, '20250030', 3, 6),
+(31, '20250031', 1, 7),
+(32, '20250032', 2, 8),
+(33, '20250033', 3, 1),
+(34, '20250034', 1, 2),
+(35, '20250035', 2, 3),
+(36, '20250036', 3, 4),
+(37, '20250037', 1, 5),
+(38, '20250038', 2, 6),
+(39, '20250039', 3, 7),
+(40, '20250040', 1, 8),
+(41, '20250041', 2, 1),
+(42, '20250042', 3, 2),
+(43, '20250043', 1, 3),
+(44, '20250044', 2, 4),
+(45, '20250045', 3, 5),
+(46, '20250046', 1, 6),
+(47, '20250047', 2, 7),
+(48, '20250048', 3, 8),
+(49, '20250049', 1, 1),
+
+INSERT INTO escom_aliz.calificacion (id_calificacion, id_alumno, id_grupo, p1, p2, ordinario) VALUES
+(1, 1, 1, 85.00, 90.00, NULL),
+(2, 2, 2, 78.50, 82.00, 80.00),
+(3, 3, 3, 92.00, 88.00, NULL),
+(4, 4, 4, 70.00, 75.00, 72.00),
+(5, 5, 5, 88.00, 91.00, NULL),
+(6, 6, 6, 65.00, 68.00, 70.00),
+(7, 7, 7, 95.00, 93.00, NULL),
+(8, 8, 8, 82.00, 85.00, 84.00),
+(9, 9, 9, 76.00, 80.00, NULL),
+(10, 10, 10, 90.00, 92.00, 91.00),
+(11, 11, 1, 68.00, 72.00, NULL),
+(12, 12, 2, 85.00, 87.00, 86.00),
+(13, 13, 3, 74.00, 78.00, NULL),
+(14, 14, 4, 88.00, 90.00, 89.00),
+(15, 15, 5, 92.00, 94.00, NULL),
+(16, 16, 6, 70.00, 73.00, 71.00),
+(17, 17, 7, 80.00, 82.00, NULL),
+(18, 18, 8, 95.00, 97.00, 96.00),
+(19, 19, 9, 60.00, 65.00, NULL),
+(20, 20, 10, 78.00, 81.00, 79.00),
+(21, 21, 1, 85.00, 88.00, NULL),
+(22, 22, 2, 90.00, 93.00, 91.00),
+(23, 23, 3, 72.00, 75.00, NULL),
+(24, 24, 4, 88.00, 89.00, 88.50),
+(25, 25, 5, 94.00, 96.00, NULL),
+(26, 26, 6, 68.00, 70.00, 69.00),
+(27, 27, 7, 82.00, 84.00, NULL),
+(28, 28, 8, 76.00, 78.00, 77.00),
+(29, 29, 9, 88.00, 90.00, NULL),
+(30, 30, 10, 92.00, 94.00, 93.00),
+(31, 31, 1, 65.00, 68.00, NULL),
+(32, 32, 2, 80.00, 83.00, 81.00),
+(33, 33, 3, 74.00, 77.00, NULL),
+(34, 34, 4, 90.00, 92.00, 91.00),
+(35, 35, 5, 85.00, 87.00, NULL),
+(36, 36, 6, 70.00, 72.00, 71.00),
+(37, 37, 7, 95.00, 97.00, NULL),
+(38, 38, 8, 78.00, 80.00, 79.00),
+(39, 39, 9, 88.00, 90.00, NULL),
+(40, 40, 10, 92.00, 94.00, 93.00),
+(41, 41, 1, 68.00, 70.00, NULL),
+(42, 42, 2, 82.00, 84.00, 83.00),
+(43, 43, 3, 74.00, 76.00, NULL),
+(44, 44, 4, 88.00, 90.00, 89.00),
+(45, 45, 5, 92.00, 94.00, NULL),
+(46, 46, 6, 70.00, 72.00, 71.00),
+(47, 47, 7, 80.00, 82.00, NULL),
+(48, 48, 8, 95.00, 97.00, 96.00),
+(49, 49, 9, 60.00, 65.00, NULL),
+(50, 50, 10, 78.00, 81.00, 79.00);
+
 
 
 -- Completed on 2025-11-12 07:18:18
