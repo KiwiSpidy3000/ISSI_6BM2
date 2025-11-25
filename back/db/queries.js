@@ -329,3 +329,52 @@ export async function getProfessorGroups(id_profesor, periodo) {
   return rows;
 }
 
+export async function getAllGroupsForOffer() {
+  const sql = `
+    SELECT
+      g.id_grupo,
+      g.periodo,
+      g.turno,
+      m.semestre,
+      m.clave    AS materia_clave,
+      m.nombre   AS materia_nombre,
+      m.creditos,
+      c.clave    AS carrera_clave,
+      c.nombre   AS carrera,
+      (u.nombre || ' ' || u.apellido) AS profesor,
+      g.cupo_max AS cupo,
+      COALESCE(
+        string_agg(
+          CASE h.dia_semana
+            WHEN 1 THEN 'Lu'
+            WHEN 2 THEN 'Ma'
+            WHEN 3 THEN 'Mi'
+            WHEN 4 THEN 'Ju'
+            WHEN 5 THEN 'Vi'
+            WHEN 6 THEN 'Sa'
+            WHEN 7 THEN 'Do'
+          END || ' ' ||
+          to_char(h.hora_ini, 'HH24:MI') || '-' || to_char(h.hora_fin, 'HH24:MI') ||
+          COALESCE(' (' || h.aula || ')', ''),
+          ', ' ORDER BY h.dia_semana, h.hora_ini
+        ),
+        ''
+      ) AS horario
+    FROM ${DB_SCHEMA}.grupo g
+    JOIN ${DB_SCHEMA}.materia  m ON g.id_materia  = m.id_materia
+    JOIN ${DB_SCHEMA}.carrera  c ON m.id_carrera  = c.id_carrera
+    LEFT JOIN ${DB_SCHEMA}.profesor p ON g.id_profesor = p.id_profesor
+    LEFT JOIN ${DB_SCHEMA}.usuario  u ON p.id_profesor = u.id_usuario
+    LEFT JOIN ${DB_SCHEMA}.horario  h ON h.id_grupo   = g.id_grupo
+    WHERE g.estado IS NULL OR g.estado <> 'CANCELADO'
+    GROUP BY
+      g.id_grupo, g.periodo, g.turno,
+      m.semestre, m.clave, m.nombre, m.creditos,
+      c.clave, c.nombre,
+      u.nombre, u.apellido,
+      g.cupo_max
+    ORDER BY c.clave, m.semestre, m.clave, g.periodo, g.id_grupo;
+  `;
+  const { rows } = await pool.query(sql);
+  return rows;
+}

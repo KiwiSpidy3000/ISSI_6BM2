@@ -676,6 +676,19 @@ app.post('/alumno/reins/confirmar', requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
+// === OFERTA GENERAL (pantalla "Oferta" del alumno) ===
+app.get('/alumno/grupos', requireAuth, async (req, res) => {
+  try {
+    const data = await db.getAllGroupsForOffer();
+    res.json(data);
+  } catch (e) {
+    console.error('DB grupos oferta:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
+
 // --- ADMIN ROUTES ---
 
 // Get Config

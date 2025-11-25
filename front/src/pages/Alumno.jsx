@@ -940,16 +940,35 @@ function Grupos() {
   const [err, setErr] = useState('')
 
   useEffect(() => {
-    fetch(`${API}/alumno/grupos`, { headers: { Authorization: `Bearer ${t()}` } })
-      .then(r => r.json()).then(data => { setGrupos(data); setFilteredGrupos(data) }).catch(() => setErr('Error cargando grupos'))
+    const token = t()
+    fetch(`${API}/alumno/grupos`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(async r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then(data => {
+        setGrupos(data || [])
+        setFilteredGrupos(data || [])
+      })
+      .catch(e => {
+        console.error(e)
+        setErr('Error cargando grupos')
+      })
   }, [])
 
   useEffect(() => {
     let filtered = [...grupos]
     if (semestre) filtered = filtered.filter(g => g.semestre?.toString() === semestre)
-    if (grupo) filtered = filtered.filter(g => g.grupo?.toLowerCase().includes(grupo.toLowerCase()))
+    if (grupo) filtered = filtered.filter(g => (g.grupo || g.id_grupo)?.toString().toLowerCase().includes(grupo.toLowerCase()))
     if (turno) filtered = filtered.filter(g => g.turno === turno)
-    if (carrera) filtered = filtered.filter(g => g.carrera?.toLowerCase().includes(carrera.toLowerCase()))
+    if (carrera) {
+      const needle = carrera.toLowerCase()
+      filtered = filtered.filter(g =>
+        (g.carrera || g.carrera_clave || '').toLowerCase().includes(needle)
+      )
+    }
     setFilteredGrupos(filtered)
   }, [semestre, grupo, turno, carrera, grupos])
 
@@ -963,29 +982,89 @@ function Grupos() {
       <div style={styles.filtrosContainer}>
         <div style={styles.filtrosLabel}>Filtros:</div>
         <div style={styles.filtrosGrid}>
-          <div style={styles.filtroItem}><label style={styles.filtroLabel}>Semestre</label><input value={semestre} onChange={e => setSemestre(e.target.value)} placeholder="1-12" style={styles.filtroInput} /></div>
-          <div style={styles.filtroItem}><label style={styles.filtroLabel}>Grupo</label><input value={grupo} onChange={e => setGrupo(e.target.value)} placeholder="1BM1..." style={styles.filtroInput} /></div>
-          <div style={styles.filtroItem}><label style={styles.filtroLabel}>Turno</label><select value={turno} onChange={e => setTurno(e.target.value)} style={styles.filtroSelect}><option value="">Todos</option><option value="M">Matutino</option><option value="V">Vespertino</option><option value="N">Nocturno</option></select></div>
-          <div style={styles.filtroItem}><label style={styles.filtroLabel}>Carrera</label><input value={carrera} onChange={e => setCarrera(e.target.value)} placeholder="ISC..." style={styles.filtroInput} /></div>
+          <div style={styles.filtroItem}>
+            <label style={styles.filtroLabel}>Semestre</label>
+            <input
+              value={semestre}
+              onChange={e => setSemestre(e.target.value)}
+              placeholder="1-12"
+              style={styles.filtroInput}
+            />
+          </div>
+          <div style={styles.filtroItem}>
+            <label style={styles.filtroLabel}>Grupo</label>
+            <input
+              value={grupo}
+              onChange={e => setGrupo(e.target.value)}
+              placeholder="id grupo"
+              style={styles.filtroInput}
+            />
+          </div>
+          <div style={styles.filtroItem}>
+            <label style={styles.filtroLabel}>Turno</label>
+            <select
+              value={turno}
+              onChange={e => setTurno(e.target.value)}
+              style={styles.filtroSelect}
+            >
+              <option value="">Todos</option>
+              <option value="M">Matutino</option>
+              <option value="V">Vespertino</option>
+              <option value="N">Nocturno</option>
+            </select>
+          </div>
+          <div style={styles.filtroItem}>
+            <label style={styles.filtroLabel}>Carrera</label>
+            <input
+              value={carrera}
+              onChange={e => setCarrera(e.target.value)}
+              placeholder="IIA, ISC..."
+              style={styles.filtroInput}
+            />
+          </div>
           <button onClick={limpiarFiltros} style={styles.clearBtn}>Limpiar</button>
         </div>
       </div>
+
       <div style={styles.tableWrap}>
         <table style={styles.table}>
-          <thead><tr style={styles.tableHeaderRow}><th style={styles.th}>Grupo</th><th style={styles.th}>Materia</th><th style={styles.th}>Profesor</th><th style={styles.th}>Créditos</th><th style={styles.th}>Cupo</th></tr></thead>
+          <thead>
+            <tr style={styles.tableHeaderRow}>
+              <th style={styles.th}>Grupo</th>
+              <th style={styles.th}>Materia</th>
+              <th style={styles.th}>Profesor</th>
+              <th style={styles.th}>Créditos</th>
+              <th style={styles.th}>Cupo</th>
+              <th style={styles.th}>Horario</th>
+            </tr>
+          </thead>
           <tbody>
             {filteredGrupos.map((g, i) => (
               <tr key={i} style={styles.tableRow}>
-                <td style={styles.td}>{g.grupo || g.id_grupo}</td><td style={styles.td}>{`${g.materia_clave || g.clave} ${g.materia_nombre || g.nombre}`}</td><td style={styles.td}>{g.profesor || '—'}</td><td style={styles.td}>{g.creditos}</td><td style={styles.td}>{g.cupo || g.lugares_disponibles || 30}</td>
+                <td style={styles.td}>{g.grupo || g.id_grupo}</td>
+                <td style={styles.td}>
+                  {(g.materia_clave || g.clave) + ' ' + (g.materia_nombre || g.nombre)}
+                </td>
+                <td style={styles.td}>{g.profesor || '—'}</td>
+                <td style={styles.td}>{g.creditos}</td>
+                <td style={styles.td}>{g.cupo || g.lugares_disponibles || g.cupo_max || 30}</td>
+                <td style={styles.td}>{g.horario || '—'}</td>
               </tr>
             ))}
-            {filteredGrupos.length === 0 && <tr><td colSpan="5" style={{ ...styles.td, textAlign: 'center', padding: '32px', color: '#6a7aae' }}>No se encontraron grupos con los filtros aplicados</td></tr>}
+            {filteredGrupos.length === 0 && (
+              <tr>
+                <td colSpan="6" style={{ ...styles.td, textAlign: 'center', padding: '32px', color: '#6a7aae' }}>
+                  No se encontraron grupos con los filtros aplicados
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
     </div>
   )
 }
+
 
 const styles = {
   container: { display: 'flex', minHeight: '100vh', background: 'linear-gradient(135deg, #0f1620 0%, #1a2847 40%, #2d3a6a 100%)', color: '#ffffff', fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', position: 'relative', overflow: 'hidden' },
