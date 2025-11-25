@@ -203,18 +203,34 @@ function Kardex() {
             </tr>
           </thead>
           <tbody>
-            {kardex.map((k, i) => (
-              <tr key={i} style={styles.tableRow}>
-                <td style={styles.td}>{k.periodo}</td>
-                <td style={styles.td}>{k.semestre}</td>
-                <td style={styles.td}>{k.materia_clave}</td>
-                <td style={styles.td}>{k.materia}</td>
-                <td style={styles.td}>{k.creditos}</td>
-                <td style={styles.td}>{k.calificacion}</td>
-                <td style={styles.td}>{k.estado}</td>
-              </tr>
-            ))}
-          </tbody>
+  {kardex.map((k, i) => {
+    // Soportar tanto el esquema nuevo como el viejo del backend
+    const materia =
+      k.materia ??
+      k.materia_nombre ??   // por si viene como materia_nombre
+      k.nombre ??           // por si el view manda nombre
+      '';
+
+    const estado =
+      k.estado ??
+      k.estatus ??          // por si viene como estatus
+      k.status ??           // por si algún día se llama status
+      '';
+
+    return (
+      <tr key={i} style={styles.tableRow}>
+        <td style={styles.td}>{k.periodo}</td>
+        <td style={styles.td}>{k.semestre}</td>
+        <td style={styles.td}>{k.materia_clave}</td>
+        <td style={styles.td}>{materia}</td>
+        <td style={styles.td}>{k.creditos}</td>
+        <td style={styles.td}>{k.calificacion}</td>
+        <td style={styles.td}>{estado}</td>
+      </tr>
+    );
+  })}
+</tbody>
+
         </table>
       </div>
     </div>
@@ -304,15 +320,107 @@ function Horario() {
 }
 
 function Calificaciones() {
+  const [periodos, setPeriodos] = useState([])
+  const [periodo, setPeriodo] = useState('')
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+
+  // Cargar lista de periodos del alumno
+  useEffect(() => {
+    const t = localStorage.getItem('access_token') || ''
+    fetch(`${API}/alumno/periodos`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json())
+      .then(list => {
+        const arr = list || []
+        setPeriodos(arr)
+        if (arr.length) setPeriodo(arr[arr.length - 1]) // último periodo
+      })
+      .catch(() => setPeriodos([]))
+  }, [])
+
+  // Cargar calificaciones del periodo seleccionado
+  useEffect(() => {
+    if (!periodo) return
+    const t = localStorage.getItem('access_token') || ''
+    setLoading(true)
+    setErr('')
+    fetch(`${API}/alumno/calificaciones?periodo=${periodo}`, {
+      headers: { Authorization: `Bearer ${t}` }
+    })
+      .then(async r => {
+        if (!r.ok) throw new Error('Error al cargar calificaciones')
+        const data = await r.json()
+        setRows(data || [])
+      })
+      .catch(e => {
+        setErr(e.message || 'Error al cargar calificaciones')
+        setRows([])
+      })
+      .finally(() => setLoading(false))
+  }, [periodo])
+
   return (
     <div>
       <h2 style={styles.h2}>Calificaciones</h2>
-      <div style={styles.card}>
-        <p style={{ color: '#d1d5e8' }}>En construcción...</p>
+
+      <div style={styles.infoBar}>
+        <b>Periodo:</b>{' '}
+        <select
+          value={periodo}
+          onChange={e => setPeriodo(e.target.value)}
+          style={styles.select}
+        >
+          {periodos.map(p => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+        </select>
+      </div>
+
+      {err && <div style={styles.error}>{err}</div>}
+
+      <div style={styles.tableWrap}>
+        <table style={styles.table}>
+          <thead>
+            <tr style={styles.tableHeaderRow}>
+              <th style={styles.th}>Clave</th>
+              <th style={styles.th}>Materia</th>
+              <th style={styles.th}>Calif. final</th>
+              <th style={styles.th}>Extraordinario</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={4} style={{ ...styles.td, textAlign: 'center', padding: '24px' }}>
+                  Cargando...
+                </td>
+              </tr>
+            ) : rows.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ ...styles.td, textAlign: 'center', padding: '24px' }}>
+                  No hay calificaciones para este periodo.
+                </td>
+              </tr>
+            ) : (
+              rows.map((r, i) => (
+                <tr key={i} style={styles.tableRow}>
+                  <td style={styles.td}>{r.materia_clave}</td>
+                  <td style={styles.td}>{r.materia_nombre}</td>
+                  <td style={styles.td}>{r.final_calc ?? '—'}</td>
+                  {/* cuando agregues la columna en la vista/consulta del back,
+                      se llenará solo; mientras, se mostrará '—' */}
+                  <td style={styles.td}>{r.extraordinario ?? '—'}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   )
 }
+
 
 function Reinscripcion() {
   const t = () => localStorage.getItem('access_token') || ''
@@ -333,14 +441,62 @@ function Reinscripcion() {
       }).catch(() => setPeriodos([]))
   }, [])
 
-  useEffect(() => { if (!periodo) return; refresh() }, [periodo, semestre, turno])
+useEffect(() => {
+  if (!periodo) return
+
+  const hdr = { headers: { Authorization: `Bearer ${t()}` } }
+
+  // Resumen
+  fetch(`${API}/alumno/reins/resumen?periodo=${periodo}`, hdr)
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(data => setResumen(data || { total_creditos: 0, creditos_usados: 0 }))
+    .catch(() => setResumen({ total_creditos: 0, creditos_usados: 0 }))
+
+  // Inscritas
+  fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr)
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(data => Array.isArray(data) ? setInscritas(data) : setInscritas([]))
+    .catch(() => setInscritas([]))
+
+  // Oferta
+  const qs = new URLSearchParams({
+    periodo,
+    ...(semestre ? { semestre } : {}),
+    ...(turno ? { turno } : {})
+  })
+
+  fetch(`${API}/alumno/reins/oferta?${qs.toString()}`, hdr)
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(data => {
+      if (!Array.isArray(data)) {
+        console.error('Respuesta de oferta no es arreglo:', data)
+        setOferta([])
+      } else {
+        setOferta(data)
+      }
+    })
+    .catch(err => {
+      console.error('Error cargando oferta:', err)
+      setOferta([])
+    })
+}, [periodo, semestre, turno])
 
   function refresh() {
+    if (!periodo) return
     const hdr = { headers: { Authorization: `Bearer ${t()}` } }
-    fetch(`${API}/alumno/reins/resumen?periodo=${periodo}`, hdr).then(r => r.json()).then(setResumen)
-    fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr).then(r => r.json()).then(setInscritas)
+    fetch(`${API}/alumno/reins/resumen?periodo=${periodo}`, hdr)
+      .then(r => r.json())
+      .then(setResumen)
+      .catch(() => setResumen({ total_creditos: 0, creditos_usados: 0 }))
+    fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr)
+      .then(r => r.json())
+      .then(setInscritas)
+      .catch(() => setInscritas([]))
     const qs = new URLSearchParams({ periodo, ...(semestre ? { semestre } : {}), ...(turno ? { turno } : {}) })
-    fetch(`${API}/alumno/reins/oferta?${qs.toString()}`, hdr).then(r => r.json()).then(setOferta)
+    fetch(`${API}/alumno/reins/oferta?${qs.toString()}`, hdr)
+      .then(r => r.json())
+      .then(setOferta)
+      .catch(() => setOferta([]))
   }
 
   async function addGrupo(id_grupo) {
@@ -369,13 +525,23 @@ function Reinscripcion() {
     })
     refresh()
   }
+  const totalCreditos =
+    resumen && resumen.total_creditos != null
+      ? Number(resumen.total_creditos)
+      : 0;
+
+  const usadosCreditos =
+    resumen && resumen.creditos_usados != null
+      ? Number(resumen.creditos_usados)
+      : 0;
 
   return (
     <div>
       <h2 style={styles.h2}>Reinscripción</h2>
       <div style={styles.infoBar}>
-        <div><b>Créditos totales:</b> {resumen.total_creditos?.toFixed?.(2) ?? resumen.total_creditos}</div>
-        <div><b>Créditos utilizados:</b> {resumen.creditos_usados?.toFixed?.(2) ?? resumen.creditos_usados}</div>
+        <div><b>Créditos totales:</b> {totalCreditos.toFixed(2)}</div>
+        <div><b>Créditos utilizados:</b> {usadosCreditos.toFixed(2)}</div>
+
         <div>
           <b>Periodo:</b>{' '}
           <select value={periodo} onChange={e => setPeriodo(e.target.value)} style={styles.select}>
@@ -437,19 +603,28 @@ function Reinscripcion() {
             </tr>
           </thead>
           <tbody>
-            {oferta.map((r, i) => (
-              <tr key={i} style={styles.tableRow}>
-                <td style={styles.td}>{r.id_grupo}</td>
-                <td style={styles.td}>{`${r.clave} ${r.nombre}`}</td>
-                <td style={styles.td}>{r.profesor || '—'}</td>
-                <td style={styles.td}>{r.creditos}</td>
-                <td style={styles.td}>{r.lugares_disponibles}</td>
-                <td style={styles.td}>
-                  <button onClick={() => addGrupo(r.id_grupo)} style={styles.iconBtn}>＋</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
+  {Array.isArray(oferta) && oferta.length > 0 ? (
+    oferta.map((r, i) => (
+      <tr key={i} style={styles.tableRow}>
+        <td style={styles.td}>{r.id_grupo}</td>
+        <td style={styles.td}>{`${r.clave} ${r.nombre}`}</td>
+        <td style={styles.td}>{r.profesor || '—'}</td>
+        <td style={styles.td}>{r.creditos}</td>
+        <td style={styles.td}>{r.lugares_disponibles}</td>
+        <td style={styles.td}>
+          <button onClick={() => addGrupo(r.id_grupo)} style={styles.iconBtn}>＋</button>
+        </td>
+      </tr>
+    ))
+  ) : (
+    <tr>
+      <td colSpan={6} style={{ ...styles.td, textAlign: 'center', padding: '24px' }}>
+        No hay grupos disponibles con los filtros actuales.
+      </td>
+    </tr>
+  )}
+</tbody>
+
         </table>
       </div>
     </div>
@@ -457,105 +632,152 @@ function Reinscripcion() {
 }
 
 function Bajas() {
-  const t = () => localStorage.getItem('access_token') || ''
-  const [periodos, setPeriodos] = useState([])
-  const [periodo, setPeriodo] = useState('')
-  const [inscritas, setInscritas] = useState([])
-  const [solicitudes, setSolicitudes] = useState([])
-  const [fechaLimite, setFechaLimite] = useState('')
-  const [cargaMinima, setCargaMinima] = useState(0)
-  const [msg, setMsg] = useState('')
-  const [err, setErr] = useState('')
+  const t = () => localStorage.getItem('access_token') || '';
+  const [periodos, setPeriodos] = useState([]);
+  const [periodo, setPeriodo] = useState('');
+  const [inscritas, setInscritas] = useState([]);
+  const [fechaLimite, setFechaLimite] = useState('');
+  const [cargaMinima, setCargaMinima] = useState(0);
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
 
   useEffect(() => {
     fetch(`${API}/alumno/periodos`, { headers: { Authorization: `Bearer ${t()}` } })
-      .then(r => r.json()).then(list => {
-        setPeriodos(list || [])
-        if (list?.length) setPeriodo(list[list.length - 1])
-      }).catch(() => setPeriodos([]))
-  }, [])
+      .then(r => r.json())
+      .then(list => {
+        setPeriodos(list || []);
+        if (list?.length) setPeriodo(list[list.length - 1]);
+      })
+      .catch(() => setErr('Error cargando periodos'));
+  }, []);
 
-  useEffect(() => { if (!periodo) return; refresh() }, [periodo])
+  useEffect(() => {
+    if (!periodo) return;
+    refresh();
+  }, [periodo]);
 
   function refresh() {
-    const hdr = { headers: { Authorization: `Bearer ${t()}` } }
-    fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr).then(r => r.json()).then(setInscritas).catch(() => setErr('Error cargando materias'))
-    fetch(`${API}/alumno/bajas/solicitudes?periodo=${periodo}`, hdr).then(r => r.json()).then(setSolicitudes).catch(() => setSolicitudes([]))
-    fetch(`${API}/alumno/bajas/info?periodo=${periodo}`, hdr).then(r => r.json()).then(data => { setFechaLimite(data.fecha_limite || '25/05/2025'); setCargaMinima(data.carga_minima || 33.33) }).catch(() => { setFechaLimite('25/05/2025'); setCargaMinima(33.33) })
-  }
+    const hdr = { headers: { Authorization: `Bearer ${t()}` } };
+    setErr('');
+    setMsg('');
 
-  async function solicitarBaja(id_grupo, materia_clave, materia_nombre) {
-    setMsg(''); setErr('')
-    try {
-      const res = await fetch(`${API}/alumno/bajas/solicitar`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t()}` },
-        body: JSON.stringify({ periodo, id_grupo, materia_clave, materia_nombre })
+    // Materias inscritas en el periodo
+    fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr)
+      .then(r => r.json())
+      .then(setInscritas)
+      .catch(() => setErr('Error cargando materias inscritas'));
+
+    // Info de bajas (fecha límite y carga mínima)
+    fetch(`${API}/alumno/bajas/info?periodo=${periodo}`, hdr)
+      .then(r => r.json())
+      .then(data => {
+        setFechaLimite(data.fecha_limite || '—');
+        setCargaMinima(data.carga_minima ?? 0);
       })
-      const data = await res.json()
-      if (!res.ok) { setErr(data.error || 'Error al solicitar baja'); return }
-      setMsg('Solicitud de baja enviada. Pendiente de aprobación.')
-      refresh()
-    } catch (error) { setErr('Error de red al solicitar baja') }
+      .catch(() => {
+        setFechaLimite('—');
+        setCargaMinima(0);
+      });
   }
 
-  const getEstadoStyle = (estado) => {
-    switch (estado) {
-      case 'pendiente': return { background: 'rgba(234, 179, 8, 0.2)', color: '#fbbf24', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600' }
-      case 'aprobada': return { background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600' }
-      case 'rechazada': return { background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600' }
-      default: return { padding: '4px 12px' }
+  async function darDeBaja(id_grupo) {
+    setMsg('');
+    setErr('');
+    try {
+      const res = await fetch(`${API}/alumno/inscripcion/baja/${id_grupo}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${t()}` }
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setErr(data.error || 'No se pudo dar de baja la materia');
+        return;
+      }
+
+      setMsg('Materia dada de baja correctamente.');
+      refresh();
+    } catch (e) {
+      setErr('Error de red al dar de baja la materia');
     }
   }
-
-  if (err) return <p style={styles.error}>{err}</p>
 
   return (
     <div>
       <h2 style={styles.h2}>Baja de materias</h2>
+
       <div style={styles.infoBar}>
-        <div><b>Fecha Límite:</b> {fechaLimite}</div>
+        <div><b>Fecha Límite:</b> {fechaLimite || '—'}</div>
         <div><b>Carga Mínima:</b> {cargaMinima} créditos</div>
-        <div><b>Periodo:</b> <select value={periodo} onChange={e => setPeriodo(e.target.value)} style={styles.select}>{periodos.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
+        <div>
+          <b>Periodo:</b>{' '}
+          <select
+            value={periodo}
+            onChange={e => setPeriodo(e.target.value)}
+            style={styles.select}
+          >
+            {periodos.map(p => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </div>
       </div>
+
       {msg && <div style={styles.success}>{msg}</div>}
+      {err && <div style={styles.error}>{err}</div>}
+
       <h3 style={styles.h3}>Materias inscritas actualmente</h3>
       <div style={styles.tableWrap}>
         <table style={styles.table}>
-          <thead><tr style={styles.tableHeaderRow}><th style={styles.th}>Grupo</th><th style={styles.th}>Materia</th><th style={styles.th}>Profesor</th><th style={styles.th}>Créditos</th><th style={styles.th}>Acción</th></tr></thead>
+          <thead>
+            <tr style={styles.tableHeaderRow}>
+              <th style={styles.th}>Grupo</th>
+              <th style={styles.th}>Materia</th>
+              <th style={styles.th}>Profesor</th>
+              <th style={styles.th}>Créditos</th>
+              <th style={styles.th}>Acción</th>
+            </tr>
+          </thead>
           <tbody>
-            {inscritas.map((r, i) => {
-              const tieneSolicitud = solicitudes.some(s => s.id_grupo === r.id_grupo && s.estado === 'pendiente')
-              return (
-                <tr key={i} style={styles.tableRow}>
-                  <td style={styles.td}>{r.id_grupo}</td><td style={styles.td}>{`${r.clave} ${r.nombre}`}</td><td style={styles.td}>{r.profesor || '—'}</td><td style={styles.td}>{r.creditos}</td>
-                  <td style={styles.td}>{tieneSolicitud ? <span style={{ color: '#fbbf24', fontSize: '13px' }}>⏳ Pendiente</span> : <button onClick={() => solicitarBaja(r.id_grupo, r.clave, r.nombre)} style={styles.iconBtn} title="Solicitar baja">⊖</button>}</td>
-                </tr>
-              )
-            })}
+            {inscritas.map((r, i) => (
+              <tr key={i} style={styles.tableRow}>
+                <td style={styles.td}>{r.id_grupo}</td>
+                <td style={styles.td}>{`${r.clave} ${r.nombre}`}</td>
+                <td style={styles.td}>{r.profesor || '—'}</td>
+                <td style={styles.td}>{r.creditos}</td>
+                <td style={styles.td}>
+                  <button
+                    onClick={() => darDeBaja(r.id_grupo)}
+                    style={styles.iconBtn}
+                    title="Dar de baja"
+                  >
+                    ⊖
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {inscritas.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  style={{
+                    ...styles.td,
+                    textAlign: 'center',
+                    padding: '24px',
+                    color: '#6a7aae'
+                  }}
+                >
+                  No tienes materias inscritas en este periodo.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
-      {solicitudes.length > 0 && (
-        <>
-          <h3 style={styles.h3}>Solicitudes de baja</h3>
-          <div style={styles.tableWrap}>
-            <table style={styles.table}>
-              <thead><tr style={styles.tableHeaderRow}><th style={styles.th}>Grupo</th><th style={styles.th}>Materia</th><th style={styles.th}>Fecha Solicitud</th><th style={styles.th}>Estado</th><th style={styles.th}>Comentarios</th></tr></thead>
-              <tbody>
-                {solicitudes.map((s, i) => (
-                  <tr key={i} style={styles.tableRow}>
-                    <td style={styles.td}>{s.id_grupo}</td><td style={styles.td}>{`${s.materia_clave} ${s.materia_nombre}`}</td><td style={styles.td}>{s.fecha_solicitud || '—'}</td>
-                    <td style={styles.td}><span style={getEstadoStyle(s.estado)}>{s.estado?.toUpperCase() || 'PENDIENTE'}</span></td><td style={styles.td}>{s.comentarios || '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
     </div>
-  )
+  );
 }
+
 
 function Evaluacion() {
   const t = () => localStorage.getItem('access_token') || ''

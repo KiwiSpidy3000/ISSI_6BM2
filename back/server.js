@@ -327,13 +327,14 @@ app.get('/alumno/profile', requireAuth, async (req, res) => {
 app.get('/alumno/kardex', requireAuth, async (req, res) => {
   const userId = req.user.sub;
   const q = `
-    SELECT k.periodo,
-           k.materia_clave,
-           k.materia_nombre,
-           m.semestre, -- Added semester
-           m.creditos,
-           k.calificacion_final AS calificacion,
-           k.estatus
+    SELECT 
+      k.periodo,
+      k.materia_clave,
+      k.materia_nombre AS materia,
+      m.semestre,
+      m.creditos,
+      k.calificacion_final AS calificacion,
+      k.estatus AS estado
     FROM ${DB_SCHEMA}.vw_kardex k
     JOIN ${DB_SCHEMA}.materia m ON m.clave = k.materia_clave
     WHERE k.id_alumno = $1
@@ -347,6 +348,7 @@ app.get('/alumno/kardex', requireAuth, async (req, res) => {
     res.status(500).json({ error: String(e.message || e) });
   }
 });
+
 
 
 // --- Horario (periodo opcional ?periodo=2025-1) ---
@@ -868,6 +870,22 @@ app.post('/api/alumno/inscripciones', requireAuth, async (req, res) => {
     res.status(400).json({ error: e.message });
   }
 });
+
+app.get('/alumno/bajas/info', requireAuth, async (req, res) => {
+  try {
+    const fechaLimite = await getConfig('FIN_BAJA');
+    const cargaMinima = parseInt(await getConfig('MIN_CREDITOS') || '30', 10);
+
+    res.json({
+      fecha_limite: fechaLimite || null,
+      carga_minima: Number.isNaN(cargaMinima) ? 0 : cargaMinima
+    });
+  } catch (e) {
+    console.error('DB bajas/info:', e);
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Auth API escuchando en http://localhost:${PORT}`);
