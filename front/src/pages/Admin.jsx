@@ -353,7 +353,7 @@ export default function Admin() {
     localStorage.removeItem('access_token')
     window.location.href = '/'
   }
-  
+
   if (isLoading) {
     return (
       <div className="loading-overlay">
@@ -367,58 +367,58 @@ export default function Admin() {
       <aside className="sb">
         {/* HEADER (Título) */}
         <div className="sb-header">
-          <div className="sb-title">Admin Panel</div> 
+          <div className="sb-title">Admin Panel</div>
         </div>
-        
+
         <div className="sb-nav-wrapper"> {/* Contenedor para el scroll horizontal en móvil */}
-            {/* NAVEGACIÓN PRINCIPAL */}
-            <nav className="sb-nav">
-              <button 
-                className="pill"
-                style={{
-                  background: view === 'perfil' ? '#5566a0' : '#e0e6fb',
-                  color: view === 'perfil' ? '#fff' : '#2f3e5d'
-                }}
-                onClick={() => setView('perfil')}
-              >
-                Datos Personales
-              </button>
-              <button 
-                className="pill"
-                style={{
-                  background: view === 'usuarios' ? '#5566a0' : '#e0e6fb',
-                  color: view === 'usuarios' ? '#fff' : '#2f3e5d'
-                }}
-                onClick={() => setView('usuarios')}
-              >
-                Gestión de Usuarios
-              </button>
-              <button 
-                className="pill"
-                style={{
-                  background: view === 'clases' ? '#5566a0' : '#e0e6fb',
-                  color: view === 'clases' ? '#fff' : '#2f3e5d'
-                }}
-                onClick={() => setView('clases')}
-              >
-                Gestión de Clases
-              </button>
-              <button 
-                className="pill"
-                style={{
-                  background: view === 'reinscripcion' ? '#5566a0' : '#e0e6fb',
-                  color: view === 'reinscripcion' ? '#fff' : '#2f3e5d'
-                }}
-                onClick={() => setView('reinscripcion')}
-              >
-                Reinscripción
-              </button>
-            </nav>
+          {/* NAVEGACIÓN PRINCIPAL */}
+          <nav className="sb-nav">
+            <button
+              className="pill"
+              style={{
+                background: view === 'perfil' ? '#5566a0' : '#e0e6fb',
+                color: view === 'perfil' ? '#fff' : '#2f3e5d'
+              }}
+              onClick={() => setView('perfil')}
+            >
+              Datos Personales
+            </button>
+            <button
+              className="pill"
+              style={{
+                background: view === 'usuarios' ? '#5566a0' : '#e0e6fb',
+                color: view === 'usuarios' ? '#fff' : '#2f3e5d'
+              }}
+              onClick={() => setView('usuarios')}
+            >
+              Gestión de Usuarios
+            </button>
+            <button
+              className="pill"
+              style={{
+                background: view === 'clases' ? '#5566a0' : '#e0e6fb',
+                color: view === 'clases' ? '#fff' : '#2f3e5d'
+              }}
+              onClick={() => setView('clases')}
+            >
+              Gestión de Clases
+            </button>
+            <button
+              className="pill"
+              style={{
+                background: view === 'reinscripcion' ? '#5566a0' : '#e0e6fb',
+                color: view === 'reinscripcion' ? '#fff' : '#2f3e5d'
+              }}
+              onClick={() => setView('reinscripcion')}
+            >
+              Reinscripción
+            </button>
+          </nav>
         </div>
 
         {/* BOTONES DE ACCIÓN (Chat y Logout) */}
         <div className="sb-bottom">
-          <button 
+          <button
             className="pill"
             style={{
               background: view === 'chat' ? '#5566a0' : '#e0e6fb',
@@ -428,8 +428,8 @@ export default function Admin() {
           >
             Chat Bot
           </button>
-          <button 
-            className="pill" 
+          <button
+            className="pill"
             onClick={logout}
             style={{
               background: '#d32f2f',
@@ -442,16 +442,16 @@ export default function Admin() {
         </div>
       </aside>
 
-    <main className="main">
-      <div className="main-content-wrapper">
-        {view === 'perfil' && <DatosPersonales profile={profile} />}
-        {view === 'usuarios' && <GestionUsuarios />}
-        {view === 'clases' && <GestionClases />}
-        {view === 'reinscripcion' && <GestionReinscripcion />}
-        {view === 'chat' && <ChatBot />}
-      </div>
-    </main>
-      </div>
+      <main className="main">
+        <div className="main-content-wrapper">
+          {view === 'perfil' && <DatosPersonales profile={profile} />}
+          {view === 'usuarios' && <GestionUsuarios />}
+          {view === 'clases' && <GestionClases />}
+          {view === 'reinscripcion' && <GestionReinscripcion />}
+          {view === 'chat' && <ChatBot />}
+        </div>
+      </main>
+    </div>
   )
 }
 
@@ -465,12 +465,12 @@ function DatosPersonales({ profile }) {
       <h2 className="h2" style={{ textAlign: 'center' }}>
         Datos Personales
       </h2>
-      <div style={{ 
-        maxWidth: 600, 
-        width: '90%', 
-        margin: '0 auto', 
+      <div style={{
+        maxWidth: 600,
+        width: '90%',
+        margin: '0 auto',
         background: '#fff',
-        padding: 25, 
+        padding: 25,
         borderRadius: 10,
         boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
       }}>
@@ -520,14 +520,14 @@ function ChatBot() {
   async function sendMessage() {
     const clean = text.trim()
     if (!clean || sending) return
-    
+
     setSending(true)
     setMessages(prev => [...prev, { from: 'user', text: clean }])
     setText('')
     setIsTyping(true)
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500)); 
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       const token = localStorage.getItem('access_token') || ''
       const res = await fetch(`${API}/ai/chat`, {
@@ -536,13 +536,13 @@ function ChatBot() {
         body: JSON.stringify({ message: clean })
       })
       const data = await res.json()
-      
+
       setMessages(prev => [...prev, { from: 'bot', text: data?.reply || 'Sin respuesta.' }])
     } catch {
       setMessages(prev => [...prev, { from: 'bot', text: 'AI service unavailable.' }])
-    } finally { 
+    } finally {
       setIsTyping(false)
-      setSending(false) 
+      setSending(false)
     }
   }
 
@@ -593,15 +593,15 @@ function GestionUsuarios() {
     setDataLoading(true)
     // Simulación de carga de datos
     setUsuarios([
-        { id: 12345, nombre: 'Ana García', tipo: 'Alumno', estado: 'Activo' },
-        { id: 67890, nombre: 'Profesor Carlos Solís', tipo: 'Maestro', estado: 'Activo' },
-        { id: 10111, nombre: 'Luis Flores (Inactivo)', tipo: 'Alumno', estado: 'Inactivo' },
+      { id: 12345, nombre: 'Ana García', tipo: 'Alumno', estado: 'Activo' },
+      { id: 67890, nombre: 'Profesor Carlos Solís', tipo: 'Maestro', estado: 'Activo' },
+      { id: 10111, nombre: 'Luis Flores (Inactivo)', tipo: 'Alumno', estado: 'Inactivo' },
     ])
     setTimeout(() => setDataLoading(false), 500)
   }
 
   const usuariosFiltrados = usuarios.filter(u => {
-    const matchBusqueda = !busqueda || 
+    const matchBusqueda = !busqueda ||
       u.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
       u.id?.toString().includes(busqueda)
     const matchTipo = !tipoFiltro || u.tipo === tipoFiltro
@@ -624,10 +624,10 @@ function GestionUsuarios() {
         Gestión de Usuarios
       </h2>
 
-      <div className="flex-wrap-mobile" style={{ 
-        display: 'flex', 
-        gap: 16, 
-        alignItems: 'center', 
+      <div className="flex-wrap-mobile" style={{
+        display: 'flex',
+        gap: 16,
+        alignItems: 'center',
         marginBottom: 20,
         flexWrap: 'wrap'
       }}>
@@ -657,18 +657,18 @@ function GestionUsuarios() {
             <option value="Admin">Admin</option>
           </select>
         </div>
-        <button 
-          className="btn" 
+        <button
+          className="btn"
           onClick={() => abrirModal()}
           style={{ whiteSpace: 'nowrap', width: 'auto', background: '#4CAF50' }}
         >
           Añadir Usuario
         </button>
       </div>
-      
+
       {dataLoading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '50px' }}>
-            <div className="spinner"></div>
+          <div className="spinner"></div>
         </div>
       ) : (
         <div className="tableWrap">
@@ -688,27 +688,27 @@ function GestionUsuarios() {
                   <td>{u.id}</td>
                   <td>{u.nombre}</td>
                   <td>
-                    <span style={{ 
-                        padding: '4px 8px', 
-                        borderRadius: '15px', 
-                        fontSize: '11px', 
-                        fontWeight: 600,
-                        backgroundColor: u.tipo === 'Admin' ? '#ffe8e8' : u.tipo === 'Maestro' ? '#fffbe0' : '#e0e6fb',
-                        color: u.tipo === 'Admin' ? '#8a1f1f' : u.tipo === 'Maestro' ? '#9c6500' : '#2f3e5d'
+                    <span style={{
+                      padding: '4px 8px',
+                      borderRadius: '15px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      backgroundColor: u.tipo === 'Admin' ? '#ffe8e8' : u.tipo === 'Maestro' ? '#fffbe0' : '#e0e6fb',
+                      color: u.tipo === 'Admin' ? '#8a1f1f' : u.tipo === 'Maestro' ? '#9c6500' : '#2f3e5d'
                     }}>
-                        {u.tipo}
+                      {u.tipo}
                     </span>
                   </td>
                   <td>
-                    <span style={{ 
-                        padding: '4px 8px', 
-                        borderRadius: '15px', 
-                        fontSize: '11px', 
-                        fontWeight: 600,
-                        backgroundColor: u.estado === 'Activo' ? '#e8f5e9' : '#ffe8e8',
-                        color: u.estado === 'Activo' ? '#2e7d32' : '#c62828'
+                    <span style={{
+                      padding: '4px 8px',
+                      borderRadius: '15px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      backgroundColor: u.estado === 'Activo' ? '#e8f5e9' : '#ffe8e8',
+                      color: u.estado === 'Activo' ? '#2e7d32' : '#c62828'
                     }}>
-                        {u.estado}
+                      {u.estado}
                     </span>
                   </td>
                   <td style={{ textAlign: 'center' }}>
@@ -737,9 +737,9 @@ function GestionUsuarios() {
       )}
 
       {showModal && (
-        <ModalUsuario 
-          user={editingUser} 
-          onClose={cerrarModal} 
+        <ModalUsuario
+          user={editingUser}
+          onClose={cerrarModal}
           onSave={() => { cargarUsuarios(); cerrarModal(); }}
         />
       )}
@@ -788,7 +788,7 @@ function ModalUsuario({ user, onClose, onSave }) {
         <h3 style={{ marginTop: 0, color: '#5566a0' }}>
           {user ? 'Editar Usuario' : 'Añadir Usuario'}
         </h3>
-        
+
         <form onSubmit={handleSubmit}>
           {/* Los inputs usan la clase .input */}
           <div style={{ marginBottom: 14 }}>
@@ -873,97 +873,100 @@ function ModalUsuario({ user, onClose, onSave }) {
 function GestionClases() {
   const [clases, setClases] = useState([])
   const [busqueda, setBusqueda] = useState('')
-  const [materiaFiltro, setMateriaFiltro] = useState('')
-  const [showModal, setShowModal] = useState(false)
-  const [editingClase, setEditingClase] = useState(null)
-  const [dataLoading, setDataLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    cargarClases()
-  }, [])
+  useEffect(() => { cargarClases() }, [])
 
   function cargarClases() {
-    setDataLoading(true)
-    setClases([
-      { id: 101, profesor: 'Dr. Pérez', materia: 'Matemáticas Avanzadas', creditos: 8, grupo: 'A', horario: 'Lun-Mié 10:00', cupo: 30 },
-      { id: 102, profesor: 'Mtra. González', materia: 'Programación', creditos: 10, grupo: 'B', horario: 'Mar-Jue 16:00', cupo: 25 },
-    ])
-    setTimeout(() => setDataLoading(false), 500)
+    setLoading(true)
+    const token = localStorage.getItem('access_token') || ''
+    fetch(`${API}/admin/grupos/ocupacion`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(data => {
+        setClases(Array.isArray(data) ? data : [])
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
   }
 
-  const clasesFiltradas = clases.filter(c => {
-    const matchBusqueda = !busqueda || 
-      c.profesor?.toLowerCase().includes(busqueda.toLowerCase()) ||
-      c.id?.toString().includes(busqueda)
-    const matchMateria = !materiaFiltro || c.materia === materiaFiltro
-    return matchBusqueda && matchMateria
-  })
-
-  const materiasUnicas = [...new Set(clases.map(c => c.materia).filter(Boolean))]
-
-  function abrirModal(clase = null) {
-    setEditingClase(clase)
-    setShowModal(true)
+  async function toggleStatus(id_grupo, currentStatus) {
+    const newStatus = currentStatus === 'ABIERTO' ? 'CERRADO' : 'ABIERTO'
+    const token = localStorage.getItem('access_token') || ''
+    try {
+      await fetch(`${API}/admin/grupos/${id_grupo}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ estado: newStatus })
+      })
+      cargarClases()
+    } catch (e) {
+      alert('Error actualizando estado')
+    }
   }
 
-  function cerrarModal() {
-    setShowModal(false)
-    setEditingClase(null)
-  }
+  const filtradas = clases.filter(c =>
+    !busqueda ||
+    c.materia_nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    c.profesor?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    c.id_grupo?.toString().includes(busqueda)
+  )
 
   return (
     <div>
-      <h2 className="h2" style={{ textAlign: 'center' }}>
-        Gestión de Clases
-      </h2>
+      <h2 className="h2" style={{ textAlign: 'center' }}>Gestión de Clases y Ocupación</h2>
 
-      <div className="flex-wrap-mobile" style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: '40%', position: 'relative' }}>
-          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#999' }}>
-            {/* 🔍 */}
-          </span>
-          <input type="text" className="input" placeholder="Buscar por Profesor, ID..." value={busqueda} onChange={e => setBusqueda(e.target.value)} style={{ paddingLeft: 12, width: '100%' }} />
-        </div>
-        <div style={{ flexGrow: 1, minWidth: '40%' }}>
-          <select className="input" value={materiaFiltro} onChange={e => setMateriaFiltro(e.target.value)} style={{ width: '100%' }}>
-            <option value="">Materia</option>
-            {materiasUnicas.map(m => (<option key={m} value={m}>{m}</option>))}
-          </select>
-        </div>
-        <button className="btn" onClick={() => abrirModal()} style={{ whiteSpace: 'nowrap', width: 'auto', background: '#4CAF50' }}>
-          Añadir Clase
-        </button>
+      <div style={{ marginBottom: 20 }}>
+        <input
+          className="input"
+          placeholder="Buscar por materia, profesor o grupo..."
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+        />
       </div>
 
-      {dataLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '50px' }}>
-            <div className="spinner"></div>
-        </div>
-      ) : (
+      {loading ? <div className="spinner"></div> : (
         <div className="tableWrap">
           <table className="tbl">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Profesor asignado</th>
+                <th>Grupo</th>
                 <th>Materia</th>
-                <th>Créditos</th>
-                <th style={{ textAlign: 'center' }}>Acción</th>
+                <th>Profesor</th>
+                <th>Cupo</th>
+                <th>Inscritos</th>
+                <th>Estado</th>
+                <th>Acción</th>
               </tr>
             </thead>
             <tbody>
-              {clasesFiltradas.map((c, i) => (
+              {filtradas.map((c, i) => (
                 <tr key={i}>
-                  <td>{c.id}</td>
-                  <td>{c.profesor}</td>
-                  <td>{c.materia}</td>
-                  <td>{c.creditos}</td>
-                  <td style={{ textAlign: 'center' }}>
+                  <td>{c.id_grupo}</td>
+                  <td>{c.materia_nombre}</td>
+                  <td>{c.profesor || '—'}</td>
+                  <td>{c.cupo}</td>
+                  <td>{c.inscritos}</td>
+                  <td>
+                    <span style={{
+                      padding: '4px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 600,
+                      background: c.estado === 'ABIERTO' ? '#dcfce7' : '#fee2e2',
+                      color: c.estado === 'ABIERTO' ? '#166534' : '#991b1b'
+                    }}>
+                      {c.estado}
+                    </span>
+                  </td>
+                  <td>
                     <button
-                      onClick={() => abrirModal(c)}
-                      style={{ background: '#5566a0', color: '#fff', border: 'none', borderRadius: 20, padding: '6px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600, transition: 'background-color 0.2s' }}
+                      className="btn"
+                      style={{ padding: '6px 12px', fontSize: '12px', background: c.estado === 'ABIERTO' ? '#ef4444' : '#22c55e' }}
+                      onClick={() => toggleStatus(c.id_grupo, c.estado)}
                     >
-                      Modificar
+                      {c.estado === 'ABIERTO' ? 'Cerrar' : 'Abrir'}
                     </button>
                   </td>
                 </tr>
@@ -972,243 +975,99 @@ function GestionClases() {
           </table>
         </div>
       )}
-
-      {showModal && (
-        <ModalClase 
-          clase={editingClase} 
-          onClose={cerrarModal} 
-          onSave={() => { cargarClases(); cerrarModal(); }}
-        />
-      )}
-    </div>
-  )
-}
-
-function ModalClase({ clase, onClose, onSave }) {
-  const [formData, setFormData] = useState({
-    id: clase?.id || '',
-    materia: clase?.materia || '',
-    profesor: clase?.profesor || '',
-    creditos: clase?.creditos || '',
-    grupo: clase?.grupo || '',
-    horario: clase?.horario || '',
-    cupo: clase?.cupo || ''
-  })
-
-  function handleChange(field, value) {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    await new Promise(resolve => setTimeout(resolve, 500))
-    onSave()
-  }
-
-  async function handleDelete() {
-    if (!confirm('¿Estás seguro de eliminar esta clase?')) return
-    await new Promise(resolve => setTimeout(resolve, 500))
-    onSave()
-  }
-
-  return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.5)', display: 'flex',
-      alignItems: 'center', justifyContent: 'center', zIndex: 1000
-    }}>
-      <div style={{
-        background: '#fff', borderRadius: 10, padding: 25,
-        width: 'min(450px, 90vw)', maxHeight: '90vh', overflow: 'auto'
-      }}>
-        <h3 style={{ marginTop: 0, color: '#5566a0' }}>
-          {clase ? 'Editar Clase' : 'Añadir Clase'}
-        </h3>
-        
-        <form onSubmit={handleSubmit}>
-          {/* Inputs usan la clase .input */}
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 13 }}>
-              ID del Grupo
-            </label>
-            <input type="text" className="input" value={formData.id} onChange={e => handleChange('id', e.target.value)} required disabled={!!clase} />
-          </div>
-
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 13 }}>
-              Materia
-            </label>
-            <input type="text" className="input" value={formData.materia} onChange={e => handleChange('materia', e.target.value)} required />
-          </div>
-
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 13 }}>
-              Profesor Asignado
-            </label>
-            <input type="text" className="input" value={formData.profesor} onChange={e => handleChange('profesor', e.target.value)} required />
-          </div>
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 13 }}>
-              Créditos
-            </label>
-            <input type="number" step="0.1" className="input" value={formData.creditos} onChange={e => handleChange('creditos', e.target.value)} required />
-          </div>
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 13 }}>
-              Grupo
-            </label>
-            <input type="text" className="input" value={formData.grupo} onChange={e => handleChange('grupo', e.target.value)} />
-          </div>
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 13 }}>
-              Horario
-            </label>
-            <input type="text" className="input" placeholder="Ej: Lun-Mie 10:00-12:00" value={formData.horario} onChange={e => handleChange('horario', e.target.value)} />
-          </div>
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 13 }}>
-              Cupo Máximo
-            </label>
-            <input type="number" className="input" value={formData.cupo} onChange={e => handleChange('cupo', e.target.value)} />
-          </div>
-          
-          {/* Botones usan la clase .btn */}
-          <div style={{ display: 'flex', gap: 10, marginTop: 20, flexWrap: 'wrap' }}>
-            <button type="submit" className="btn" style={{ flex: 1, minWidth: '100px' }}>
-              {clase ? 'Guardar Cambios' : 'Crear Clase'}
-            </button>
-            {clase && (
-              <button
-                type="button"
-                onClick={handleDelete}
-                style={{ flex: 1, minWidth: '100px', background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 20, padding: '10px 18px', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Eliminar
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onClose}
-              style={{ flex: 1, minWidth: '100px', background: '#e0e0e0', color: '#333', border: 'none', borderRadius: 20, padding: '10px 18px', fontWeight: 600, cursor: 'pointer' }}
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   )
 }
 
 function GestionReinscripcion() {
-  const [periodos, setPeriodos] = useState(['2025-1', '2024-2', '2024-1'])
-  const [periodo, setPeriodo] = useState('2025-1')
-  const [horaInicio, setHoraInicio] = useState('')
-  const [horaFin, setHoraFin] = useState('')
-  const [mensaje, setMensaje] = useState('')
+  const [config, setConfig] = useState({
+    INICIO_INSCRIPCION: '',
+    FIN_INSCRIPCION: '',
+    INICIO_BAJAS: '',
+    FIN_BAJAS: '',
+    MAX_CREDITOS: '90',
+    MIN_CREDITOS: '30'
+  })
+  const [msg, setMsg] = useState('')
 
   useEffect(() => {
-    setHoraInicio('2025-01-15T09:00')
-    setHoraFin('2025-01-20T18:00')
-  }, [periodo])
+    const token = localStorage.getItem('access_token') || ''
+    fetch(`${API}/admin/config`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => {
+        // Convert dates to datetime-local format (YYYY-MM-DDTHH:mm)
+        const fmt = (d) => d ? new Date(d).toISOString().slice(0, 16) : ''
+        setConfig({
+          INICIO_INSCRIPCION: fmt(data.INICIO_INSCRIPCION),
+          FIN_INSCRIPCION: fmt(data.FIN_INSCRIPCION),
+          INICIO_BAJAS: fmt(data.INICIO_BAJAS),
+          FIN_BAJAS: fmt(data.FIN_BAJAS),
+          MAX_CREDITOS: data.MAX_CREDITOS || '90',
+          MIN_CREDITOS: data.MIN_CREDITOS || '30'
+        })
+      })
+  }, [])
 
-  async function guardarHorarios(e) {
+  async function guardar(e) {
     e.preventDefault()
-    setMensaje('Horarios de reinscripción guardados exitosamente')
-    setTimeout(() => setMensaje(''), 3000)
+    const token = localStorage.getItem('access_token') || ''
+    try {
+      const res = await fetch(`${API}/admin/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(config)
+      })
+      if (res.ok) setMsg('Configuración guardada correctamente')
+      else setMsg('Error al guardar')
+    } catch {
+      setMsg('Error de conexión')
+    }
+    setTimeout(() => setMsg(''), 3000)
   }
+
+  const handleChange = (k, v) => setConfig(p => ({ ...p, [k]: v }))
 
   return (
     <div>
-      <h2 className="h2" style={{ textAlign: 'center' }}>
-        Gestión de Reinscripción
-      </h2>
-
-      <div style={{ maxWidth: 580, width: '90%', margin: '0 auto', background: '#fff', padding: 25, borderRadius: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-        <form onSubmit={guardarHorarios}>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#5566a0', fontSize: 14 }}>
-              Periodo Escolar
-            </label>
-            <select
-              className="input"
-              value={periodo}
-              onChange={e => setPeriodo(e.target.value)}
-              required
-            >
-              <option value="">Selecciona un periodo</option>
-              {periodos.map(p => (<option key={p} value={p}>{p}</option>))}
-            </select>
+      <h2 className="h2" style={{ textAlign: 'center' }}>Configuración del Periodo</h2>
+      <div style={{ maxWidth: 600, margin: '0 auto', background: '#fff', padding: 30, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+        <form onSubmit={guardar}>
+          <h3 style={{ color: '#4a5d85', marginTop: 0 }}>Inscripciones</h3>
+          <div style={{ marginBottom: 15 }}>
+            <label style={{ display: 'block', marginBottom: 5, fontWeight: 600 }}>Inicio:</label>
+            <input type="datetime-local" className="input" value={config.INICIO_INSCRIPCION} onChange={e => handleChange('INICIO_INSCRIPCION', e.target.value)} />
+          </div>
+          <div style={{ marginBottom: 15 }}>
+            <label style={{ display: 'block', marginBottom: 5, fontWeight: 600 }}>Fin:</label>
+            <input type="datetime-local" className="input" value={config.FIN_INSCRIPCION} onChange={e => handleChange('FIN_INSCRIPCION', e.target.value)} />
           </div>
 
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#5566a0', fontSize: 14 }}>
-              Hora de Inicio de Reinscripción
-            </label>
-            <input
-              type="datetime-local"
-              className="input"
-              value={horaInicio}
-              onChange={e => setHoraInicio(e.target.value)}
-              required
-            />
-            <small style={{ color: '#7a8195', fontSize: 12, marginTop: 4, display: 'block' }}>
-              Fecha y hora en que los alumnos podrán comenzar a reinscribirse
-            </small>
+          <h3 style={{ color: '#4a5d85' }}>Bajas</h3>
+          <div style={{ marginBottom: 15 }}>
+            <label style={{ display: 'block', marginBottom: 5, fontWeight: 600 }}>Inicio:</label>
+            <input type="datetime-local" className="input" value={config.INICIO_BAJAS} onChange={e => handleChange('INICIO_BAJAS', e.target.value)} />
+          </div>
+          <div style={{ marginBottom: 15 }}>
+            <label style={{ display: 'block', marginBottom: 5, fontWeight: 600 }}>Fin:</label>
+            <input type="datetime-local" className="input" value={config.FIN_BAJAS} onChange={e => handleChange('FIN_BAJAS', e.target.value)} />
           </div>
 
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#5566a0', fontSize: 14 }}>
-              Hora de Fin de Reinscripción
-            </label>
-            <input
-              type="datetime-local"
-              className="input"
-              value={horaFin}
-              onChange={e => setHoraFin(e.target.value)}
-              required
-            />
-            <small style={{ color: '#7a8195', fontSize: 12, marginTop: 4, display: 'block' }}>
-              Fecha y hora en que finaliza el periodo de reinscripción
-            </small>
-          </div>
-
-          {mensaje && (
-            <div style={{
-              padding: 12, borderRadius: 6, marginBottom: 15,
-              background: mensaje.includes('Error') ? '#ffebee' : '#e8f5e9',
-              color: mensaje.includes('Error') ? '#c62828' : '#2e7d32',
-              fontSize: 13, fontWeight: 600, textAlign: 'center'
-            }}>
-              {mensaje}
+          <h3 style={{ color: '#4a5d85' }}>Créditos</h3>
+          <div style={{ display: 'flex', gap: 15 }}>
+            <div style={{ flex: 1, marginBottom: 15 }}>
+              <label style={{ display: 'block', marginBottom: 5, fontWeight: 600 }}>Mínimo:</label>
+              <input type="number" className="input" value={config.MIN_CREDITOS} onChange={e => handleChange('MIN_CREDITOS', e.target.value)} />
             </div>
-          )}
-
-          <button 
-            type="submit"
-            className="btn"
-            style={{ width: '100%', padding: '10px 18px', marginBottom: 10 }}
-          >
-            Guardar Horarios de Reinscripción
-          </button>
-        </form>
-
-        <div style={{ padding: 15, background: '#f7f8fc', borderRadius: 8, border: '1px solid #e0e6f6', marginTop: 15 }}>
-          <h4 style={{ margin: '0 0 8px', color: '#4a5d85', fontSize: 14, fontWeight: 700 }}>
-            Información Actual
-          </h4>
-          <div style={{ fontSize: 13, color: '#5a5a5a', lineHeight: 1.6 }}>
-            <p style={{ margin: '0 0 5px' }}>
-              <strong>Periodo:</strong> {periodo || 'No seleccionado'}
-            </p>
-            <p style={{ margin: '0 0 5px' }}>
-              <strong>Inicio:</strong> {horaInicio ? new Date(horaInicio).toLocaleString('es-MX') : 'No configurado'}
-            </p>
-            <p style={{ margin: '0' }}>
-              <strong>Fin:</strong> {horaFin ? new Date(horaFin).toLocaleString('es-MX') : 'No configurado'}
-            </p>
+            <div style={{ flex: 1, marginBottom: 15 }}>
+              <label style={{ display: 'block', marginBottom: 5, fontWeight: 600 }}>Máximo:</label>
+              <input type="number" className="input" value={config.MAX_CREDITOS} onChange={e => handleChange('MAX_CREDITOS', e.target.value)} />
+            </div>
           </div>
-        </div>
+
+          {msg && <div style={{ padding: 10, borderRadius: 6, background: '#e0f2f1', color: '#00695c', marginBottom: 15, textAlign: 'center' }}>{msg}</div>}
+
+          <button type="submit" className="btn" style={{ width: '100%', padding: 12, fontSize: 16 }}>Guardar Configuración</button>
+        </form>
       </div>
     </div>
   )

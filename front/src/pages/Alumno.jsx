@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom' 
+import { useNavigate } from 'react-router-dom'
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
-export default function Alumno(){
-  const nav = useNavigate();   
+export default function Alumno() {
+  const nav = useNavigate();
   const [view, setView] = useState('chat')
-  const [messages, setMessages] = useState([{ from:'bot', text:'¡Hola! ¿En qué te puedo ayudar?' }])
+  const [messages, setMessages] = useState([{ from: 'bot', text: '¡Hola! ¿En qué te puedo ayudar?' }])
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
 
@@ -54,7 +54,7 @@ export default function Alumno(){
     return () => document.head.removeChild(style)
   }, [])
 
-  function logout(){
+  function logout() {
     localStorage.removeItem('access_token');
     nav('/');
   }
@@ -62,31 +62,31 @@ export default function Alumno(){
   const scrollRef = useRef(null)
   const [stickBottom, setStickBottom] = useState(true)
 
-  function handleScroll(){
+  function handleScroll() {
     const el = scrollRef.current
-    if(!el) return
+    if (!el) return
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
     setStickBottom(nearBottom)
   }
 
-  useEffect(()=>{
+  useEffect(() => {
     const el = scrollRef.current
-    if(el && stickBottom){
+    if (el && stickBottom) {
       el.scrollTop = el.scrollHeight
     }
   }, [messages, stickBottom])
 
-  async function sendMessage(){
+  async function sendMessage() {
     const clean = text.trim()
-    if(!clean || sending) return
+    if (!clean || sending) return
     setSending(true)
-    setMessages(prev => [...prev, {from:'user', text: clean}])
+    setMessages(prev => [...prev, { from: 'user', text: clean }])
     setText('')
-    try{
+    try {
       const token = localStorage.getItem('access_token') || ''
       const res = await fetch(`${API}/ai/chat`, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json', ...(token? {Authorization:`Bearer ${token}`} : {}) },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ pregunta: clean })
       });
 
@@ -97,20 +97,20 @@ export default function Alumno(){
 
       const data = await res.json();
       const reply = data.reply ?? data.respuesta ?? 'Hay no se, siguiente pregunta';
-      setMessages(prev => [...prev, { from:'bot', text: reply }]);
-    }catch{
-      setMessages(prev => [...prev, {from:'bot', text:'AI service unavailable.'}])
-    }finally{ setSending(false) }
+      setMessages(prev => [...prev, { from: 'bot', text: reply }]);
+    } catch {
+      setMessages(prev => [...prev, { from: 'bot', text: 'AI service unavailable.' }])
+    } finally { setSending(false) }
   }
-  
-  function onKey(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage() } }
+
+  function onKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }
 
   return (
     <div style={styles.container}>
       <div style={styles.floatingShapes}>
         {[...Array(15)].map((_, i) => (
-          <svg key={i} style={{...styles.floatingSvg, ...styles[`svg${i % 10}`]}} xmlns="http://www.w3.org/2000/svg">
-            <path d="m2.46177,126.39581c10.12618,-0.06577 20.25237,-0.13151 30.37857,-0.19726c0.06666,-10.3997 0.13333,-20.7994 0.19999,-31.19908c10.07782,0 20.15564,0 30.23346,0c0,-10.46351 0,-20.927 0,-31.39051c10.33589,0 20.67178,0 31.00767,0c0,-10.20827 0,-20.41656 0,-30.62485c10.20829,0 20.41656,0 30.62485,0c0,-10.20829 0,-20.41658 0,-30.62487c15.18483,0 30.36965,0 45.55448,0c0,5.10414 0,10.20829 0,15.31243c-10.08071,0 -20.16136,0 -30.24206,0c0,10.33589 0,20.67178 0,31.00769c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33589 0,20.67178 0,31.00767c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33591 0,20.6718 0,31.00767c-10.33589,0 -20.67178,0 -31.00767,0c0,10.46351 0,20.927 0,31.39049c-15.31243,0 -30.62485,0 -45.93728,0c0.68263,-5.07223 -1.16374,-10.79174 0.43769,-15.68938l0,0z" strokeWidth="7" fill="none"/>
+          <svg key={i} style={{ ...styles.floatingSvg, ...styles[`svg${i % 10}`] }} xmlns="http://www.w3.org/2000/svg">
+            <path d="m2.46177,126.39581c10.12618,-0.06577 20.25237,-0.13151 30.37857,-0.19726c0.06666,-10.3997 0.13333,-20.7994 0.19999,-31.19908c10.07782,0 20.15564,0 30.23346,0c0,-10.46351 0,-20.927 0,-31.39051c10.33589,0 20.67178,0 31.00767,0c0,-10.20827 0,-20.41656 0,-30.62485c10.20829,0 20.41656,0 30.62485,0c0,-10.20829 0,-20.41658 0,-30.62487c15.18483,0 30.36965,0 45.55448,0c0,5.10414 0,10.20829 0,15.31243c-10.08071,0 -20.16136,0 -30.24206,0c0,10.33589 0,20.67178 0,31.00769c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33589 0,20.67178 0,31.00767c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33591 0,20.6718 0,31.00767c-10.33589,0 -20.67178,0 -31.00767,0c0,10.46351 0,20.927 0,31.39049c-15.31243,0 -30.62485,0 -45.93728,0c0.68263,-5.07223 -1.16374,-10.79174 0.43769,-15.68938l0,0z" strokeWidth="7" fill="none" />
           </svg>
         ))}
       </div>
@@ -121,18 +121,20 @@ export default function Alumno(){
           <div style={styles.avatar}>👤</div>
           <div style={styles.sidebarTitle}>Alumno</div>
         </div>
-        
+
         <nav style={styles.sidebarNav}>
-          <button style={styles.pill} className="pill-hover" onClick={()=>setView('perfil')}>Datos Personales</button>
-          <button style={styles.pill} className="pill-hover" onClick={()=>setView('kardex')}>Kardex</button>
-          <button style={styles.pill} className="pill-hover" onClick={()=>setView('horario')}>Horario</button>
-          <button style={styles.pill} className="pill-hover" onClick={()=>setView('calificaciones')}>Calificaciones</button>
-          <button style={styles.pill} className="pill-hover" onClick={()=>setView('reins')}>Reinscripción</button>
-          <button style={styles.pill} className="pill-hover" onClick={()=>setView('bajas')}>Bajas</button>
+          <button style={styles.pill} className="pill-hover" onClick={() => setView('perfil')}>Datos Personales</button>
+          <button style={styles.pill} className="pill-hover" onClick={() => setView('kardex')}>Kardex</button>
+          <button style={styles.pill} className="pill-hover" onClick={() => setView('horario')}>Horario</button>
+          <button style={styles.pill} className="pill-hover" onClick={() => setView('calificaciones')}>Calificaciones</button>
+          <button style={styles.pill} className="pill-hover" onClick={() => setView('reins')}>Reinscripción</button>
+          <button style={styles.pill} className="pill-hover" onClick={() => setView('bajas')}>Bajas</button>
+          <button style={styles.pill} className="pill-hover" onClick={() => setView('evaluacion')}>Evaluación Docente</button>
+          <button style={styles.pill} className="pill-hover" onClick={() => setView('grupos')}>Oferta</button>
         </nav>
-        
+
         <div style={styles.sidebarBottom}>
-          <button style={{...styles.pill, ...(view==='chat' ? styles.pillActive : {})}} className="pill-hover" onClick={()=>setView('chat')}>
+          <button style={{ ...styles.pill, ...(view === 'chat' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('chat')}>
             💬 Chat Bot
           </button>
           <button style={styles.pillDanger} className="danger-hover" onClick={logout}>
@@ -142,23 +144,23 @@ export default function Alumno(){
       </aside>
 
       <main style={styles.main}>
-        {view==='chat' && (
+        {view === 'chat' && (
           <>
             <h2 style={styles.h2}>Chat Bot</h2>
             <section style={styles.chatSection}>
               <div style={styles.chatScroll} ref={scrollRef} onScroll={handleScroll}>
-                {messages.map((m,i)=>(
+                {messages.map((m, i) => (
                   <div key={i} style={m.from === 'user' ? styles.msgUser : styles.msgBot}>
                     {m.text}
                   </div>
                 ))}
               </div>
               <div style={styles.chatInput}>
-                <textarea 
-                  value={text} 
-                  onChange={e=>setText(e.target.value)} 
+                <textarea
+                  value={text}
+                  onChange={e => setText(e.target.value)}
                   onKeyDown={onKey}
-                  placeholder="Escribe tu mensaje…" 
+                  placeholder="Escribe tu mensaje…"
                   disabled={sending}
                   style={styles.textarea}
                 />
@@ -168,78 +170,78 @@ export default function Alumno(){
           </>
         )}
 
-        {view==='perfil'  && <DatosPersonales/>}
-        {view==='kardex'  && <Kardex/>}
-        {view==='horario' && <Horario/>}
-        {view==='calificaciones' && <Calificaciones/>}
-        {view==='reins' && <Reinscripcion/>}
-        {view==='bajas' && <Bajas/>}
-        {view==='grupos' && <Grupos/>}
+        {view === 'perfil' && <DatosPersonales />}
+        {view === 'kardex' && <Kardex />}
+        {view === 'horario' && <Horario />}
+        {view === 'calificaciones' && <Calificaciones />}
+        {view === 'reins' && <Reinscripcion />}
+        {view === 'bajas' && <Bajas />}
+        {view === 'evaluacion' && <Evaluacion />}
+        {view === 'grupos' && <Grupos />}
       </main>
     </div>
   )
 }
 
-function DatosPersonales(){
+function DatosPersonales() {
   const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-  const [data,setData]=useState(null)
-  const [err,setErr]=useState('')
-  
-  useEffect(()=>{
-    const t = localStorage.getItem('access_token')||''
-    fetch(`${API}/alumno/profile`,{headers:{Authorization:`Bearer ${t}`}})
-      .then(r=>r.json().then(d=>({ok:r.ok,data:d})))
-      .then(({ok,data})=> ok? setData(data): setErr(data?.error||'Error'))
-      .catch(()=>setErr('Error de red'))
-  },[])
-  
-  if(err) return <p style={styles.error}>{err}</p>
-  if(!data) return <p style={styles.loading}>Cargando…</p>
-  
+  const [data, setData] = useState(null)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    const t = localStorage.getItem('access_token') || ''
+    fetch(`${API}/alumno/profile`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+      .then(({ ok, data }) => ok ? setData(data) : setErr(data?.error || 'Error'))
+      .catch(() => setErr('Error de red'))
+  }, [])
+
+  if (err) return <p style={styles.error}>{err}</p>
+  if (!data) return <p style={styles.loading}>Cargando…</p>
+
   return (
     <div style={styles.card}>
       <h2 style={styles.h2}>Datos Personales</h2>
       <div style={styles.dataGrid}>
         <div style={styles.dataItem}>
           <span style={styles.dataLabel}>Nombre:</span>
-          <span style={styles.dataValue}>{data.nombre_completo||'—'}</span>
+          <span style={styles.dataValue}>{data.nombre_completo || '—'}</span>
         </div>
         <div style={styles.dataItem}>
           <span style={styles.dataLabel}>Boleta:</span>
-          <span style={styles.dataValue}>{data.boleta||'—'}</span>
+          <span style={styles.dataValue}>{data.boleta || '—'}</span>
         </div>
         <div style={styles.dataItem}>
           <span style={styles.dataLabel}>Email:</span>
-          <span style={styles.dataValue}>{data.email||'—'}</span>
+          <span style={styles.dataValue}>{data.email || '—'}</span>
         </div>
         <div style={styles.dataItem}>
           <span style={styles.dataLabel}>Carrera:</span>
-          <span style={styles.dataValue}>{data.carrera||'—'} ({data.carrera_clave||'—'})</span>
+          <span style={styles.dataValue}>{data.carrera || '—'} ({data.carrera_clave || '—'})</span>
         </div>
         <div style={styles.dataItem}>
           <span style={styles.dataLabel}>Semestre:</span>
-          <span style={styles.dataValue}>{data.semestre||'—'}</span>
+          <span style={styles.dataValue}>{data.semestre || '—'}</span>
         </div>
       </div>
     </div>
   )
 }
-
-function Kardex(){
+function Kardex() {
   const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-  const [rows,setRows]=useState([])
-  const [err,setErr]=useState('')
-  
-  useEffect(()=>{
-    const t = localStorage.getItem('access_token')||''
-    fetch(`${API}/alumno/kardex`,{headers:{Authorization:`Bearer ${t}`}})
-      .then(r=>r.json().then(d=>({ok:r.ok,data:d})))
-      .then(({ok,data})=> ok? setRows(data): setErr(data?.error||'Error'))
-      .catch(()=>setErr('Error de red'))
-  },[])
-  
-  if(err) return <p style={styles.error}>{err}</p>
-  
+  const [rows, setRows] = useState([])
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    const t = localStorage.getItem('access_token') || ''
+    fetch(`${API}/alumno/kardex`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+      .then(({ ok, data }) => ok ? setRows(data) : setErr(data?.error || 'Error'))
+      .catch(() => setErr('Error de red'))
+  }, [])
+
+  if (err) return <p style={styles.error}>{err}</p>
+
   return (
     <>
       <h2 style={styles.h2}>Kardex</h2>
@@ -256,7 +258,7 @@ function Kardex(){
             </tr>
           </thead>
           <tbody>
-            {rows.map((r,i)=>(
+            {rows.map((r, i) => (
               <tr key={i} style={styles.tableRow}>
                 <td style={styles.td}>{r.periodo}</td>
                 <td style={styles.td}>{r.materia_clave}</td>
@@ -272,8 +274,7 @@ function Kardex(){
     </>
   )
 }
-
-function Horario(){
+function Horario() {
   const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
   const [profile, setProfile] = useState(null)
   const [periodos, setPeriodos] = useState([])
@@ -281,57 +282,57 @@ function Horario(){
   const [rows, setRows] = useState([])
   const [err, setErr] = useState('')
 
-  useEffect(()=>{
-    const t = localStorage.getItem('access_token')||''
-    fetch(`${API}/alumno/profile`,{headers:{Authorization:`Bearer ${t}`}})
-      .then(r=>r.json().then(d=>({ok:r.ok,data:d})))
-      .then(({ok,data})=> ok? setProfile(data): setErr(data?.error||'Error'))
-    fetch(`${API}/alumno/periodos`,{headers:{Authorization:`Bearer ${t}`}})
-      .then(r=>r.json())
-      .then(list=>{
+  useEffect(() => {
+    const t = localStorage.getItem('access_token') || ''
+    fetch(`${API}/alumno/profile`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+      .then(({ ok, data }) => ok ? setProfile(data) : setErr(data?.error || 'Error'))
+    fetch(`${API}/alumno/periodos`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json())
+      .then(list => {
         setPeriodos(list)
-        if(list?.length) setPeriodo(list[list.length-1])
+        if (list?.length) setPeriodo(list[list.length - 1])
       })
-  },[])
+  }, [])
 
-  useEffect(()=>{
-    if(!periodo) return
-    const t = localStorage.getItem('access_token')||''
-    fetch(`${API}/alumno/horario?periodo=${encodeURIComponent(periodo)}`,{
-      headers:{Authorization:`Bearer ${t}`}
+  useEffect(() => {
+    if (!periodo) return
+    const t = localStorage.getItem('access_token') || ''
+    fetch(`${API}/alumno/horario?periodo=${encodeURIComponent(periodo)}`, {
+      headers: { Authorization: `Bearer ${t}` }
     })
-    .then(r=>r.json().then(d=>({ok:r.ok,data:d})))
-    .then(({ok,data})=> ok? setRows(data): setErr(data?.error||'Error'))
-    .catch(()=>setErr('Error de red'))
-  },[periodo])
+      .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+      .then(({ ok, data }) => ok ? setRows(data) : setErr(data?.error || 'Error'))
+      .catch(() => setErr('Error de red'))
+  }, [periodo])
 
-  const dias = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+  const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
   const porMateria = {}
-  rows.forEach(r=>{
+  rows.forEach(r => {
     const key = `${r.materia_clave} ${r.materia_nombre}`
-    if(!porMateria[key]) porMateria[key] = { materia:key, slots:{} }
-    const hora = `${(r.hora_ini||'').slice(0,5)} - ${(r.hora_fin||'').slice(0,5)}`
+    if (!porMateria[key]) porMateria[key] = { materia: key, slots: {} }
+    const hora = `${(r.hora_ini || '').slice(0, 5)} - ${(r.hora_fin || '').slice(0, 5)}`
     porMateria[key].slots[r.dia_semana] = hora
   })
   const tabla = Object.values(porMateria)
 
-  function descargar(){ window.print() }
+  function descargar() { window.print() }
 
-  if(err) return <p style={styles.error}>{err}</p>
+  if (err) return <p style={styles.error}>{err}</p>
 
   return (
     <div>
       <h2 style={styles.h2}>Horario</h2>
 
       <div style={styles.infoBar}>
-        <div><b>Boleta:</b> {profile?.boleta||'—'}</div>
-        <div><b>Nombre:</b> {profile?.nombre_completo||'—'}</div>
+        <div><b>Boleta:</b> {profile?.boleta || '—'}</div>
+        <div><b>Nombre:</b> {profile?.nombre_completo || '—'}</div>
         <div><b>Plantel:</b> ESCOM</div>
         <div>
           <b>Periodo:</b>{' '}
-          <select value={periodo} onChange={e=>setPeriodo(e.target.value)} style={styles.select}>
+          <select value={periodo} onChange={e => setPeriodo(e.target.value)} style={styles.select}>
             <option value="" disabled>Selecciona</option>
-            {periodos.map(p=><option key={p} value={p}>{p}</option>)}
+            {periodos.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
       </div>
@@ -341,28 +342,27 @@ function Horario(){
           <thead>
             <tr style={styles.tableHeaderRow}>
               <th style={styles.th}>Materia</th>
-              {dias.slice(0,5).map(d=><th key={d} style={styles.th}>{d}</th>)}
+              {dias.slice(0, 5).map(d => <th key={d} style={styles.th}>{d}</th>)}
             </tr>
           </thead>
           <tbody>
-            {tabla.map((r,i)=>(
+            {tabla.map((r, i) => (
               <tr key={i} style={styles.tableRow}>
                 <td style={styles.td}>{r.materia}</td>
-                {[1,2,3,4,5].map(d=> <td key={d} style={styles.td}>{r.slots[d]||''}</td>)}
+                {[1, 2, 3, 4, 5].map(d => <td key={d} style={styles.td}>{r.slots[d] || ''}</td>)}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div style={{marginTop:20}}>
+      <div style={{ marginTop: 20 }}>
         <button style={styles.button} onClick={descargar}>Descargar horario</button>
       </div>
     </div>
   )
 }
-
-function Calificaciones(){
+function Calificaciones() {
   const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
   const [profile, setProfile] = useState(null)
   const [periodos, setPeriodos] = useState([])
@@ -370,44 +370,44 @@ function Calificaciones(){
   const [rows, setRows] = useState([])
   const [err, setErr] = useState('')
 
-  useEffect(()=>{
-    const t = localStorage.getItem('access_token')||''
-    fetch(`${API}/alumno/profile`,{headers:{Authorization:`Bearer ${t}`}})
-      .then(r=>r.json().then(d=>({ok:r.ok,data:d})))
-      .then(({ok,data})=> ok? setProfile(data): setErr(data?.error||'Error'))
-    fetch(`${API}/alumno/periodos`,{headers:{Authorization:`Bearer ${t}`}})
-      .then(r=>r.json())
-      .then(list=>{
+  useEffect(() => {
+    const t = localStorage.getItem('access_token') || ''
+    fetch(`${API}/alumno/profile`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+      .then(({ ok, data }) => ok ? setProfile(data) : setErr(data?.error || 'Error'))
+    fetch(`${API}/alumno/periodos`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json())
+      .then(list => {
         setPeriodos(list)
-        if(list?.length) setPeriodo(list[list.length-1])
+        if (list?.length) setPeriodo(list[list.length - 1])
       })
-  },[])
+  }, [])
 
-  useEffect(()=>{
-    if(!periodo) return
-    const t = localStorage.getItem('access_token')||''
-    fetch(`${API}/alumno/calificaciones?periodo=${encodeURIComponent(periodo)}`,{
-      headers:{Authorization:`Bearer ${t}`}
+  useEffect(() => {
+    if (!periodo) return
+    const t = localStorage.getItem('access_token') || ''
+    fetch(`${API}/alumno/calificaciones?periodo=${encodeURIComponent(periodo)}`, {
+      headers: { Authorization: `Bearer ${t}` }
     })
-    .then(r=>r.json().then(d=>({ok:r.ok,data:d})))
-    .then(({ok,data})=> ok? setRows(data): setErr(data?.error||'Error'))
-    .catch(()=>setErr('Error de red'))
-  },[periodo])
+      .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+      .then(({ ok, data }) => ok ? setRows(data) : setErr(data?.error || 'Error'))
+      .catch(() => setErr('Error de red'))
+  }, [periodo])
 
-  if(err) return <p style={styles.error}>{err}</p>
+  if (err) return <p style={styles.error}>{err}</p>
 
   return (
     <div>
       <h2 style={styles.h2}>Calificaciones</h2>
 
       <div style={styles.infoBar}>
-        <div><b>Boleta:</b> {profile?.boleta||'—'}</div>
-        <div><b>Nombre:</b> {profile?.nombre_completo||'—'}</div>
+        <div><b>Boleta:</b> {profile?.boleta || '—'}</div>
+        <div><b>Nombre:</b> {profile?.nombre_completo || '—'}</div>
         <div>
           <b>Periodo:</b>{' '}
-          <select value={periodo} onChange={e=>setPeriodo(e.target.value)} style={styles.select}>
+          <select value={periodo} onChange={e => setPeriodo(e.target.value)} style={styles.select}>
             <option value="" disabled>Selecciona</option>
-            {periodos.map(p=><option key={p} value={p}>{p}</option>)}
+            {periodos.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
       </div>
@@ -424,7 +424,7 @@ function Calificaciones(){
             </tr>
           </thead>
           <tbody>
-            {rows.map((r,i)=>(
+            {rows.map((r, i) => (
               <tr key={i} style={styles.tableRow}>
                 <td style={styles.td}>{`${r.materia_clave} ${r.materia_nombre}`}</td>
                 <td style={styles.td}>{r.p1 ?? ''}</td>
@@ -439,60 +439,59 @@ function Calificaciones(){
     </div>
   )
 }
-
-function Reinscripcion(){
+function Reinscripcion() {
   const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-  const t = () => localStorage.getItem('access_token')||''
-  const [periodos,setPeriodos]=useState([])
-  const [periodo,setPeriodo]=useState('')
-  const [semestre,setSemestre]=useState('')
-  const [turno,setTurno]=useState('')
-  const [inscritas,setInscritas]=useState([])
-  const [oferta,setOferta]=useState([])
-  const [resumen,setResumen]=useState({total_creditos:0,creditos_usados:0})
-  const [msg,setMsg]=useState('')
+  const t = () => localStorage.getItem('access_token') || ''
+  const [periodos, setPeriodos] = useState([])
+  const [periodo, setPeriodo] = useState('')
+  const [semestre, setSemestre] = useState('')
+  const [turno, setTurno] = useState('')
+  const [inscritas, setInscritas] = useState([])
+  const [oferta, setOferta] = useState([])
+  const [resumen, setResumen] = useState({ total_creditos: 0, creditos_usados: 0 })
+  const [msg, setMsg] = useState('')
 
-  useEffect(()=>{
-    fetch(`${API}/alumno/periodos`,{headers:{Authorization:`Bearer ${t()}`}})
-      .then(r=>r.json()).then(list=>{
-        setPeriodos(list); if(list?.length) setPeriodo(list[list.length-1])
+  useEffect(() => {
+    fetch(`${API}/alumno/periodos`, { headers: { Authorization: `Bearer ${t()}` } })
+      .then(r => r.json()).then(list => {
+        setPeriodos(list); if (list?.length) setPeriodo(list[list.length - 1])
       })
-  },[])
+  }, [])
 
-  useEffect(()=>{ if(!periodo) return; refresh() },[periodo,semestre,turno])
+  useEffect(() => { if (!periodo) return; refresh() }, [periodo, semestre, turno])
 
-  function refresh(){
-    const hdr={headers:{Authorization:`Bearer ${t()}`}}
-    fetch(`${API}/alumno/reins/resumen?periodo=${periodo}`,hdr).then(r=>r.json()).then(setResumen)
-    fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`,hdr).then(r=>r.json()).then(setInscritas)
-    const qs = new URLSearchParams({periodo, ...(semestre?{semestre}:{}) , ...(turno?{turno}:{}) })
-    fetch(`${API}/alumno/reins/oferta?${qs.toString()}`,hdr).then(r=>r.json()).then(setOferta)
+  function refresh() {
+    const hdr = { headers: { Authorization: `Bearer ${t()}` } }
+    fetch(`${API}/alumno/reins/resumen?periodo=${periodo}`, hdr).then(r => r.json()).then(setResumen)
+    fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr).then(r => r.json()).then(setInscritas)
+    const qs = new URLSearchParams({ periodo, ...(semestre ? { semestre } : {}), ...(turno ? { turno } : {}) })
+    fetch(`${API}/alumno/reins/oferta?${qs.toString()}`, hdr).then(r => r.json()).then(setOferta)
   }
 
-  async function addGrupo(id_grupo){
+  async function addGrupo(id_grupo) {
     setMsg('')
-    const r = await fetch(`${API}/alumno/reins/conflictos?id_grupo=${id_grupo}`,{
-      headers:{Authorization:`Bearer ${t()}`}
+    const r = await fetch(`${API}/alumno/reins/conflictos?id_grupo=${id_grupo}`, {
+      headers: { Authorization: `Bearer ${t()}` }
     }); const choques = await r.json()
-    if(choques.length){ setMsg('Choque de horario'); return }
-    await fetch(`${API}/alumno/reins/preinscribir`,{
-      method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${t()}`},
-      body: JSON.stringify({id_grupo})
+    if (choques.length) { setMsg('Choque de horario'); return }
+    await fetch(`${API}/alumno/reins/preinscribir`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t()}` },
+      body: JSON.stringify({ id_grupo })
     })
     refresh()
   }
-  
-  async function delGrupo(id_grupo){
-    await fetch(`${API}/alumno/reins/preinscribir/${id_grupo}`,{
-      method:'DELETE', headers:{Authorization:`Bearer ${t()}`}
+
+  async function delGrupo(id_grupo) {
+    await fetch(`${API}/alumno/reins/preinscribir/${id_grupo}`, {
+      method: 'DELETE', headers: { Authorization: `Bearer ${t()}` }
     })
     refresh()
   }
-  
-  async function confirmar(){
-    await fetch(`${API}/alumno/reins/confirmar`,{
-      method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${t()}`},
-      body: JSON.stringify({periodo})
+
+  async function confirmar() {
+    await fetch(`${API}/alumno/reins/confirmar`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t()}` },
+      body: JSON.stringify({ periodo })
     })
     refresh()
   }
@@ -506,17 +505,17 @@ function Reinscripcion(){
         <div><b>Créditos utilizados:</b> {resumen.creditos_usados?.toFixed?.(2) ?? resumen.creditos_usados}</div>
         <div>
           <b>Periodo:</b>{' '}
-          <select value={periodo} onChange={e=>setPeriodo(e.target.value)} style={styles.select}>
-            {periodos.map(p=><option key={p} value={p}>{p}</option>)}
+          <select value={periodo} onChange={e => setPeriodo(e.target.value)} style={styles.select}>
+            {periodos.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
         <div>
           <b>Semestre:</b>{' '}
-          <input value={semestre} onChange={e=>setSemestre(e.target.value)} placeholder="1..12" style={styles.input}/>
+          <input value={semestre} onChange={e => setSemestre(e.target.value)} placeholder="1..12" style={styles.input} />
         </div>
         <div>
           <b>Turno:</b>{' '}
-          <select value={turno} onChange={e=>setTurno(e.target.value)} style={styles.select}>
+          <select value={turno} onChange={e => setTurno(e.target.value)} style={styles.select}>
             <option value="">Todos</option>
             <option value="M">M</option><option value="V">V</option><option value="N">N</option>
           </select>
@@ -539,14 +538,14 @@ function Reinscripcion(){
             </tr>
           </thead>
           <tbody>
-            {inscritas.map((r,i)=>(
+            {inscritas.map((r, i) => (
               <tr key={i} style={styles.tableRow}>
                 <td style={styles.td}>{r.id_grupo}</td>
                 <td style={styles.td}>{`${r.clave} ${r.nombre}`}</td>
-                <td style={styles.td}>{r.profesor||'—'}</td>
+                <td style={styles.td}>{r.profesor || '—'}</td>
                 <td style={styles.td}>{r.creditos}</td>
                 <td style={styles.td}>
-                  <button onClick={()=>delGrupo(r.id_grupo)} style={styles.iconBtn}>🗑</button>
+                  <button onClick={() => delGrupo(r.id_grupo)} style={styles.iconBtn}>🗑</button>
                 </td>
               </tr>
             ))}
@@ -568,15 +567,15 @@ function Reinscripcion(){
             </tr>
           </thead>
           <tbody>
-            {oferta.map((r,i)=>(
+            {oferta.map((r, i) => (
               <tr key={i} style={styles.tableRow}>
                 <td style={styles.td}>{r.id_grupo}</td>
                 <td style={styles.td}>{`${r.clave} ${r.nombre}`}</td>
-                <td style={styles.td}>{r.profesor||'—'}</td>
+                <td style={styles.td}>{r.profesor || '—'}</td>
                 <td style={styles.td}>{r.creditos}</td>
                 <td style={styles.td}>{r.lugares_disponibles}</td>
                 <td style={styles.td}>
-                  <button onClick={()=>addGrupo(r.id_grupo)} style={styles.iconBtn}>＋</button>
+                  <button onClick={() => addGrupo(r.id_grupo)} style={styles.iconBtn}>＋</button>
                 </td>
               </tr>
             ))}
@@ -586,10 +585,9 @@ function Reinscripcion(){
     </div>
   )
 }
-
-function Bajas(){
+function Bajas() {
   const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-  const t = () => localStorage.getItem('access_token')||''
+  const t = () => localStorage.getItem('access_token') || ''
   const [periodos, setPeriodos] = useState([])
   const [periodo, setPeriodo] = useState('')
   const [inscritas, setInscritas] = useState([])
@@ -599,55 +597,55 @@ function Bajas(){
   const [msg, setMsg] = useState('')
   const [err, setErr] = useState('')
 
-  useEffect(()=>{
-    fetch(`${API}/alumno/periodos`,{headers:{Authorization:`Bearer ${t()}`}})
-      .then(r=>r.json()).then(list=>{
+  useEffect(() => {
+    fetch(`${API}/alumno/periodos`, { headers: { Authorization: `Bearer ${t()}` } })
+      .then(r => r.json()).then(list => {
         setPeriodos(list)
-        if(list?.length) setPeriodo(list[list.length-1])
+        if (list?.length) setPeriodo(list[list.length - 1])
       })
-  },[])
+  }, [])
 
-  useEffect(()=>{ 
-    if(!periodo) return
+  useEffect(() => {
+    if (!periodo) return
     refresh()
-  },[periodo])
+  }, [periodo])
 
-  function refresh(){
-    const hdr={headers:{Authorization:`Bearer ${t()}`}}
-    
+  function refresh() {
+    const hdr = { headers: { Authorization: `Bearer ${t()}` } }
+
     // Obtener materias inscritas actuales
-    fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`,hdr)
-      .then(r=>r.json())
+    fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr)
+      .then(r => r.json())
       .then(setInscritas)
-      .catch(()=>setErr('Error cargando materias'))
+      .catch(() => setErr('Error cargando materias'))
 
     // Obtener solicitudes de baja pendientes (simulado - ajusta según tu API)
-    fetch(`${API}/alumno/bajas/solicitudes?periodo=${periodo}`,hdr)
-      .then(r=>r.json())
+    fetch(`${API}/alumno/bajas/solicitudes?periodo=${periodo}`, hdr)
+      .then(r => r.json())
       .then(setSolicitudes)
-      .catch(()=>setSolicitudes([]))
+      .catch(() => setSolicitudes([]))
 
     // Obtener información del periodo
-    fetch(`${API}/alumno/bajas/info?periodo=${periodo}`,hdr)
-      .then(r=>r.json())
-      .then(data=>{
+    fetch(`${API}/alumno/bajas/info?periodo=${periodo}`, hdr)
+      .then(r => r.json())
+      .then(data => {
         setFechaLimite(data.fecha_limite || '25/05/2025')
         setCargaMinima(data.carga_minima || 33.33)
       })
-      .catch(()=>{
+      .catch(() => {
         setFechaLimite('25/05/2025')
         setCargaMinima(33.33)
       })
   }
 
-  async function solicitarBaja(id_grupo, materia_clave, materia_nombre){
+  async function solicitarBaja(id_grupo, materia_clave, materia_nombre) {
     setMsg('')
     setErr('')
-    
+
     try {
-      const res = await fetch(`${API}/alumno/bajas/solicitar`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json', Authorization:`Bearer ${t()}`},
+      const res = await fetch(`${API}/alumno/bajas/solicitar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t()}` },
         body: JSON.stringify({
           periodo,
           id_grupo,
@@ -655,35 +653,35 @@ function Bajas(){
           materia_nombre
         })
       })
-      
+
       const data = await res.json()
-      
-      if(!res.ok){
+
+      if (!res.ok) {
         setErr(data.error || 'Error al solicitar baja')
         return
       }
-      
+
       setMsg('Solicitud de baja enviada. Pendiente de aprobación.')
       refresh()
-    } catch(error) {
+    } catch (error) {
       setErr('Error de red al solicitar baja')
     }
   }
 
   const getEstadoStyle = (estado) => {
-    switch(estado){
+    switch (estado) {
       case 'pendiente':
-        return {background: 'rgba(234, 179, 8, 0.2)', color: '#fbbf24', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600'}
+        return { background: 'rgba(234, 179, 8, 0.2)', color: '#fbbf24', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600' }
       case 'aprobada':
-        return {background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600'}
+        return { background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600' }
       case 'rechazada':
-        return {background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600'}
+        return { background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600' }
       default:
-        return {padding: '4px 12px'}
+        return { padding: '4px 12px' }
     }
   }
 
-  if(err) return <p style={styles.error}>{err}</p>
+  if (err) return <p style={styles.error}>{err}</p>
 
   return (
     <div>
@@ -694,9 +692,8 @@ function Bajas(){
         <div><b>Carga Mínima:</b> {cargaMinima} créditos</div>
         <div>
           <b>Periodo:</b>{' '}
-          <select value={periodo} onChange={e=>setPeriodo(e.target.value)} style={styles.select}>
-            <option value="" disabled>Selecciona</option>
-            {periodos.map(p=><option key={p} value={p}>{p}</option>)}
+          <select value={periodo} onChange={e => setPeriodo(e.target.value)} style={styles.select}>
+            {periodos.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
       </div>
@@ -716,20 +713,20 @@ function Bajas(){
             </tr>
           </thead>
           <tbody>
-            {inscritas.map((r,i)=>{
+            {inscritas.map((r, i) => {
               const tieneSolicitud = solicitudes.some(s => s.id_grupo === r.id_grupo && s.estado === 'pendiente')
               return (
                 <tr key={i} style={styles.tableRow}>
                   <td style={styles.td}>{r.id_grupo}</td>
                   <td style={styles.td}>{`${r.clave} ${r.nombre}`}</td>
-                  <td style={styles.td}>{r.profesor||'—'}</td>
+                  <td style={styles.td}>{r.profesor || '—'}</td>
                   <td style={styles.td}>{r.creditos}</td>
                   <td style={styles.td}>
                     {tieneSolicitud ? (
-                      <span style={{color: '#fbbf24', fontSize: '13px'}}>⏳ Pendiente</span>
+                      <span style={{ color: '#fbbf24', fontSize: '13px' }}>⏳ Pendiente</span>
                     ) : (
-                      <button 
-                        onClick={()=>solicitarBaja(r.id_grupo, r.clave, r.nombre)} 
+                      <button
+                        onClick={() => solicitarBaja(r.id_grupo, r.clave, r.nombre)}
                         style={styles.iconBtn}
                         title="Solicitar baja"
                       >
@@ -759,7 +756,7 @@ function Bajas(){
                 </tr>
               </thead>
               <tbody>
-                {solicitudes.map((s,i)=>(
+                {solicitudes.map((s, i) => (
                   <tr key={i} style={styles.tableRow}>
                     <td style={styles.td}>{s.id_grupo}</td>
                     <td style={styles.td}>{`${s.materia_clave} ${s.materia_nombre}`}</td>
@@ -780,10 +777,124 @@ function Bajas(){
     </div>
   )
 }
-
-function Grupos(){
+function Evaluacion() {
   const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-  const t = () => localStorage.getItem('access_token')||''
+  const t = () => localStorage.getItem('access_token') || ''
+  const [periodos, setPeriodos] = useState([])
+  const [periodo, setPeriodo] = useState('')
+  const [inscritas, setInscritas] = useState([])
+  const [selectedGrupo, setSelectedGrupo] = useState(null)
+  const [respuestas, setRespuestas] = useState([5, 5, 5, 5, 5])
+  const [comentario, setComentario] = useState('')
+  const [msg, setMsg] = useState('')
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    fetch(`${API}/alumno/periodos`, { headers: { Authorization: `Bearer ${t()}` } })
+      .then(r => r.json()).then(list => {
+        setPeriodos(list)
+        if (list?.length) setPeriodo(list[list.length - 1])
+      })
+  }, [])
+
+  useEffect(() => { if (!periodo) return; refresh() }, [periodo])
+
+  function refresh() {
+    fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, { headers: { Authorization: `Bearer ${t()}` } })
+      .then(r => r.json())
+      .then(setInscritas)
+  }
+
+  async function enviarEvaluacion(e) {
+    e.preventDefault()
+    if (!selectedGrupo) return
+    setMsg(''); setErr('')
+    try {
+      const res = await fetch(`${API}/alumno/evaluacion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t()}` },
+        body: JSON.stringify({
+          id_grupo: selectedGrupo,
+          respuestas,
+          comentario
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error')
+      setMsg('Evaluación enviada gracias')
+      setSelectedGrupo(null)
+      setComentario('')
+      setRespuestas([5, 5, 5, 5, 5])
+    } catch (e) {
+      setErr(e.message)
+    }
+  }
+
+  return (
+    <div>
+      <h2 style={styles.h2}>Evaluación Docente</h2>
+      <div style={styles.infoBar}>
+        <b>Periodo:</b>{' '}
+        <select value={periodo} onChange={e => setPeriodo(e.target.value)} style={styles.select}>
+          {periodos.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+      </div>
+
+      {msg && <div style={styles.success}>{msg}</div>}
+      {err && <div style={styles.error}>{err}</div>}
+
+      {!selectedGrupo ? (
+        <div style={styles.tableWrap}>
+          <table style={styles.table}>
+            <thead>
+              <tr style={styles.tableHeaderRow}>
+                <th style={styles.th}>Materia</th>
+                <th style={styles.th}>Profesor</th>
+                <th style={styles.th}>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {inscritas.map((r, i) => (
+                <tr key={i} style={styles.tableRow}>
+                  <td style={styles.td}>{r.nombre}</td>
+                  <td style={styles.td}>{r.profesor}</td>
+                  <td style={styles.td}>
+                    <button onClick={() => setSelectedGrupo(r.id_grupo)} style={styles.pill}>Evaluar</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div style={styles.card}>
+          <h3 style={styles.h3}>Evaluando Grupo {selectedGrupo}</h3>
+          <form onSubmit={enviarEvaluacion}>
+            {[0, 1, 2, 3, 4].map(i => (
+              <div key={i} style={{ marginBottom: 10 }}>
+                <label>Pregunta {i + 1} (1-5): </label>
+                <input type="number" min="1" max="5" value={respuestas[i]}
+                  onChange={e => {
+                    const n = [...respuestas]; n[i] = parseInt(e.target.value); setRespuestas(n)
+                  }}
+                />
+              </div>
+            ))}
+            <div style={{ marginBottom: 10 }}>
+              <label>Comentario: </label>
+              <input value={comentario} onChange={e => setComentario(e.target.value)} style={styles.input} />
+            </div>
+            <button type="submit" style={styles.button}>Enviar</button>
+            <button type="button" onClick={() => setSelectedGrupo(null)} style={{ ...styles.button, background: '#ccc', marginLeft: 10 }}>Cancelar</button>
+          </form>
+        </div>
+      )}
+    </div>
+  )
+}
+function Grupos() {
+  const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+  const t = () => localStorage.getItem('access_token') || ''
   const [grupos, setGrupos] = useState([])
   const [filteredGrupos, setFilteredGrupos] = useState([])
   const [semestre, setSemestre] = useState('')
@@ -792,34 +903,34 @@ function Grupos(){
   const [carrera, setCarrera] = useState('')
   const [err, setErr] = useState('')
 
-  useEffect(()=>{
-    fetch(`${API}/alumno/grupos`,{headers:{Authorization:`Bearer ${t()}`}})
-      .then(r=>r.json())
-      .then(data=>{
+  useEffect(() => {
+    fetch(`${API}/alumno/grupos`, { headers: { Authorization: `Bearer ${t()}` } })
+      .then(r => r.json())
+      .then(data => {
         setGrupos(data)
         setFilteredGrupos(data)
       })
-      .catch(()=>setErr('Error cargando grupos'))
-  },[])
+      .catch(() => setErr('Error cargando grupos'))
+  }, [])
 
-  useEffect(()=>{
+  useEffect(() => {
     let filtered = [...grupos]
-    
-    if(semestre){
+
+    if (semestre) {
       filtered = filtered.filter(g => g.semestre?.toString() === semestre)
     }
-    if(grupo){
+    if (grupo) {
       filtered = filtered.filter(g => g.grupo?.toLowerCase().includes(grupo.toLowerCase()))
     }
-    if(turno){
+    if (turno) {
       filtered = filtered.filter(g => g.turno === turno)
     }
-    if(carrera){
+    if (carrera) {
       filtered = filtered.filter(g => g.carrera?.toLowerCase().includes(carrera.toLowerCase()))
     }
-    
+
     setFilteredGrupos(filtered)
-  },[semestre, grupo, turno, carrera, grupos])
+  }, [semestre, grupo, turno, carrera, grupos])
 
   const limpiarFiltros = () => {
     setSemestre('')
@@ -828,7 +939,7 @@ function Grupos(){
     setCarrera('')
   }
 
-  if(err) return <p style={styles.error}>{err}</p>
+  if (err) return <p style={styles.error}>{err}</p>
 
   return (
     <div>
@@ -839,25 +950,25 @@ function Grupos(){
         <div style={styles.filtrosGrid}>
           <div style={styles.filtroItem}>
             <label style={styles.filtroLabel}>Semestre</label>
-            <input 
-              value={semestre} 
-              onChange={e=>setSemestre(e.target.value)} 
-              placeholder="1-12" 
+            <input
+              value={semestre}
+              onChange={e => setSemestre(e.target.value)}
+              placeholder="1-12"
               style={styles.filtroInput}
             />
           </div>
           <div style={styles.filtroItem}>
             <label style={styles.filtroLabel}>Grupo</label>
-            <input 
-              value={grupo} 
-              onChange={e=>setGrupo(e.target.value)} 
-              placeholder="1BM1, 2CV3..." 
+            <input
+              value={grupo}
+              onChange={e => setGrupo(e.target.value)}
+              placeholder="1BM1, 2CV3..."
               style={styles.filtroInput}
             />
           </div>
           <div style={styles.filtroItem}>
             <label style={styles.filtroLabel}>Turno</label>
-            <select value={turno} onChange={e=>setTurno(e.target.value)} style={styles.filtroSelect}>
+            <select value={turno} onChange={e => setTurno(e.target.value)} style={styles.filtroSelect}>
               <option value="">Todos</option>
               <option value="M">Matutino</option>
               <option value="V">Vespertino</option>
@@ -866,10 +977,10 @@ function Grupos(){
           </div>
           <div style={styles.filtroItem}>
             <label style={styles.filtroLabel}>Carrera</label>
-            <input 
-              value={carrera} 
-              onChange={e=>setCarrera(e.target.value)} 
-              placeholder="ISC, LCD..." 
+            <input
+              value={carrera}
+              onChange={e => setCarrera(e.target.value)}
+              placeholder="ISC, LCD..."
               style={styles.filtroInput}
             />
           </div>
@@ -889,7 +1000,7 @@ function Grupos(){
             </tr>
           </thead>
           <tbody>
-            {filteredGrupos.map((g,i)=>(
+            {filteredGrupos.map((g, i) => (
               <tr key={i} style={styles.tableRow}>
                 <td style={styles.td}>{g.grupo || g.id_grupo}</td>
                 <td style={styles.td}>{`${g.materia_clave || g.clave} ${g.materia_nombre || g.nombre}`}</td>
@@ -900,7 +1011,7 @@ function Grupos(){
             ))}
             {filteredGrupos.length === 0 && (
               <tr>
-                <td colSpan="5" style={{...styles.td, textAlign: 'center', padding: '32px', color: '#6a7aae'}}>
+                <td colSpan="5" style={{ ...styles.td, textAlign: 'center', padding: '32px', color: '#6a7aae' }}>
                   No se encontraron grupos con los filtros aplicados
                 </td>
               </tr>
@@ -1306,10 +1417,80 @@ const styles = {
     fontSize: '14px',
     marginBottom: '16px',
   },
+  success: {
+    background: 'rgba(34, 197, 94, 0.2)',
+    border: '1px solid rgba(34, 197, 94, 0.4)',
+    color: '#86efac',
+    padding: '14px 18px',
+    borderRadius: '12px',
+    fontSize: '14px',
+    marginBottom: '16px',
+  },
   loading: {
     color: '#6a7aae',
     fontSize: '16px',
     textAlign: 'center',
     padding: '40px',
+  },
+  filtrosContainer: {
+    background: 'rgba(30, 43, 79, 0.6)',
+    backdropFilter: 'blur(20px)',
+    borderRadius: '16px',
+    border: '1px solid rgba(106, 122, 174, 0.2)',
+    padding: '20px',
+    marginBottom: '24px',
+  },
+  filtrosLabel: {
+    color: '#6a7aae',
+    fontSize: '14px',
+    fontWeight: '600',
+    marginBottom: '12px',
+  },
+  filtrosGrid: {
+    display: 'flex',
+    gap: '16px',
+    flexWrap: 'wrap',
+    alignItems: 'flex-end',
+  },
+  filtroItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  filtroLabel: {
+    fontSize: '12px',
+    color: '#d1d5e8',
+  },
+  filtroInput: {
+    background: 'rgba(58, 74, 122, 0.6)',
+    border: '1px solid rgba(106, 122, 174, 0.3)',
+    borderRadius: '8px',
+    padding: '8px 12px',
+    color: '#ffffff',
+    fontSize: '14px',
+    outline: 'none',
+    width: '140px',
+  },
+  filtroSelect: {
+    background: 'rgba(58, 74, 122, 0.6)',
+    border: '1px solid rgba(106, 122, 174, 0.3)',
+    borderRadius: '8px',
+    padding: '8px 12px',
+    color: '#ffffff',
+    fontSize: '14px',
+    outline: 'none',
+    cursor: 'pointer',
+    width: '140px',
+  },
+  clearBtn: {
+    background: 'rgba(58, 74, 122, 0.4)',
+    border: '1px solid rgba(106, 122, 174, 0.3)',
+    color: '#d1d5e8',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '13px',
+    transition: 'all 0.2s ease',
+    height: '35px',
   },
 }
