@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 const API = import.meta.env?.VITE_API_URL || 'http://localhost:3000'
 
-export default function Profesor(){
+export default function Profesor() {
   const [view, setView] = useState('perfil')
   const [profile, setProfile] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -58,18 +58,21 @@ export default function Profesor(){
 
   useEffect(() => {
     setTimeout(() => {
-        const token = localStorage.getItem?.('access_token') || ''
-        fetch(`${API}/profesor/profile`, {
-          headers: { Authorization: `Bearer ${token}` }
+      const token = localStorage.getItem?.('access_token') || ''
+      fetch(`${API}/profesor/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) console.error(data.error);
+          else setProfile(data);
         })
-          .then(r => r.json())
-          .then(data => setProfile(data))
-          .catch(() => {})
-          .finally(() => setIsLoading(false))
-    }, 1000)
+        .catch(() => { })
+        .finally(() => setIsLoading(false))
+    }, 500)
   }, [])
 
-  function logout(){
+  function logout() {
     localStorage.removeItem('access_token')
     window.location.href = '/'
   }
@@ -86,8 +89,8 @@ export default function Profesor(){
     <div style={styles.container}>
       <div style={styles.floatingShapes}>
         {[...Array(15)].map((_, i) => (
-          <svg key={i} style={{...styles.floatingSvg, ...styles[`svg${i % 10}`]}} xmlns="http://www.w3.org/2000/svg">
-            <path d="m2.46177,126.39581c10.12618,-0.06577 20.25237,-0.13151 30.37857,-0.19726c0.06666,-10.3997 0.13333,-20.7994 0.19999,-31.19908c10.07782,0 20.15564,0 30.23346,0c0,-10.46351 0,-20.927 0,-31.39051c10.33589,0 20.67178,0 31.00767,0c0,-10.20827 0,-20.41656 0,-30.62485c10.20829,0 20.41656,0 30.62485,0c0,-10.20829 0,-20.41658 0,-30.62487c15.18483,0 30.36965,0 45.55448,0c0,5.10414 0,10.20829 0,15.31243c-10.08071,0 -20.16136,0 -30.24206,0c0,10.33589 0,20.67178 0,31.00769c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33589 0,20.67178 0,31.00767c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33591 0,20.6718 0,31.00767c-10.33589,0 -20.67178,0 -31.00767,0c0,10.46351 0,20.927 0,31.39049c-15.31243,0 -30.62485,0 -45.93728,0c0.68263,-5.07223 -1.16374,-10.79174 0.43769,-15.68938l0,0z" strokeWidth="7" fill="none"/>
+          <svg key={i} style={{ ...styles.floatingSvg, ...styles[`svg${i % 10}`] }} xmlns="http://www.w3.org/2000/svg">
+            <path d="m2.46177,126.39581c10.12618,-0.06577 20.25237,-0.13151 30.37857,-0.19726c0.06666,-10.3997 0.13333,-20.7994 0.19999,-31.19908c10.07782,0 20.15564,0 30.23346,0c0,-10.46351 0,-20.927 0,-31.39051c10.33589,0 20.67178,0 31.00767,0c0,-10.20827 0,-20.41656 0,-30.62485c10.20829,0 20.41656,0 30.62485,0c0,-10.20829 0,-20.41658 0,-30.62487c15.18483,0 30.36965,0 45.55448,0c0,5.10414 0,10.20829 0,15.31243c-10.08071,0 -20.16136,0 -30.24206,0c0,10.33589 0,20.67178 0,31.00769c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33589 0,20.67178 0,31.00767c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33591 0,20.6718 0,31.00767c-10.33589,0 -20.67178,0 -31.00767,0c0,10.46351 0,20.927 0,31.39049c-15.31243,0 -30.62485,0 -45.93728,0c0.68263,-5.07223 -1.16374,-10.79174 0.43769,-15.68938l0,0z" strokeWidth="7" fill="none" />
           </svg>
         ))}
       </div>
@@ -98,24 +101,24 @@ export default function Profesor(){
           <div style={styles.avatar}>👤</div>
           <div style={styles.sidebarTitle}>Panel Profesor</div>
         </div>
-        
+
         <nav style={styles.sidebarNav}>
-          <button style={{...styles.pill, ...(view==='perfil' ? styles.pillActive : {})}} className="pill-hover" onClick={()=>setView('perfil')}>
+          <button style={{ ...styles.pill, ...(view === 'perfil' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('perfil')}>
             Datos Personales
           </button>
-          <button style={{...styles.pill, ...(view==='grupos' ? styles.pillActive : {})}} className="pill-hover" onClick={()=>setView('grupos')}>
+          <button style={{ ...styles.pill, ...(view === 'grupos' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('grupos')}>
             Grupos
           </button>
-          <button style={{...styles.pill, ...(view==='horario' ? styles.pillActive : {})}} className="pill-hover" onClick={()=>setView('horario')}>
+          <button style={{ ...styles.pill, ...(view === 'horario' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('horario')}>
             Horario
           </button>
-          <button style={{...styles.pill, ...(view==='calificaciones' ? styles.pillActive : {})}} className="pill-hover" onClick={()=>setView('calificaciones')}>
+          <button style={{ ...styles.pill, ...(view === 'calificaciones' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('calificaciones')}>
             Calificaciones
           </button>
         </nav>
-        
+
         <div style={styles.sidebarBottom}>
-          <button style={{...styles.pill, ...(view==='chat' ? styles.pillActive : {})}} className="pill-hover" onClick={()=>setView('chat')}>
+          <button style={{ ...styles.pill, ...(view === 'chat' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('chat')}>
             💬 Chat Bot
           </button>
           <button style={styles.pillDanger} className="danger-hover" onClick={logout}>
@@ -154,6 +157,14 @@ function DatosPersonales({ profile }) {
           <span style={styles.dataLabel}>Plantel:</span>
           <span style={styles.dataValue}>{profile.plantel || 'ESCOM'}</span>
         </div>
+        <div style={styles.dataItem}>
+          <span style={styles.dataLabel}>Departamento:</span>
+          <span style={styles.dataValue}>{profile.departamento || '—'}</span>
+        </div>
+        <div style={styles.dataItem}>
+          <span style={styles.dataLabel}>No. Empleado:</span>
+          <span style={styles.dataValue}>{profile.num_empleado || '—'}</span>
+        </div>
       </div>
     </div>
   )
@@ -188,7 +199,7 @@ function ChatBot() {
     setMessages(prev => [...prev, { from: 'user', text: clean }])
     setText('')
     setIsTyping(true)
-    
+
     try {
       await new Promise(resolve => setTimeout(resolve, 1500))
 
@@ -202,9 +213,9 @@ function ChatBot() {
       setMessages(prev => [...prev, { from: 'bot', text: data?.reply || 'Sin respuesta.' }])
     } catch {
       setMessages(prev => [...prev, { from: 'bot', text: 'AI service unavailable.' }])
-    } finally { 
+    } finally {
       setIsTyping(false)
-      setSending(false) 
+      setSending(false)
     }
   }
 
@@ -220,18 +231,18 @@ function ChatBot() {
           ))}
           {isTyping && (
             <div style={styles.typingIndicator}>
-              <div style={{...styles.dot, animationDelay: '0s'}}></div>
-              <div style={{...styles.dot, animationDelay: '0.2s'}}></div>
-              <div style={{...styles.dot, animationDelay: '0.4s'}}></div>
+              <div style={{ ...styles.dot, animationDelay: '0s' }}></div>
+              <div style={{ ...styles.dot, animationDelay: '0.2s' }}></div>
+              <div style={{ ...styles.dot, animationDelay: '0.4s' }}></div>
             </div>
           )}
         </div>
         <div style={styles.chatInput}>
-          <textarea 
-            value={text} 
-            onChange={e => setText(e.target.value)} 
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
             onKeyDown={onKey}
-            placeholder="Escribe tu mensaje…" 
+            placeholder="Escribe tu mensaje…"
             disabled={sending || isTyping}
             style={styles.textarea}
           />
@@ -243,24 +254,25 @@ function ChatBot() {
 }
 
 function Grupos() {
-  const [periodos, setPeriodos] = useState(['2024-2', '2024-1', '2023-2'])
-  const [periodo, setPeriodo] = useState('2024-2')
-  const [grupos, setGrupos] = useState([
-    { id_grupo: '3CM1', materia_nombre: 'Programación', materia_clave: 'PRG101', semestre: 3, turno: 'Matutino', inscritos: 35 },
-    { id_grupo: '4CM3', materia_nombre: 'Bases de Datos', materia_clave: 'BDD201', semestre: 4, turno: 'Vespertino', inscritos: 28 },
-  ])
+  const [periodos, setPeriodos] = useState(['2025-2', '2025-1', '2024-2'])
+  const [periodo, setPeriodo] = useState('2025-2')
+  const [grupos, setGrupos] = useState([])
   const [dataLoading, setDataLoading] = useState(false)
 
   useEffect(() => {
     if (!periodo) return
     setDataLoading(true)
-    setTimeout(() => {
-      setGrupos([
-        { id_grupo: '3CM1', materia_nombre: 'Programación Avanzada', materia_clave: 'PRG101', semestre: 3, turno: 'Matutino', inscritos: 35 },
-        { id_grupo: '4CM3', materia_nombre: 'Bases de Datos', materia_clave: 'BDD201', semestre: 4, turno: 'Vespertino', inscritos: 28 },
-      ])
-      setDataLoading(false)
-    }, 500)
+    const token = localStorage.getItem('access_token') || ''
+    fetch(`${API}/profesor/grupos?periodo=${periodo}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setGrupos(data)
+        else setGrupos([])
+      })
+      .catch(() => setGrupos([]))
+      .finally(() => setDataLoading(false))
   }, [periodo])
 
   return (
@@ -276,7 +288,7 @@ function Grupos() {
           </select>
         </div>
       </div>
-      
+
       {dataLoading ? (
         <div style={styles.loadingContainer}>
           <div style={styles.spinner}></div>
@@ -326,12 +338,12 @@ function Horario() {
     if (!periodo) return
     setDataLoading(true)
     setTimeout(() => {
-        setRows([
-          { materia_nombre: 'Programación Avanzada', dia_semana: 1, hora_ini: '10:00:00', hora_fin: '12:00:00' },
-          { materia_nombre: 'Programación Avanzada', dia_semana: 3, hora_ini: '10:00:00', hora_fin: '12:00:00' },
-          { materia_nombre: 'Bases de Datos', dia_semana: 2, hora_ini: '16:00:00', hora_fin: '18:00:00' },
-        ])
-        setDataLoading(false)
+      setRows([
+        { materia_nombre: 'Programación Avanzada', dia_semana: 1, hora_ini: '10:00:00', hora_fin: '12:00:00' },
+        { materia_nombre: 'Programación Avanzada', dia_semana: 3, hora_ini: '10:00:00', hora_fin: '12:00:00' },
+        { materia_nombre: 'Bases de Datos', dia_semana: 2, hora_ini: '16:00:00', hora_fin: '18:00:00' },
+      ])
+      setDataLoading(false)
     }, 500)
   }, [periodo])
 
@@ -381,7 +393,7 @@ function Horario() {
                   <td style={styles.td}>{r.materia}</td>
                   {[1, 2, 3, 4, 5].map(d => (
                     <td key={d} style={styles.td}>
-                      <span style={r.slots[d] ? styles.horarioSlot : {color: '#6a7aae'}}>
+                      <span style={r.slots[d] ? styles.horarioSlot : { color: '#6a7aae' }}>
                         {r.slots[d] || '—'}
                       </span>
                     </td>

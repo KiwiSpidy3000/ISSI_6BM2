@@ -1,0 +1,97 @@
+### READ Endpoints
+
+# Get table counts (Admin only)
+GET http://localhost:3000/api/admin/db-counts
+Authorization: Bearer {{admin_token}}
+
+# Get IIA curriculum (Admin only)
+GET http://localhost:3000/api/admin/materias/iia
+Authorization: Bearer {{admin_token}}
+
+# Get Professors (Admin only)
+GET http://localhost:3000/api/admin/profesores
+Authorization: Bearer {{admin_token}}
+
+# Get Group Offer (Admin only)
+GET http://localhost:3000/api/admin/oferta?period=2025-2
+Authorization: Bearer {{admin_token}}
+
+# Get Schedules by Group (Admin only)
+GET http://localhost:3000/api/admin/horarios/31
+Authorization: Bearer {{admin_token}}
+
+# Get Student Kardex (Admin or Student)
+GET http://localhost:3000/api/alumno/5/kardex-basic
+Authorization: Bearer {{token}}
+
+# Get Student Grades (Admin or Student)
+GET http://localhost:3000/api/alumno/5/calificaciones
+Authorization: Bearer {{token}}
+
+### WRITE Endpoints
+
+# Create Professor (Admin only)
+POST http://localhost:3000/api/admin/profesores
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "email": "new.prof@example.com",
+  "password": "securepassword",
+  "nombre": "Nuevo",
+  "apellido": "Profesor",
+  "num_empleado": "EMP999",
+  "departamento": "Ciencias Básicas"
+}
+
+# Create Student (Admin only)
+POST http://localhost:3000/api/admin/alumnos
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "email": "new.student@example.com",
+  "password": "securepassword",
+  "nombre": "Nuevo",
+  "apellido": "Alumno",
+  "boleta": "2025999999",
+  "id_carrera": 1,
+  "semestre": 1
+}
+
+# Create Group (Admin only)
+POST http://localhost:3000/api/admin/grupos
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "id_materia": 1,
+  "id_profesor": 1,
+  "periodo": "2026-1",
+  "cupo_max": 30,
+  "estado": "ABIERTO",
+  "turno": "M"
+}
+
+# Create Schedule (Admin only)
+POST http://localhost:3000/api/admin/horarios
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "id_grupo": 1,
+  "dia_semana": 1,
+  "hora_ini": "07:00:00",
+  "hora_fin": "08:30:00",
+  "aula": "B-202"
+}
+
+# Enroll Student (Admin or Student)
+POST http://localhost:3000/api/alumno/inscripciones
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_alumno": 5,
+  "id_grupo": 10
+}

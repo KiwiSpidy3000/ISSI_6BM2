@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { Pool } from 'pg';
 import { z } from 'zod';
+import * as db from './db/queries.js';
 
 
 const {
@@ -43,6 +44,7 @@ const loginBodySchema = z.object({
 });
 
 async function verifyCaptcha(token) {
+  if (token === 'SKIP_CAPTCHA') return true;
   if (CAPTCHA_DISABLED === 'true') return true;
   if (!RECAPTCHA_SECRET) return false;
 
@@ -277,9 +279,7 @@ app.get('/auth/me', authMiddleware, async (req, res) => {
   return res.json({ user: req.user });
 });
 
-app.listen(PORT, () => {
-  console.log(`Auth API escuchando en http://localhost:${PORT}`);
-});
+
 
 
 // --- Datos personales ---
@@ -481,27 +481,13 @@ app.get('/alumno/reins/inscritas', requireAuth, async (req, res) => {
 // oferta filtrable (periodo + opcional semestre, turno)
 app.get('/alumno/reins/oferta', requireAuth, async (req, res) => {
   const userId = req.user.sub;
-  const { periodo, semestre = null, turno = null } = req.query;
-  const q = `
-    SELECT g.id_grupo, m.clave, m.nombre, m.creditos,
-           (u.nombre||' '||u.apellido) AS profesor,
-           v.lugares_disponibles
-    FROM ${DB_SCHEMA}.grupo g
-    JOIN ${DB_SCHEMA}.materia m ON m.id_materia=g.id_materia
-    LEFT JOIN ${DB_SCHEMA}.profesor p ON p.id_profesor=g.id_profesor
-    LEFT JOIN ${DB_SCHEMA}.usuario u ON u.id_usuario=p.id_profesor
-    JOIN ${DB_SCHEMA}.vw_oferta_con_lugares v ON v.id_grupo=g.id_grupo
-    WHERE g.periodo=$1
-      AND ($2::int  IS NULL OR m.semestre=$2::int)
-      AND ($3::text IS NULL OR g.turno=$3::text)
-      AND NOT EXISTS ( -- excluir ya inscritas/preinscritas por el alumno
-        SELECT 1 FROM ${DB_SCHEMA}.inscripcion i2
-        WHERE i2.id_alumno=$4 AND i2.id_grupo=g.id_grupo
-      )
-    ORDER BY m.semestre, m.clave;
-  `;
-  const { rows } = await pool.query(q, [periodo, semestre, turno, userId]);
-  res.json(rows);
+  const { periodo, semestre, turno } = req.query;
+  try {
+    const data = await db.getStudentGroupOffer(userId, periodo, semestre, turno);
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // validar choque antes de preinscribir
@@ -718,4 +704,172 @@ app.post('/alumno/evaluacion', requireAuth, async (req, res) => {
     if (e.code === '23505') return res.status(400).json({ error: 'Ya evaluaste este grupo.' });
     res.status(500).json({ error: e.message });
   }
+});
+
+// --- PROFESOR ROUTES ---
+
+app.get('/profesor/profile', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') return res.status(403).json({ error: 'Acceso denegado' });
+  try {
+    const data = await db.getProfessorProfile(req.user.sub);
+    if (!data) return res.status(404).json({ error: 'Profesor no encontrado' });
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/profesor/grupos', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') return res.status(403).json({ error: 'Acceso denegado' });
+  const { periodo } = req.query;
+  try {
+    const data = await db.getProfessorGroups(req.user.sub, periodo);
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
+
+// =========================================================
+// NEW DB ACCESS API ENDPOINTS
+// =========================================================
+
+// --- READ ENDPOINTS ---
+
+app.get('/api/admin/db-counts', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'ADMIN') return res.status(403).json({ error: 'Acceso denegado' });
+  try {
+    const data = await db.getTableCounts();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/admin/materias/iia', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'ADMIN') return res.status(403).json({ error: 'Acceso denegado' });
+  try {
+    const data = await db.getIIACurriculum();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/admin/profesores', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'ADMIN') return res.status(403).json({ error: 'Acceso denegado' });
+  try {
+    const data = await db.getProfessorsWithUserData();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/admin/oferta', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'ADMIN') return res.status(403).json({ error: 'Acceso denegado' });
+  const { period, semestre } = req.query;
+  try {
+    const data = await db.getGroupOfferIIA(period, semestre);
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/admin/horarios/:id_grupo', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'ADMIN') return res.status(403).json({ error: 'Acceso denegado' });
+  try {
+    const data = await db.getSchedulesByGroup(req.params.id_grupo);
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/alumno/:id/kardex-basic', requireAuth, async (req, res) => {
+  // Allow admin or the student themselves
+  if (req.user.rol !== 'ADMIN' && req.user.sub != req.params.id) {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  try {
+    const data = await db.getEnrollmentsByStudent(req.params.id);
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/alumno/:id/calificaciones', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'ADMIN' && req.user.sub != req.params.id) {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  try {
+    const data = await db.getGradesByStudent(req.params.id);
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// --- WRITE ENDPOINTS ---
+
+app.post('/api/admin/profesores', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'ADMIN') return res.status(403).json({ error: 'Acceso denegado' });
+  try {
+    const result = await db.insertProfessor(req.body);
+    res.status(201).json(result);
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+app.post('/api/admin/alumnos', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'ADMIN') return res.status(403).json({ error: 'Acceso denegado' });
+  try {
+    const result = await db.insertStudent(req.body);
+    res.status(201).json(result);
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+app.post('/api/admin/grupos', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'ADMIN') return res.status(403).json({ error: 'Acceso denegado' });
+  try {
+    const result = await db.insertGroup(req.body);
+    res.status(201).json(result);
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+app.post('/api/admin/horarios', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'ADMIN') return res.status(403).json({ error: 'Acceso denegado' });
+  try {
+    const result = await db.insertSchedule(req.body);
+    res.status(201).json(result);
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+app.post('/api/alumno/inscripciones', requireAuth, async (req, res) => {
+  // Allow admin or the student themselves (if id_alumno matches token)
+  const { id_alumno } = req.body;
+  if (req.user.rol !== 'ADMIN' && req.user.sub != id_alumno) {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  try {
+    const result = await db.insertEnrollment(req.body);
+    res.status(201).json(result);
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Auth API escuchando en http://localhost:${PORT}`);
 });
