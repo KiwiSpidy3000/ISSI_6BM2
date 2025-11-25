@@ -433,115 +433,160 @@ function Reinscripcion() {
   const [resumen, setResumen] = useState({ total_creditos: 0, creditos_usados: 0 })
   const [msg, setMsg] = useState('')
 
+  // Cargar lista de periodos
   useEffect(() => {
     fetch(`${API}/alumno/periodos`, { headers: { Authorization: `Bearer ${t()}` } })
-      .then(r => r.json()).then(list => {
+      .then(r => r.json())
+      .then(list => {
         setPeriodos(list || [])
         if (list?.length) setPeriodo(list[list.length - 1])
-      }).catch(() => setPeriodos([]))
+      })
+      .catch(() => setPeriodos([]))
   }, [])
 
-useEffect(() => {
-  if (!periodo) return
+  // Cargar resumen, inscritas y oferta cada que cambian filtros
+  useEffect(() => {
+    if (!periodo) return
+    const hdr = { headers: { Authorization: `Bearer ${t()}` } }
+    setMsg('')
 
-  const hdr = { headers: { Authorization: `Bearer ${t()}` } }
+    // Resumen
+    fetch(`${API}/alumno/reins/resumen?periodo=${periodo}`, hdr)
+      .then(async r => {
+        if (!r.ok) throw new Error()
+        return r.json()
+      })
+      .then(data => setResumen(data || { total_creditos: 0, creditos_usados: 0 }))
+      .catch(() => setResumen({ total_creditos: 0, creditos_usados: 0 }))
 
-  // Resumen
-  fetch(`${API}/alumno/reins/resumen?periodo=${periodo}`, hdr)
-    .then(r => r.ok ? r.json() : Promise.reject())
-    .then(data => setResumen(data || { total_creditos: 0, creditos_usados: 0 }))
-    .catch(() => setResumen({ total_creditos: 0, creditos_usados: 0 }))
+    // Materias inscritas
+    fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr)
+      .then(async r => {
+        if (!r.ok) throw new Error()
+        return r.json()
+      })
+      .then(data => setInscritas(Array.isArray(data) ? data : []))
+      .catch(() => setInscritas([]))
 
-  // Inscritas
-  fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr)
-    .then(r => r.ok ? r.json() : Promise.reject())
-    .then(data => Array.isArray(data) ? setInscritas(data) : setInscritas([]))
-    .catch(() => setInscritas([]))
-
-  // Oferta
-  const qs = new URLSearchParams({
-    periodo,
-    ...(semestre ? { semestre } : {}),
-    ...(turno ? { turno } : {})
-  })
-
-  fetch(`${API}/alumno/reins/oferta?${qs.toString()}`, hdr)
-    .then(r => r.ok ? r.json() : Promise.reject())
-    .then(data => {
-      if (!Array.isArray(data)) {
-        console.error('Respuesta de oferta no es arreglo:', data)
-        setOferta([])
-      } else {
-        setOferta(data)
-      }
+    // Oferta
+    const qs = new URLSearchParams({
+      periodo,
+      ...(semestre ? { semestre } : {}),
+      ...(turno ? { turno } : {})
     })
-    .catch(err => {
-      console.error('Error cargando oferta:', err)
-      setOferta([])
-    })
-}, [periodo, semestre, turno])
+
+    fetch(`${API}/alumno/reins/oferta?${qs.toString()}`, hdr)
+      .then(async r => {
+        if (!r.ok) throw new Error()
+        const data = await r.json()
+        setOferta(Array.isArray(data) ? data : [])
+      })
+      .catch(() => setOferta([]))
+  }, [periodo, semestre, turno])
 
   function refresh() {
     if (!periodo) return
     const hdr = { headers: { Authorization: `Bearer ${t()}` } }
+    const qs = new URLSearchParams({
+      periodo,
+      ...(semestre ? { semestre } : {}),
+      ...(turno ? { turno } : {})
+    })
+
     fetch(`${API}/alumno/reins/resumen?periodo=${periodo}`, hdr)
       .then(r => r.json())
-      .then(setResumen)
+      .then(data => setResumen(data || { total_creditos: 0, creditos_usados: 0 }))
       .catch(() => setResumen({ total_creditos: 0, creditos_usados: 0 }))
+
     fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr)
       .then(r => r.json())
-      .then(setInscritas)
+      .then(data => setInscritas(Array.isArray(data) ? data : []))
       .catch(() => setInscritas([]))
-    const qs = new URLSearchParams({ periodo, ...(semestre ? { semestre } : {}), ...(turno ? { turno } : {}) })
+
     fetch(`${API}/alumno/reins/oferta?${qs.toString()}`, hdr)
       .then(r => r.json())
-      .then(setOferta)
+      .then(data => setOferta(Array.isArray(data) ? data : []))
       .catch(() => setOferta([]))
   }
 
   async function addGrupo(id_grupo) {
     setMsg('')
-    const r = await fetch(`${API}/alumno/reins/conflictos?id_grupo=${id_grupo}`, { headers: { Authorization: `Bearer ${t()}` } });
-    const choques = await r.json()
-    if (choques.length) { setMsg('Choque de horario'); return }
-    await fetch(`${API}/alumno/reins/preinscribir`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t()}` },
-      body: JSON.stringify({ id_grupo })
-    })
-    refresh()
+
+    // Regla 1 también en front: máximo 6 materias
+    if (inscritas.length >= 6) {
+      setMsg('No puedes inscribir más de 6 materias en este periodo (máximo 6).')
+      return
+    }
+
+    try {
+      const hdr = { Authorization: `Bearer ${t()}` }
+
+      // Choque de horario
+      const rChoque = await fetch(`${API}/alumno/reins/conflictos?id_grupo=${id_grupo}`, { headers: hdr })
+      const choques = await rChoque.json()
+      if (Array.isArray(choques) && choques.length) {
+        setMsg('Choque de horario con otra materia.')
+        return
+      }
+
+      const res = await fetch(`${API}/alumno/reins/preinscribir`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t()}` },
+        body: JSON.stringify({ id_grupo })
+      })
+
+      const data = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        setMsg(data.error || 'No se pudo agregar el grupo.')
+        return
+      }
+
+      setMsg('Grupo agregado al carrito de reinscripción.')
+      refresh()
+    } catch {
+      setMsg('Error de red al agregar grupo.')
+    }
   }
 
   async function delGrupo(id_grupo) {
+    setMsg('')
     await fetch(`${API}/alumno/reins/preinscribir/${id_grupo}`, {
-      method: 'DELETE', headers: { Authorization: `Bearer ${t()}` }
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${t()}` }
     })
     refresh()
   }
 
   async function confirmar() {
-    await fetch(`${API}/alumno/reins/confirmar`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t()}` },
-      body: JSON.stringify({ periodo })
-    })
-    refresh()
+    setMsg('')
+    try {
+      const res = await fetch(`${API}/alumno/reins/confirmar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t()}` },
+        body: JSON.stringify({ periodo })
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setMsg(data.error || 'Error al confirmar la reinscripción.')
+        return
+      }
+      setMsg('Reinscripción confirmada correctamente.')
+      refresh()
+    } catch {
+      setMsg('Error de red al confirmar la reinscripción.')
+    }
   }
-  const totalCreditos =
-    resumen && resumen.total_creditos != null
-      ? Number(resumen.total_creditos)
-      : 0;
 
-  const usadosCreditos =
-    resumen && resumen.creditos_usados != null
-      ? Number(resumen.creditos_usados)
-      : 0;
+  const materiasPeriodo = inscritas.length
 
   return (
     <div>
       <h2 style={styles.h2}>Reinscripción</h2>
       <div style={styles.infoBar}>
-        <div><b>Créditos totales:</b> {totalCreditos.toFixed(2)}</div>
-        <div><b>Créditos utilizados:</b> {usadosCreditos.toFixed(2)}</div>
-
+        <div><b>Créditos totales:</b> {resumen.total_creditos?.toFixed?.(2) ?? resumen.total_creditos}</div>
+        <div><b>Créditos utilizados:</b> {resumen.creditos_usados?.toFixed?.(2) ?? resumen.creditos_usados}</div>
+        <div><b>Materias inscritas:</b> {materiasPeriodo} / 6</div>
         <div>
           <b>Periodo:</b>{' '}
           <select value={periodo} onChange={e => setPeriodo(e.target.value)} style={styles.select}>
@@ -556,12 +601,16 @@ useEffect(() => {
           <b>Turno:</b>{' '}
           <select value={turno} onChange={e => setTurno(e.target.value)} style={styles.select}>
             <option value="">Todos</option>
-            <option value="M">M</option><option value="V">V</option><option value="N">N</option>
+            <option value="M">M</option>
+            <option value="V">V</option>
+            <option value="N">N</option>
           </select>
         </div>
         <button style={styles.button} onClick={confirmar}>Confirmar</button>
       </div>
       {msg && <p style={styles.error}>{msg}</p>}
+
+      {/* Materias inscritas */}
       <h3 style={styles.h3}>Materias Inscritas</h3>
       <div style={styles.tableWrap}>
         <table style={styles.table}>
@@ -589,6 +638,8 @@ useEffect(() => {
           </tbody>
         </table>
       </div>
+
+      {/* Oferta */}
       <h3 style={styles.h3}>Oferta</h3>
       <div style={styles.tableWrap}>
         <table style={styles.table}>
@@ -603,33 +654,39 @@ useEffect(() => {
             </tr>
           </thead>
           <tbody>
-  {Array.isArray(oferta) && oferta.length > 0 ? (
-    oferta.map((r, i) => (
-      <tr key={i} style={styles.tableRow}>
-        <td style={styles.td}>{r.id_grupo}</td>
-        <td style={styles.td}>{`${r.clave} ${r.nombre}`}</td>
-        <td style={styles.td}>{r.profesor || '—'}</td>
-        <td style={styles.td}>{r.creditos}</td>
-        <td style={styles.td}>{r.lugares_disponibles}</td>
-        <td style={styles.td}>
-          <button onClick={() => addGrupo(r.id_grupo)} style={styles.iconBtn}>＋</button>
-        </td>
-      </tr>
-    ))
-  ) : (
-    <tr>
-      <td colSpan={6} style={{ ...styles.td, textAlign: 'center', padding: '24px' }}>
-        No hay grupos disponibles con los filtros actuales.
-      </td>
-    </tr>
-  )}
-</tbody>
-
+            {oferta.map((r, i) => (
+              <tr key={i} style={styles.tableRow}>
+                <td style={styles.td}>{r.id_grupo}</td>
+                <td style={styles.td}>{`${r.clave} ${r.nombre}`}</td>
+                <td style={styles.td}>{r.profesor || '—'}</td>
+                <td style={styles.td}>{r.creditos}</td>
+                <td style={styles.td}>{r.lugares_disponibles}</td>
+                <td style={styles.td}>
+                  <button
+                    onClick={() => addGrupo(r.id_grupo)}
+                    style={styles.iconBtn}
+                    disabled={materiasPeriodo >= 6}
+                    title={materiasPeriodo >= 6 ? 'Límite de 6 materias alcanzado' : 'Agregar'}
+                  >
+                    ＋
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {oferta.length === 0 && (
+              <tr>
+                <td colSpan={6} style={{ ...styles.td, textAlign: 'center', padding: '24px', color: '#6a7aae' }}>
+                  No hay grupos disponibles con los filtros aplicados.
+                </td>
+              </tr>
+            )}
+          </tbody>
         </table>
       </div>
     </div>
   )
 }
+
 
 function Bajas() {
   const t = () => localStorage.getItem('access_token') || '';

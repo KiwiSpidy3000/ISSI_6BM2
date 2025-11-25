@@ -139,71 +139,60 @@ export async function getStudentGroupOffer(id_alumno, periodo, semestre, turno) 
   const params = [id_alumno];
   let idx = 2;
 
-  let extraWhere = '';
+  let where = `
+    WHERE a.id_alumno = $1
+      AND a.id_carrera = m.id_carrera
+  `;
 
   if (periodo) {
-    extraWhere += ` AND g.periodo = $${idx++}`;
+    where += ` AND g.periodo = $${idx}`;
     params.push(periodo);
+    idx++;
   }
 
   if (semestre) {
-    extraWhere += ` AND m.semestre = $${idx++}`;
+    where += ` AND m.semestre = $${idx}`;
     params.push(parseInt(semestre, 10));
+    idx++;
   }
 
   if (turno) {
-    extraWhere += ` AND g.turno = $${idx++}`;
+    where += ` AND g.turno = $${idx}`;
     params.push(turno);
+    idx++;
   }
 
-  const sql = `
+  const query = `
     SELECT
       g.id_grupo,
-      g.grupo,
       g.periodo,
       g.turno,
       m.semestre,
-      m.clave,
-      m.nombre,
-      m.creditos,
-      (u.nombre || ' ' || u.apellido)         AS profesor,
+      m.clave      AS clave,
+      m.nombre     AS nombre,
+      m.creditos   AS creditos,
+      (u.nombre || ' ' || u.apellido) AS profesor,
       g.cupo_max,
       g.estado,
-      GREATEST(g.cupo_max - COUNT(i2.*), 0)   AS lugares_disponibles
-    FROM ${DB_SCHEMA}.alumno a
-    JOIN ${DB_SCHEMA}.carrera c
-      ON c.id_carrera = a.id_carrera
-    JOIN ${DB_SCHEMA}.materia m
-      ON m.id_carrera = c.id_carrera
-    JOIN ${DB_SCHEMA}.grupo g
-      ON g.id_materia = m.id_materia
-    LEFT JOIN ${DB_SCHEMA}.profesor p
-      ON p.id_profesor = g.id_profesor
-    LEFT JOIN ${DB_SCHEMA}.usuario u
-      ON u.id_usuario = p.id_profesor
-    LEFT JOIN ${DB_SCHEMA}.inscripcion i2
-      ON i2.id_grupo = g.id_grupo
-     AND i2.estado IN ('INSCRITO','PREINSCRITO')
-    WHERE a.id_alumno = $1
-      AND g.estado = 'ABIERTO'
-      ${extraWhere}
-      AND NOT EXISTS (
-        SELECT 1
+      g.cupo_max - COALESCE((
+        SELECT COUNT(*)
         FROM ${DB_SCHEMA}.inscripcion i
-        WHERE i.id_alumno = a.id_alumno
-          AND i.id_grupo = g.id_grupo
-      )
-    GROUP BY
-      g.id_grupo, g.grupo, g.periodo, g.turno,
-      m.semestre, m.clave, m.nombre, m.creditos,
-      u.nombre, u.apellido,
-      g.cupo_max, g.estado
-    ORDER BY m.semestre, m.clave, g.grupo;
+        WHERE i.id_grupo = g.id_grupo
+          AND i.estado IN ('INSCRITO','PREINSCRITO')
+      ),0) AS lugares_disponibles
+    FROM ${DB_SCHEMA}.grupo g
+    JOIN ${DB_SCHEMA}.materia  m ON m.id_materia = g.id_materia
+    JOIN ${DB_SCHEMA}.alumno   a ON a.id_carrera = m.id_carrera
+    LEFT JOIN ${DB_SCHEMA}.profesor p ON p.id_profesor = g.id_profesor
+    LEFT JOIN ${DB_SCHEMA}.usuario  u ON u.id_usuario = p.id_profesor
+    ${where}
+    ORDER BY g.periodo, m.semestre, m.clave;
   `;
 
-  const { rows } = await pool.query(sql, params);
+  const { rows } = await pool.query(query, params);
   return rows;
 }
+
 
 // =========================================================
 // WRITE OPERATIONS (INSERTIONS)
@@ -294,15 +283,16 @@ export async function insertSchedule({ id_grupo, dia_semana, hora_ini, hora_fin,
   return rows[0];
 }
 
-export async function insertEnrollment({ id_alumno, id_grupo }) {
+export async function insertEnrollment({ id_alumno, id_grupo, estado = 'INSCRITO' }) {
   const query = `
     INSERT INTO ${DB_SCHEMA}.inscripcion (id_alumno, id_grupo, estado)
-    VALUES ($1, $2, 'INSCRITO')
+    VALUES ($1, $2, $3)
     RETURNING id_inscripcion;
   `;
-  const { rows } = await pool.query(query, [id_alumno, id_grupo]);
+  const { rows } = await pool.query(query, [id_alumno, id_grupo, estado]);
   return rows[0];
 }
+
 
 export async function getProfessorProfile(id_profesor) {
   const sql = `

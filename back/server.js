@@ -487,9 +487,11 @@ app.get('/alumno/reins/oferta', requireAuth, async (req, res) => {
     const data = await db.getStudentGroupOffer(userId, periodo, semestre, turno);
     res.json(data);
   } catch (e) {
+    console.error('Oferta error:', e);
     res.status(500).json({ error: e.message });
   }
 });
+
 
 // validar choque antes de preinscribir
 app.get('/alumno/reins/conflictos', requireAuth, async (req, res) => {
@@ -501,40 +503,103 @@ app.get('/alumno/reins/conflictos', requireAuth, async (req, res) => {
 
 // preinscribir (si no hay choque y cumple reglas SAES)
 app.post('/alumno/reins/preinscribir', requireAuth, async (req, res) => {
-  const userId = req.user.sub; const { id_grupo } = req.body;
+  const userId = req.user.sub;
+  const { id_grupo } = req.body;
 
   try {
-    // 1. Validar ventana de tiempo
+    // 1. Ventana de inscripción
     await checkInscriptionWindow();
 
-    // 2. Obtener id_materia del grupo
-    const gRes = await pool.query(`SELECT id_materia FROM ${DB_SCHEMA}.grupo WHERE id_grupo = $1`, [id_grupo]);
-    if (!gRes.rows.length) return res.status(404).json({ error: 'Grupo no encontrado' });
-    const id_materia = gRes.rows[0].id_materia;
+    // 2. Datos del grupo y la materia
+    const gRes = await pool.query(`
+      SELECT g.id_materia,
+             g.periodo,
+             m.semestre AS materia_semestre
+      FROM ${DB_SCHEMA}.grupo g
+      JOIN ${DB_SCHEMA}.materia m ON m.id_materia = g.id_materia
+      WHERE g.id_grupo = $1
+    `, [id_grupo]);
 
-    // 3. Validar prerrequisitos
+    if (!gRes.rows.length) {
+      return res.status(404).json({ error: 'Grupo no encontrado' });
+    }
+
+    const { id_materia, periodo: grupoPeriodo, materia_semestre } = gRes.rows[0];
+
+    // 3. Semestre actual del alumno
+    const aRes = await pool.query(
+      `SELECT semestre FROM ${DB_SCHEMA}.alumno WHERE id_alumno = $1`,
+      [userId]
+    );
+    const alumnoSemestre = aRes.rows[0]?.semestre ?? null;
+
+    // 🔹 REGLA 1: máximo 6 materias en el mismo periodo
+    const cRes = await pool.query(`
+      SELECT COUNT(*) AS n
+      FROM ${DB_SCHEMA}.inscripcion i
+      JOIN ${DB_SCHEMA}.grupo g ON g.id_grupo = i.id_grupo
+      WHERE i.id_alumno = $1
+        AND g.periodo  = $2
+        AND i.estado IN ('INSCRITO','PREINSCRITO')
+    `, [userId, grupoPeriodo]);
+
+    const materiasEnPeriodo = parseInt(cRes.rows[0].n, 10);
+    if (materiasEnPeriodo >= 6) {
+      throw new Error('No puedes inscribir más de 6 materias en este periodo.');
+    }
+
+    // 🔹 REGLA 2: no meter materia ya cursada (aparezca en el kardex)
+    const kRes = await pool.query(`
+      SELECT 1
+      FROM ${DB_SCHEMA}.vw_kardex k
+      JOIN ${DB_SCHEMA}.materia m ON m.clave = k.materia_clave
+      WHERE k.id_alumno = $1
+        AND m.id_materia = $2
+      LIMIT 1;
+    `, [userId, id_materia]);
+
+    if (kRes.rows.length) {
+      throw new Error('Ya cursaste esta materia en un periodo anterior.');
+    }
+
+    // 🔹 REGLA 3: no más de 3 semestres de diferencia con tu semestre actual
+    if (alumnoSemestre != null && materia_semestre != null) {
+      const diff = Math.abs(Number(alumnoSemestre) - Number(materia_semestre));
+      if (diff > 3) {
+        throw new Error('No puedes inscribir materias con más de 3 semestres de diferencia respecto a tu semestre actual.');
+      }
+    }
+
+    // 4. Prerrequisitos
     await checkPrerequisites(userId, id_materia);
 
-    // 4. Validar carga máxima
+    // 5. Límite de créditos
     await checkLoadLimit(userId, id_materia);
 
-    // 5. Validar choque (existente)
-    const chk = await pool.query(`SELECT * FROM ${DB_SCHEMA}.sp_validar_choque_horario($1,$2)`, [userId, id_grupo]);
-    if (chk.rows.length) return res.status(409).json({ error: 'Choque de horario', detalles: chk.rows });
-
-    // 6. Insertar
-    await pool.query(`
-      INSERT INTO ${DB_SCHEMA}.inscripcion (id_alumno,id_grupo,estado)
-      VALUES ($1,$2,'PREINSCRITO')
-      ON CONFLICT (id_alumno,id_grupo) DO UPDATE SET estado='PREINSCRITO'`,
+    // 6. Choque de horario
+    const chk = await pool.query(
+      `SELECT * FROM ${DB_SCHEMA}.sp_validar_choque_horario($1,$2)`,
       [userId, id_grupo]
     );
+    if (chk.rows.length) {
+      return res.status(409).json({ error: 'Choque de horario', detalles: chk.rows });
+    }
+
+    // 7. Insertar / actualizar preinscripción
+    await pool.query(`
+      INSERT INTO ${DB_SCHEMA}.inscripcion (id_alumno, id_grupo, estado)
+      VALUES ($1, $2, 'PREINSCRITO')
+      ON CONFLICT (id_alumno, id_grupo)
+      DO UPDATE SET estado = 'PREINSCRITO'
+    `, [userId, id_grupo]);
+
     res.json({ ok: true });
   } catch (e) {
     console.error('Enrollment error:', e);
     return res.status(400).json({ error: e.message });
   }
 });
+
 
 // Baja de materia (Drop)
 app.delete('/alumno/inscripcion/baja/:id_grupo', requireAuth, async (req, res) => {
