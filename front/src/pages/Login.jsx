@@ -15,10 +15,10 @@ const ROUTES = {
   admin: '/admin'       // En tu App.jsx es "/admin"
 };
 
-export default function Login(){
+export default function Login() {
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
-  
+
   // Nuevo estado para el rol (por defecto alumno)
   const [role, setRole] = useState('alumno')
 
@@ -47,38 +47,43 @@ export default function Login(){
     return () => document.head.removeChild(style)
   }, [])
 
-  async function handleSubmit(e){
+  async function handleSubmit(e) {
     e.preventDefault()
     setError(''); setOkMsg('')
-    
-    if(!captcha){ setError('Marca el captcha.'); return }
-    if(!login || !password){ setError('Completa usuario y contraseña.'); return }
+
+    if (!captcha) { setError('Marca el captcha.'); return }
+    if (!login || !password) { setError('Completa usuario y contraseña.'); return }
 
     setLoading(true)
-    try{
-      const res = await fetch(`${API}/auth/login`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        // Nota: Enviamos el rol, aunque el server actual valida por usuario/pass
-        body: JSON.stringify({ login, password, role, captchaToken:'dummy' })
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Nota: Enviamos el rol para validación en backend
+        body: JSON.stringify({
+          login,
+          password,
+          role: role.toUpperCase(), // 'ALUMNO', 'PROFESOR', 'ADMIN'
+          captchaToken: 'SKIP_CAPTCHA'
+        })
       })
       const data = await res.json()
-      if(!res.ok){ throw new Error(data?.error || 'Error de autenticación') }
-      
+      if (!res.ok) { throw new Error(data?.error || 'Error de autenticación') }
+
       localStorage.setItem('access_token', data.access_token)
       localStorage.setItem('user_role', role) // Guardamos el rol para uso futuro
 
       setOkMsg(`¡Bienvenido! Ingresando como ${role}...`)
-      
+
       // 🟢 REDIRECCIÓN BASADA EN EL ROL SELECCIONADO
-      setTimeout(()=> {
+      setTimeout(() => {
         const path = ROUTES[role] || '/';
-        window.location.href = path; 
+        window.location.href = path;
       }, 700)
 
-    }catch(err){
+    } catch (err) {
       setError(err.message)
-    }finally{
+    } finally {
       setLoading(false)
     }
   }
@@ -87,34 +92,34 @@ export default function Login(){
     <div style={styles.container}>
       <div style={styles.floatingShapes}>
         {[...Array(20)].map((_, i) => (
-          <svg key={i} style={{...styles.floatingSvg, ...styles[`svg${i % 10}`]}} xmlns="http://www.w3.org/2000/svg">
-            <path d="m2.46177,126.39581c10.12618,-0.06577 20.25237,-0.13151 30.37857,-0.19726c0.06666,-10.3997 0.13333,-20.7994 0.19999,-31.19908c10.07782,0 20.15564,0 30.23346,0c0,-10.46351 0,-20.927 0,-31.39051c10.33589,0 20.67178,0 31.00767,0c0,-10.20827 0,-20.41656 0,-30.62485c10.20829,0 20.41656,0 30.62485,0c0,-10.20829 0,-20.41658 0,-30.62487c15.18483,0 30.36965,0 45.55448,0c0,5.10414 0,10.20829 0,15.31243c-10.08071,0 -20.16136,0 -30.24206,0c0,10.33589 0,20.67178 0,31.00769c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33589 0,20.67178 0,31.00767c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33591 0,20.6718 0,31.00767c-10.33589,0 -20.67178,0 -31.00767,0c0,10.46351 0,20.927 0,31.39049c-15.31243,0 -30.62485,0 -45.93728,0c0.68263,-5.07223 -1.16374,-10.79174 0.43769,-15.68938l0,0z" strokeWidth="7" fill="none"/>
+          <svg key={i} style={{ ...styles.floatingSvg, ...styles[`svg${i % 10}`] }} xmlns="http://www.w3.org/2000/svg">
+            <path d="m2.46177,126.39581c10.12618,-0.06577 20.25237,-0.13151 30.37857,-0.19726c0.06666,-10.3997 0.13333,-20.7994 0.19999,-31.19908c10.07782,0 20.15564,0 30.23346,0c0,-10.46351 0,-20.927 0,-31.39051c10.33589,0 20.67178,0 31.00767,0c0,-10.20827 0,-20.41656 0,-30.62485c10.20829,0 20.41656,0 30.62485,0c0,-10.20829 0,-20.41658 0,-30.62487c15.18483,0 30.36965,0 45.55448,0c0,5.10414 0,10.20829 0,15.31243c-10.08071,0 -20.16136,0 -30.24206,0c0,10.33589 0,20.67178 0,31.00769c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33589 0,20.67178 0,31.00767c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33591 0,20.6718 0,31.00767c-10.33589,0 -20.67178,0 -31.00767,0c0,10.46351 0,20.927 0,31.39049c-15.31243,0 -30.62485,0 -45.93728,0c0.68263,-5.07223 -1.16374,-10.79174 0.43769,-15.68938l0,0z" strokeWidth="7" fill="none" />
           </svg>
         ))}
       </div>
-      
+
       {/* BOTONES DE ROL AGREGADOS */}
       <div style={styles.roleRow}>
-        <button 
-            type="button" 
-            onClick={()=>setRole('alumno')} 
-            style={role === 'alumno' ? styles.roleBtnActive : styles.roleBtn}
+        <button
+          type="button"
+          onClick={() => setRole('alumno')}
+          style={role === 'alumno' ? styles.roleBtnActive : styles.roleBtn}
         >
-            Soy Alumno
+          Soy Alumno
         </button>
-        <button 
-            type="button" 
-            onClick={()=>setRole('profesor')} 
-            style={role === 'profesor' ? styles.roleBtnActive : styles.roleBtn}
+        <button
+          type="button"
+          onClick={() => setRole('profesor')}
+          style={role === 'profesor' ? styles.roleBtnActive : styles.roleBtn}
         >
-            Soy Profesor
+          Soy Profesor
         </button>
-        <button 
-            type="button" 
-            onClick={()=>setRole('admin')}    
-            style={role === 'admin' ? styles.roleBtnSmallActive : styles.roleBtnSmall}
+        <button
+          type="button"
+          onClick={() => setRole('admin')}
+          style={role === 'admin' ? styles.roleBtnSmallActive : styles.roleBtnSmall}
         >
-            admin
+          admin
         </button>
       </div>
 
@@ -151,7 +156,7 @@ export default function Login(){
                 <input
                   style={styles.input}
                   value={login}
-                  onChange={e=>setLogin(e.target.value)}
+                  onChange={e => setLogin(e.target.value)}
                   placeholder={role === 'admin' ? "Usuario Admin" : "Boleta / Usuario"}
                 />
               </div>
@@ -161,7 +166,7 @@ export default function Login(){
                   style={styles.input}
                   type="password"
                   value={password}
-                  onChange={e=>setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   placeholder="Contraseña"
                 />
               </div>
@@ -171,7 +176,7 @@ export default function Login(){
                   <input
                     type="checkbox"
                     checked={captcha}
-                    onChange={e=>setCaptcha(e.target.checked)}
+                    onChange={e => setCaptcha(e.target.checked)}
                     style={styles.checkbox}
                   />
                   <span style={styles.captchaText}>No soy un robot</span>
@@ -181,10 +186,10 @@ export default function Login(){
               {error && <div style={styles.error}>{error}</div>}
               {okMsg && <div style={styles.success}>{okMsg}</div>}
 
-              <button 
-                type="button" 
-                onClick={handleSubmit} 
-                style={styles.button} 
+              <button
+                type="button"
+                onClick={handleSubmit}
+                style={styles.button}
                 disabled={loading}
               >
                 {loading ? 'Verificando...' : 'Ingresar'}
@@ -229,7 +234,7 @@ const styles = {
   imageCarousel: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
   carouselImage: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundSize: 'cover', backgroundPosition: 'center', transition: 'opacity 1.5s ease-in-out' },
   overlay: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(180deg, rgba(30, 43, 79, 0.4) 0%, rgba(42, 54, 88, 0.5) 100%)' },
-  rightPanel: { flex: '1', background: 'linear-gradient(135deg, #1e2b4f 0%, #2a3658 100%)' , padding: '40px', display: 'flex', alignItems: 'center' },
+  rightPanel: { flex: '1', background: 'linear-gradient(135deg, #1e2b4f 0%, #2a3658 100%)', padding: '40px', display: 'flex', alignItems: 'center' },
   formContainer: { width: '100%', maxWidth: '380px' },
   header: { marginBottom: '32px' },
   title: { color: '#ffffff', fontSize: '28px', fontWeight: '600', marginBottom: '8px' },

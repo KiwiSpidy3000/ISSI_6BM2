@@ -40,7 +40,8 @@ app.use(rateLimit({ windowMs: 60_000, max: 30 }));
 const loginBodySchema = z.object({
   login: z.string().min(3).max(120),
   password: z.string().min(6).max(100),
-  captchaToken: z.string().optional()
+  captchaToken: z.string().optional(),
+  role: z.string().optional() // 'ALUMNO', 'PROFESOR', 'ADMIN'
 });
 
 async function verifyCaptcha(token) {
@@ -260,6 +261,19 @@ app.post('/auth/login', async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Credenciales inválidas' });
 
     if (!user.activo) return res.status(403).json({ error: 'Usuario inactivo' });
+
+    // 🟢 VALIDACIÓN DE ROL
+    if (req.body.role) {
+      const expectedRole = req.body.role.toUpperCase();
+      // Normalizamos user.rol a mayúsculas por si acaso
+      const actualRole = (user.rol || '').toUpperCase();
+
+      if (actualRole !== expectedRole) {
+        return res.status(403).json({
+          error: `Role mismatch: please use the correct login tab for your account. (Expected: ${expectedRole}, Found: ${actualRole})`
+        });
+      }
+    }
 
     const ok = await bcrypt.compare(password, user.pwd || '');
     if (!ok) return res.status(401).json({ error: 'Credenciales inválidas' });
