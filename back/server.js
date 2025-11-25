@@ -788,15 +788,27 @@ app.post('/alumno/evaluacion', requireAuth, async (req, res) => {
 // --- PROFESOR ROUTES ---
 
 app.get('/profesor/profile', requireAuth, async (req, res) => {
-  if (req.user.rol !== 'PROFESOR') return res.status(403).json({ error: 'Acceso denegado' });
+  if (req.user.rol !== 'PROFESOR') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+
   try {
-    const data = await db.getProfessorProfile(req.user.sub);
-    if (!data) return res.status(404).json({ error: 'Profesor no encontrado' });
+    // usa el id que guardaste en el token
+    const idUsuario = req.user.id_usuario || req.user.sub;
+
+    const data = await db.getProfessorProfile(idUsuario);
+
+    if (!data) {
+      return res.status(404).json({ error: 'Profesor no encontrado' });
+    }
+
     res.json(data);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error('Error en /profesor/profile:', e);
+    res.status(500).json({ error: 'Error obteniendo perfil de profesor' });
   }
 });
+
 
 app.get('/profesor/grupos', requireAuth, async (req, res) => {
   if (req.user.rol !== 'PROFESOR') return res.status(403).json({ error: 'Acceso denegado' });

@@ -283,51 +283,66 @@ export async function insertSchedule({ id_grupo, dia_semana, hora_ini, hora_fin,
   return rows[0];
 }
 
-export async function insertEnrollment({ id_alumno, id_grupo, estado = 'INSCRITO' }) {
+// =========================================================
+// INSCRIPCIONES / PROFESOR
+// =========================================================
+
+export async function insertEnrollment({ id_alumno, id_grupo }) {
+  // Esta función sólo inserta la inscripción; las reglas de cupo
+  // las dejamos al trigger de BD.
   const query = `
     INSERT INTO ${DB_SCHEMA}.inscripcion (id_alumno, id_grupo, estado)
-    VALUES ($1, $2, $3)
+    VALUES ($1, $2, 'INSCRITO')
     RETURNING id_inscripcion;
   `;
-  const { rows } = await pool.query(query, [id_alumno, id_grupo, estado]);
+  const { rows } = await pool.query(query, [id_alumno, id_grupo]);
   return rows[0];
 }
 
-
-export async function getProfessorProfile(id_profesor) {
-  const sql = `
-    SELECT 
-      p.id_profesor,
-      u.email,
-      u.nombre,
-      u.apellido,
-      p.num_empleado,
-      p.departamento
-    FROM ${DB_SCHEMA}.profesor p
-    JOIN ${DB_SCHEMA}.usuario u
-      ON u.id_usuario = p.id_profesor
-    WHERE p.id_profesor = $1
-    LIMIT 1;
-  `;
-  const { rows } = await pool.query(sql, [id_profesor]);
-  return rows[0] || null;
-}
-
-
 export async function getProfessorGroups(id_profesor, periodo) {
   const query = `
-    SELECT g.id_grupo, m.nombre as materia_nombre, m.clave as materia_clave, 
-           m.semestre, g.turno, g.periodo,
-           (SELECT COUNT(*) FROM ${DB_SCHEMA}.inscripcion i WHERE i.id_grupo = g.id_grupo AND i.estado IN ('INSCRITO', 'PREINSCRITO')) as inscritos
+    SELECT 
+      g.id_grupo,
+      m.nombre  AS materia_nombre,
+      m.clave   AS materia_clave,
+      m.semestre,
+      g.turno,
+      g.periodo,
+      (
+        SELECT COUNT(*)
+        FROM ${DB_SCHEMA}.inscripcion i
+        WHERE i.id_grupo = g.id_grupo
+          AND i.estado IN ('INSCRITO', 'PREINSCRITO')
+      ) AS inscritos
     FROM ${DB_SCHEMA}.grupo g
     JOIN ${DB_SCHEMA}.materia m ON g.id_materia = m.id_materia
     WHERE g.id_profesor = $1
       AND ($2::text IS NULL OR g.periodo = $2)
     ORDER BY g.periodo DESC, m.nombre;
   `;
-  const { rows } = await pool.query(query, [id_profesor, periodo]);
+  const { rows } = await pool.query(query, [id_profesor, periodo || null]);
   return rows;
 }
+
+// === NUEVA: perfil del profesor para /profesor/profile ===
+export async function getProfessorProfile(id_usuario) {
+  const query = `
+    SELECT 
+      (u.nombre || ' ' || u.apellido) AS nombre_completo,
+      p.num_empleado,
+      p.departamento,
+      'ESCOM' AS plantel,
+      'RFC' || p.num_empleado AS rfc
+    FROM ${DB_SCHEMA}.usuario u
+    JOIN ${DB_SCHEMA}.profesor p 
+      ON u.id_usuario = p.id_profesor
+    WHERE u.id_usuario = $1;
+  `;
+  const { rows } = await pool.query(query, [id_usuario]);
+  return rows[0] || null;
+}
+
+
 
 export async function getAllGroupsForOffer() {
   const sql = `
