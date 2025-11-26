@@ -300,29 +300,66 @@ export async function insertEnrollment({ id_alumno, id_grupo }) {
 }
 
 export async function getProfessorGroups(id_profesor, periodo) {
-  const query = `
-    SELECT 
+  // 👀 Debug útil en consola de Node
+  console.log('getProfessorGroups called with:', { id_profesor, periodo });
+
+  // 1) Primero traemos los grupos del profesor
+  let query = `
+    SELECT
       g.id_grupo,
-      m.nombre  AS materia_nombre,
-      m.clave   AS materia_clave,
+      m.nombre AS materia_nombre,
+      m.clave  AS materia_clave,
       m.semestre,
       g.turno,
-      g.periodo,
-      (
-        SELECT COUNT(*)
-        FROM ${DB_SCHEMA}.inscripcion i
-        WHERE i.id_grupo = g.id_grupo
-          AND i.estado IN ('INSCRITO', 'PREINSCRITO')
-      ) AS inscritos
+      g.periodo
     FROM ${DB_SCHEMA}.grupo g
-    JOIN ${DB_SCHEMA}.materia m ON g.id_materia = m.id_materia
+    JOIN ${DB_SCHEMA}.materia m
+      ON g.id_materia = m.id_materia
     WHERE g.id_profesor = $1
-      AND ($2::text IS NULL OR g.periodo = $2)
-    ORDER BY g.periodo DESC, m.nombre;
   `;
-  const { rows } = await pool.query(query, [id_profesor, periodo || null]);
-  return rows;
+  const params = [id_profesor];
+
+  if (periodo) {
+    query += ' AND g.periodo = $2';
+    params.push(periodo);
+  }
+
+  const { rows } = await pool.query(query, params);
+
+  // Si no hay grupos, regresamos vacío y ya
+  if (!rows.length) {
+    return rows;
+  }
+
+  // 2) Ahora contamos cuántos alumnos hay por grupo en una segunda query
+  const grupoIds = rows.map(r => r.id_grupo);
+
+  const { rows: countRows } = await pool.query(
+    `
+      SELECT
+        id_grupo,
+        COUNT(*)::int AS inscritos
+      FROM ${DB_SCHEMA}.inscripcion
+      WHERE id_grupo = ANY($1)
+      GROUP BY id_grupo
+    `,
+    [grupoIds]
+  );
+
+  const countMap = {};
+  for (const c of countRows) {
+    countMap[c.id_grupo] = c.inscritos;
+  }
+
+  // 3) Mezclamos datos de grupo + inscritos
+  return rows.map(r => ({
+    ...r,
+    inscritos: countMap[r.id_grupo] || 0
+  }));
 }
+
+
+
 
 // === NUEVA: perfil del profesor para /profesor/profile ===
 export async function getProfessorProfile(id_usuario) {

@@ -424,8 +424,10 @@ function Calificaciones() {
 
 function Reinscripcion() {
   const t = () => localStorage.getItem('access_token') || ''
-  const [periodos, setPeriodos] = useState([])
-  const [periodo, setPeriodo] = useState('')
+ // puedes dejarlo fijo por ahora
+  const [periodos] = useState(['2025-2', '2025-1', '2024-2', '2024-1'])
+  const [periodo, setPeriodo] = useState('2025-2')
+
   const [semestre, setSemestre] = useState('')
   const [turno, setTurno] = useState('')
   const [inscritas, setInscritas] = useState([])

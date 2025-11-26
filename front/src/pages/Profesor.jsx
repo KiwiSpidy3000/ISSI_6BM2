@@ -259,21 +259,26 @@ function Grupos() {
   const [grupos, setGrupos] = useState([])
   const [dataLoading, setDataLoading] = useState(false)
 
-  useEffect(() => {
-    if (!periodo) return
-    setDataLoading(true)
-    const token = localStorage.getItem('access_token') || ''
-    fetch(`${API}/profesor/grupos?periodo=${periodo}`, {
-      headers: { Authorization: `Bearer ${token}` }
+ useEffect(() => {
+  if (!periodo) return
+  setDataLoading(true)
+  const token = localStorage.getItem('access_token') || ''
+  fetch(`${API}/profesor/grupos?periodo=${periodo}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+    .then(r => r.json())
+    .then(data => {
+      console.log('Respuesta /profesor/grupos:', data) // 👈 agrega esto
+      if (Array.isArray(data)) setGrupos(data)
+      else setGrupos([])
     })
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) setGrupos(data)
-        else setGrupos([])
-      })
-      .catch(() => setGrupos([]))
-      .finally(() => setDataLoading(false))
-  }, [periodo])
+    .catch(err => {
+      console.error('Error fetch grupos:', err)
+      setGrupos([])
+    })
+    .finally(() => setDataLoading(false))
+}, [periodo])
+
 
   return (
     <div>

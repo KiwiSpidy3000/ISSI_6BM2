@@ -811,15 +811,23 @@ app.get('/profesor/profile', requireAuth, async (req, res) => {
 
 
 app.get('/profesor/grupos', requireAuth, async (req, res) => {
-  if (req.user.rol !== 'PROFESOR') return res.status(403).json({ error: 'Acceso denegado' });
-  const { periodo } = req.query;
+  if (req.user.rol !== 'PROFESOR') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+
   try {
-    const data = await db.getProfessorGroups(req.user.sub, periodo);
-    res.json(data);
+    const periodo = req.query.periodo || null;
+    const idProfesor = req.user.sub; // <- este es el id_usuario / id_profesor
+
+    const data = await db.getProfessorGroups(idProfesor, periodo);
+    return res.json(data);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error('Error en /profesor/grupos:', e);
+    return res.status(500).json({ error: 'Error obteniendo grupos del profesor' });
   }
 });
+
+
 
 
 
