@@ -430,3 +430,15 @@ export async function getAllGroupsForOffer() {
   const { rows } = await pool.query(sql);
   return rows;
 }
+
+// al inicio del archivo ya tienes: import { pool, DB_SCHEMA } from './pool.js';
+
+export async function getBoletaByUserId(id_usuario) {
+  const query = `
+    SELECT boleta
+    FROM ${DB_SCHEMA}.alumno
+    WHERE id_alumno = $1
+  `;
+  const { rows } = await pool.query(query, [id_usuario]);
+  return rows[0]?.boleta || null;
+}

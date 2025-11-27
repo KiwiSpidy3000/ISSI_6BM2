@@ -219,8 +219,7 @@ async function checkLoadLimit(userId, materiaId) {
 }
 
 // modelo de ia para comunicacion con front 
-// modelo de ia para comunicacion con front 
-app.post('/ai/chat', async (req, res) => {
+app.post('/ai/chat', requireAuth, async (req, res) => {
   try {
     const text =
       (req.body.pregunta || req.body.message || req.body.text || req.body.q || '').trim();
@@ -229,15 +228,33 @@ app.post('/ai/chat', async (req, res) => {
       return res.status(400).json({ error: "Falta 'pregunta' o 'message' en el body" });
     }
 
-    // OJO: mejor pegamos al alias del backend que ya devuelve {reply,...}
+    console.log('[AI] req.user =', req.user);
+
+    let boleta = null;
+
+    // solo alumnos tienen boleta
+    if (req.user?.rol === 'ALUMNO') {
+      try {
+        const userId = req.user.sub;              // 👈 AQUÍ el id correcto
+        boleta = await db.getBoletaByUserId(userId);
+        console.log('[AI] boleta encontrada =', boleta);
+      } catch (e) {
+        console.error('[AI] Error obteniendo boleta:', e);
+      }
+    }
+
+    const body = { message: text };
+    if (boleta) body.boleta = String(boleta);     // 👈 se la mandamos al microservicio
+
+    console.log('[AI] Body enviado a IA:', body);
+
     const r = await fetch(`${AI_URL}/ai/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text })
+      body: JSON.stringify(body)
     });
 
     const data = await r.json();
-    // normaliza la respuesta para el front
     return res.json({
       reply: data.reply ?? data.respuesta ?? data.message ?? '',
       categoria: data.categoria ?? null
@@ -247,6 +264,7 @@ app.post('/ai/chat', async (req, res) => {
     return res.status(502).json({ error: 'AI service unavailable' });
   }
 });
+
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 

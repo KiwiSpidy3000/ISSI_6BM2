@@ -3,3 +3,7 @@ uvicorn
 pydantic
 fastapi
 uvicorn[standard]
+google-generativeai
+python-dotenv
+psycopg2-binary
+
