@@ -635,9 +635,11 @@ app.delete('/alumno/inscripcion/baja/:id_grupo', requireAuth, async (req, res) =
     `, [userId]);
     const currentLoad = parseFloat(lRes.rows[0].total);
 
-    if (currentLoad - dropCredits < minCreds) {
-      throw new Error(`No puedes dar de baja: quedarías con menos de ${minCreds} créditos.`);
-    }
+//IMPORTANTE, CUANDO SEA LA PRESENTACION FINAL ACTIVAR DE VUELTA LA REGLA DE NEGOCIO DE ABAJO
+
+    //if (currentLoad - dropCredits < minCreds) {
+   //  throw new Error(`No puedes dar de baja: quedarías con menos de ${minCreds} créditos.`);
+   // }
 
     // 3. Ejecutar baja
     const result = await pool.query(`
