@@ -179,13 +179,36 @@ export async function getStudentGroupOffer(id_alumno, periodo, semestre, turno) 
         FROM ${DB_SCHEMA}.inscripcion i
         WHERE i.id_grupo = g.id_grupo
           AND i.estado IN ('INSCRITO','PREINSCRITO')
-      ),0) AS lugares_disponibles
+      ),0) AS lugares_disponibles,
+      COALESCE(
+        string_agg(
+          CASE h.dia_semana
+            WHEN 1 THEN 'Lu'
+            WHEN 2 THEN 'Ma'
+            WHEN 3 THEN 'Mi'
+            WHEN 4 THEN 'Ju'
+            WHEN 5 THEN 'Vi'
+            WHEN 6 THEN 'Sa'
+            WHEN 7 THEN 'Do'
+          END || ' ' ||
+          to_char(h.hora_ini, 'HH24:MI') || '-' || to_char(h.hora_fin, 'HH24:MI') ||
+          COALESCE(' (' || h.aula || ')', ''),
+          ', ' ORDER BY h.dia_semana, h.hora_ini
+        ),
+        ''
+      ) AS horario
     FROM ${DB_SCHEMA}.grupo g
     JOIN ${DB_SCHEMA}.materia  m ON m.id_materia = g.id_materia
     JOIN ${DB_SCHEMA}.alumno   a ON a.id_carrera = m.id_carrera
     LEFT JOIN ${DB_SCHEMA}.profesor p ON p.id_profesor = g.id_profesor
     LEFT JOIN ${DB_SCHEMA}.usuario  u ON u.id_usuario = p.id_profesor
+    LEFT JOIN ${DB_SCHEMA}.horario  h ON h.id_grupo   = g.id_grupo
     ${where}
+    GROUP BY
+      g.id_grupo, g.periodo, g.turno,
+      m.semestre, m.clave, m.nombre, m.creditos,
+      u.nombre, u.apellido,
+      g.cupo_max, g.estado
     ORDER BY g.periodo, m.semestre, m.clave;
   `;
 

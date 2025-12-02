@@ -203,33 +203,33 @@ function Kardex() {
             </tr>
           </thead>
           <tbody>
-  {kardex.map((k, i) => {
-    // Soportar tanto el esquema nuevo como el viejo del backend
-    const materia =
-      k.materia ??
-      k.materia_nombre ??   // por si viene como materia_nombre
-      k.nombre ??           // por si el view manda nombre
-      '';
+            {kardex.map((k, i) => {
+              // Soportar tanto el esquema nuevo como el viejo del backend
+              const materia =
+                k.materia ??
+                k.materia_nombre ??   // por si viene como materia_nombre
+                k.nombre ??           // por si el view manda nombre
+                '';
 
-    const estado =
-      k.estado ??
-      k.estatus ??          // por si viene como estatus
-      k.status ??           // por si algún día se llama status
-      '';
+              const estado =
+                k.estado ??
+                k.estatus ??          // por si viene como estatus
+                k.status ??           // por si algún día se llama status
+                '';
 
-    return (
-      <tr key={i} style={styles.tableRow}>
-        <td style={styles.td}>{k.periodo}</td>
-        <td style={styles.td}>{k.semestre}</td>
-        <td style={styles.td}>{k.materia_clave}</td>
-        <td style={styles.td}>{materia}</td>
-        <td style={styles.td}>{k.creditos}</td>
-        <td style={styles.td}>{k.calificacion}</td>
-        <td style={styles.td}>{estado}</td>
-      </tr>
-    );
-  })}
-</tbody>
+              return (
+                <tr key={i} style={styles.tableRow}>
+                  <td style={styles.td}>{k.periodo}</td>
+                  <td style={styles.td}>{k.semestre}</td>
+                  <td style={styles.td}>{k.materia_clave}</td>
+                  <td style={styles.td}>{materia}</td>
+                  <td style={styles.td}>{k.creditos}</td>
+                  <td style={styles.td}>{k.calificacion}</td>
+                  <td style={styles.td}>{estado}</td>
+                </tr>
+              );
+            })}
+          </tbody>
 
         </table>
       </div>
@@ -424,7 +424,7 @@ function Calificaciones() {
 
 function Reinscripcion() {
   const t = () => localStorage.getItem('access_token') || ''
- // puedes dejarlo fijo por ahora
+  // puedes dejarlo fijo por ahora
   const [periodos] = useState(['2025-2', '2025-1', '2024-2', '2024-1'])
   const [periodo, setPeriodo] = useState('2025-2')
 
@@ -650,6 +650,7 @@ function Reinscripcion() {
               <th style={styles.th}>Grupo</th>
               <th style={styles.th}>Materia</th>
               <th style={styles.th}>Profesor</th>
+              <th style={styles.th}>Horario</th>
               <th style={styles.th}>Cr</th>
               <th style={styles.th}>Lugares</th>
               <th style={styles.th}></th>
@@ -661,6 +662,7 @@ function Reinscripcion() {
                 <td style={styles.td}>{r.id_grupo}</td>
                 <td style={styles.td}>{`${r.clave} ${r.nombre}`}</td>
                 <td style={styles.td}>{r.profesor || '—'}</td>
+                <td style={styles.td}><small>{r.horario || '—'}</small></td>
                 <td style={styles.td}>{r.creditos}</td>
                 <td style={styles.td}>{r.lugares_disponibles}</td>
                 <td style={styles.td}>
@@ -677,7 +679,7 @@ function Reinscripcion() {
             ))}
             {oferta.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ ...styles.td, textAlign: 'center', padding: '24px', color: '#6a7aae' }}>
+                <td colSpan={7} style={{ ...styles.td, textAlign: 'center', padding: '24px', color: '#6a7aae' }}>
                   No hay grupos disponibles con los filtros aplicados.
                 </td>
               </tr>
