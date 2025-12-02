@@ -1,0 +1,205 @@
+BEGIN;
+
+------------------------------------------------------------
+-- HELP: obtener id de IIA
+------------------------------------------------------------
+WITH iia AS (
+  SELECT id_carrera
+  FROM escom_aliz.carrera
+  WHERE clave = 'IIA'
+),
+
+------------------------------------------------------------
+-- ALUMNO 1: Miguel Ángel Ocampo Porcayo – 6º semestre
+------------------------------------------------------------
+alumno1_usuario AS (
+  INSERT INTO escom_aliz.usuario (email, pass_hash, nombre, apellido, rol, activo)
+  VALUES (
+    '2021301170@alumno.ipn.mx',
+    '$2b$10$K8pbBVADmIGalUmKnV4o7O94OGfWLNq3fPuL69JUQbNQHByXCGFja',  -- password: lyte123
+    'Miguel Angel',
+    'Ocampo Porcayo',
+    'ALUMNO',
+    true
+  )
+  ON CONFLICT (email) DO UPDATE
+    SET nombre    = EXCLUDED.nombre,
+        apellido  = EXCLUDED.apellido,
+        rol       = EXCLUDED.rol,
+        activo    = EXCLUDED.activo,
+        pass_hash = EXCLUDED.pass_hash
+  RETURNING id_usuario
+),
+alumno1 AS (
+  INSERT INTO escom_aliz.alumno (id_alumno, boleta, id_carrera, semestre)
+  SELECT
+    id_usuario,
+    '2021301170',
+    (SELECT id_carrera FROM iia),
+    6
+  FROM alumno1_usuario
+  ON CONFLICT (id_alumno) DO UPDATE
+    SET boleta    = EXCLUDED.boleta,
+        id_carrera= EXCLUDED.id_carrera,
+        semestre  = EXCLUDED.semestre
+  RETURNING id_alumno
+),
+
+------------------------------------------------------------
+-- ALUMNO 2: Julia Martínez Rivera – 6º semestre
+------------------------------------------------------------
+alumno2_usuario AS (
+  INSERT INTO escom_aliz.usuario (email, pass_hash, nombre, apellido, rol, activo)
+  VALUES (
+    '2021301171@alumno.ipn.mx',
+    '$2b$10$K8pbBVADmIGalUmKnV4o7O94OGfWLNq3fPuL69JUQbNQHByXCGFja',  -- password: lyte123
+    'Julia',
+    'Martinez Rivera',
+    'ALUMNO',
+    true
+  )
+  ON CONFLICT (email) DO UPDATE
+    SET nombre    = EXCLUDED.nombre,
+        apellido  = EXCLUDED.apellido,
+        rol       = EXCLUDED.rol,
+        activo    = EXCLUDED.activo,
+        pass_hash = EXCLUDED.pass_hash
+  RETURNING id_usuario
+),
+alumno2 AS (
+  INSERT INTO escom_aliz.alumno (id_alumno, boleta, id_carrera, semestre)
+  SELECT
+    id_usuario,
+    '2021301171',
+    (SELECT id_carrera FROM iia),
+    6
+  FROM alumno2_usuario
+  ON CONFLICT (id_alumno) DO UPDATE
+    SET boleta    = EXCLUDED.boleta,
+        id_carrera= EXCLUDED.id_carrera,
+        semestre  = EXCLUDED.semestre
+  RETURNING id_alumno
+),
+
+------------------------------------------------------------
+-- ALUMNO 3: Carlos Hernández López – 5º semestre
+------------------------------------------------------------
+alumno3_usuario AS (
+  INSERT INTO escom_aliz.usuario (email, pass_hash, nombre, apellido, rol, activo)
+  VALUES (
+    '2021301172@alumno.ipn.mx',
+    '$2b$10$K8pbBVADmIGalUmKnV4o7O94OGfWLNq3fPuL69JUQbNQHByXCGFja',  -- password: lyte123
+    'Carlos',
+    'Hernandez Lopez',
+    'ALUMNO',
+    true
+  )
+  ON CONFLICT (email) DO UPDATE
+    SET nombre    = EXCLUDED.nombre,
+        apellido  = EXCLUDED.apellido,
+        rol       = EXCLUDED.rol,
+        activo    = EXCLUDED.activo,
+        pass_hash = EXCLUDED.pass_hash
+  RETURNING id_usuario
+),
+alumno3 AS (
+  INSERT INTO escom_aliz.alumno (id_alumno, boleta, id_carrera, semestre)
+  SELECT
+    id_usuario,
+    '2021301172',
+    (SELECT id_carrera FROM iia),
+    5
+  FROM alumno3_usuario
+  ON CONFLICT (id_alumno) DO UPDATE
+    SET boleta    = EXCLUDED.boleta,
+        id_carrera= EXCLUDED.id_carrera,
+        semestre  = EXCLUDED.semestre
+  RETURNING id_alumno
+),
+
+------------------------------------------------------------
+-- PROFESORES DE PRUEBA (usuario + profesor)
+-- password para todos: prof123
+------------------------------------------------------------
+prof1_usuario AS (
+  INSERT INTO escom_aliz.usuario (email, pass_hash, nombre, apellido, rol, activo)
+  VALUES (
+    'idalia.maldonado@escom.ipn.mx',
+    '$2b$10$Mg1ZIMWHV0C.xp9BRc2w2.S6GbRkR5EopSKq02e5KwofLQGKyWbIe',  -- prof123
+    'Idalia',
+    'Maldonado Castillo',
+    'PROFESOR',
+    true
+  )
+  ON CONFLICT (email) DO UPDATE
+    SET nombre    = EXCLUDED.nombre,
+        apellido  = EXCLUDED.apellido,
+        rol       = EXCLUDED.rol,
+        activo    = EXCLUDED.activo,
+        pass_hash = EXCLUDED.pass_hash
+  RETURNING id_usuario
+),
+prof1 AS (
+  INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento)
+  SELECT id_usuario, 'EMP501', 'Inteligencia Artificial'
+  FROM prof1_usuario
+  ON CONFLICT (id_profesor) DO UPDATE
+    SET num_empleado = EXCLUDED.num_empleado,
+        departamento = EXCLUDED.departamento
+  RETURNING id_profesor
+),
+
+prof2_usuario AS (
+  INSERT INTO escom_aliz.usuario (email, pass_hash, nombre, apellido, rol, activo)
+  VALUES (
+    'eduardo.gutierrez@escom.ipn.mx',
+    '$2b$10$Mg1ZIMWHV0C.xp9BRc2w2.S6GbRkR5EopSKq02e5KwofLQGKyWbIe',  -- prof123
+    'Eduardo',
+    'Gutierrez Aldana',
+    'PROFESOR',
+    true
+  )
+  ON CONFLICT (email) DO UPDATE
+    SET nombre    = EXCLUDED.nombre,
+        apellido  = EXCLUDED.apellido,
+        rol       = EXCLUDED.rol,
+        activo    = EXCLUDED.activo,
+        pass_hash = EXCLUDED.pass_hash
+  RETURNING id_usuario
+),
+prof2 AS (
+  INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento)
+  SELECT id_usuario, 'EMP502', 'Inteligencia Artificial'
+  FROM prof2_usuario
+  ON CONFLICT (id_profesor) DO UPDATE
+    SET num_empleado = EXCLUDED.num_empleado,
+        departamento = EXCLUDED.departamento
+  RETURNING id_profesor
+),
+
+prof3_usuario AS (
+  INSERT INTO escom_aliz.usuario (email, pass_hash, nombre, apellido, rol, activo)
+  VALUES (
+    'horacio.garcia@escom.ipn.mx',
+    '$2b$10$Mg1ZIMWHV0C.xp9BRc2w2.S6GbRkR5EopSKq02e5KwofLQGKyWbIe',  -- prof123
+    'Horacio',
+    'Garcia Salas',
+    'PROFESOR',
+    true
+  )
+  ON CONFLICT (email) DO UPDATE
+    SET nombre    = EXCLUDED.nombre,
+        apellido  = EXCLUDED.apellido,
+        rol       = EXCLUDED.rol,
+        activo    = EXCLUDED.activo,
+        pass_hash = EXCLUDED.pass_hash
+  RETURNING id_usuario
+)
+INSERT INTO escom_aliz.profesor (id_profesor, num_empleado, departamento)
+SELECT id_usuario, 'EMP503', 'Inteligencia Artificial'
+FROM prof3_usuario
+ON CONFLICT (id_profesor) DO UPDATE
+  SET num_empleado = EXCLUDED.num_empleado,
+      departamento = EXCLUDED.departamento;
+
+COMMIT;
