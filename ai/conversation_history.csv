@@ -1,0 +1,107 @@
+timestamp,usuario,modelo
+2025-11-27 16:45:28,hola,Mi conocimiento es limitado sobre ese tema. ¿Tienes otra pregunta?
+2025-11-27 16:45:43,cual es mi promedio,No estoy seguro de entender. ¿Puedes ser más específico?
+2025-11-27 16:45:58,derechos de estudiantes,No estoy seguro de entender. ¿Puedes ser más específico?
+2025-11-27 17:00:01,hola,No estoy seguro de entender. ¿Puedes ser más específico?
+2025-11-27 17:00:13,derechos de estudiantes,Mi conocimiento es limitado sobre ese tema. ¿Tienes otra pregunta?
+2025-11-27 17:00:27,cual es mi promedio,"Para poder decirte tu promedio necesito tu número de boleta (10 dígitos, por ejemplo 2021301171). Escríbelo en el mismo mensaje."
+2025-11-27 17:00:40,cual es mi promedio 2021301170,Promedio general: 9.00
+2025-11-27 17:07:50,hola,"Hola, soy el asistente virtual de ESCOM. ¿En qué puedo ayudarte?"
+2025-11-27 17:09:18,qué pasa si entrego documentos falsos en la inscripción?,"La inscripción será nula de pleno derecho cuando el aspirante entregue documentación falsa o alterada, haciéndose del conocimiento de la Oficina del Abogado General del Instituto para que en el ámbito de su competencia ejerza las acciones legales conducentes. En este supuesto, el aspirante no podrá gestionar nueva inscripción a programa académico."
+2025-11-27 17:10:01,qué materias tengo inscritas 2021301170,"De acuerdo a la información consultada, estas son las materias que tienes inscritas en el periodo 2023-2 con estado CERRADO:
+
+- Fundamentos de Programación
+- Matemáticas Discretas
+- Cálculo
+- Comunicación Oral y Escrita
+- Mecánica y Electromagnetismo
+- Fundamentos Económicos
+- Algoritmos y Estructuras de Datos
+- Fundamentos de Diseño Digital
+- Cálculo Multivariable
+- Ingeniería, Ética y Sociedad
+- Álgebra Lineal
+- Finanzas Empresariales
+- Análisis y Diseño de Algoritmos
+- Paradigmas de Programación
+- Ecuaciones Diferenciales
+- Bases de Datos
+- Diseño de Sistemas Digitales
+- Liderazgo Personal
+- Fundamentos de Inteligencia Artificial
+- Probabilidad y Estadística
+- Matemáticas Avanzadas para la Ingeniería
+- Tecnologías para el Desarrollo de Aplicaciones Web
+- Análisis y Diseño de Sistemas
+- Procesamiento Digital de Imágenes
+- Aprendizaje de Máquina
+- Visión Artificial
+- Teoría de la Computación
+- Procesamiento de Señales
+- Algoritmos Bioinspirados
+- Tecnologías de Lenguaje Natural"
+2025-11-27 17:10:29,dame mi información personal 2021301170,"Hola Miguel Angel, soy el asistente virtual de ESCOM. Aquí está tu información personal registrada:
+
+*   **Nombre:** Miguel Angel Ocampo Porcayo
+*   **Email:** 2021301170@alumno.ipn.mx
+*   **Carrera:** Ingeniería en Inteligencia Artificial
+*   **Semestre:** 6
+
+Si necesitas realizar algún trámite o tienes alguna otra pregunta relacionada con tu trayectoria escolar, no dudes en consultarme. Por ejemplo, puedo proporcionarte información sobre reinscripciones, bajas de materias, o el reglamento interno. ¡Estoy para ayudarte!"
+2025-11-27 17:12:30,"si reprobé una materia, me puedo reinscribir a más materias?","Si el alumno tiene adeudos de unidades de aprendizaje, tendrá derecho a recursar sus adeudos de acuerdo con el Artículo 48 del Reglamento General de Estudios, e inscribir unidades de aprendizaje adicionales de su plan de estudio hasta completar al menos la carga mínima y sin rebasar la carga media de créditos del plan, siempre y cuando no se encuentre en el supuesto del Artículo 98 del Reglamento Interno.
+Cuando el alumno no pueda recursar las unidades de aprendizaje adeudadas en el periodo escolar correspondiente, no podrá sustituirlas por unidades de aprendizaje diferentes a las que adeuda.
+En caso de no poder reinscribirse, podrá presentar la evaluación a título de suficiencia en el periodo escolar correspondiente, el cual será contabilizado en la duración de su trayectoria escolar.
+Si el alumno adeuda al menos una unidad de aprendizaje en términos de lo establecido en el Artículo 98 del Reglamento Interno, o si adeudando una unidad de aprendizaje de cualquier otro periodo escolar solicita reinscribirse a una carga menor a la mínima, deberá presentar por escrito una solicitud justificada a la Comisión de Situación Escolar del Consejo Técnico Consultivo Escolar para, en su caso, obtener la autorización correspondiente."
+2025-11-27 17:24:44,cual es mi promedio?,"Por seguridad no puedo consultar información personal, porque el sistema no me envió tu boleta."
+2025-11-27 17:33:41,cual es mi promedio?,"Por seguridad no puedo consultar información personal, porque el sistema no me envió tu boleta."
+2025-11-27 17:33:52,promedio 2021301170,"Por seguridad no puedo consultar información personal, porque el sistema no me envió tu boleta."
+2025-11-27 17:55:56,hola,"Hola, soy el asistente virtual de ESCOM. ¿En qué puedo ayudarte?"
+2025-11-27 17:56:07,cual es mi promedio?,Tu promedio general es: 9.00
+2025-12-02 08:12:46,que sabes sobre mi?,No estoy seguro de entender. ¿Puedes ser más específico?
+2025-12-02 08:17:07,cual es mi informacion?,Mi conocimiento es limitado sobre ese tema. ¿Tienes otra pregunta?
+2025-12-02 08:17:55,cual es mi promedio?,Tu promedio general es: 9.00
+2025-12-02 08:19:08,hablame sobre la reinscripcion,"El próximo periodo de reinscripciones para alumnos de segundo semestre o superior será el 3 de Febrero de 2026. Para tu reinscripción debes tener en cuenta que acorde a tu plan de estudio tienes un total de creditos que emplearas para completar tu trayecto academico en el plan que estes inscrito, para cada semestre tendras un numero de creditos que te permitiran inscribir una cierta cantidad de materias dependiendo de tu carga academica.
+
+Para poder reinscribirte a un semestre posterior debes tener en cuenta los siguientes puntos:
+1)Si el alumno se encuentra en situación escolar regular, podrá reinscribirse en un número de créditos comprendido entre la carga mínima y la máxima indicadas en el plan de estudio. Cuando el alumno solicite reinscribirse a una carga menor a la mínima o mayor a la máxima, deberá presentar por escrito una solicitud justificada al titular de la unidad académica para que, en su caso, obtenga la autorización correspondiente, en un término no mayor a tres días hábiles, siempre que esto no implique sobrepasar la duración máxima del plan.
+2) Si el alumno tiene adeudos de unidades de aprendizaje, tendrá derecho a recursar sus adeudos de acuerdo con el Artículo 48 del Reglamento General de Estudios, e inscribir unidades de aprendizaje adicionales de su plan de estudio hasta completar al menos la carga mínima y sin rebasar la carga media de créditos del plan, siempre y cuando no se encuentre en el supuesto del Artículo 98 del Reglamento Interno. 
+Cuando el alumno no pueda recursar las unidades de aprendizaje adeudadas en el periodo escolar correspondiente, no podrá sustituirlas por unidades de aprendizaje diferentes a las que adeuda.
+En caso de no poder reinscribirse, podrá presentar la evaluación a título de suficiencia en el periodo escolar correspondiente, el cual será contabilizado en la duración de su trayectoria escolar.
+3)Si el alumno adeuda al menos una unidad de aprendizaje en términos de lo establecido en el Artículo 98 del Reglamento Interno, o si adeudando una unidad de aprendizaje de cualquier otro periodo escolar solicita reinscribirse a una carga menor a la mínima, deberá presentar por escrito una solicitud justificada a la Comisión de Situación Escolar del Consejo Técnico Consultivo Escolar para, en su caso, obtener la autorización correspondiente.
+
+Puedes dar de baja en las tres primeras semanas habiles las materias que hayas inscrito en el semstre que este cursando, pero solo si mantienes la carga minima de creditos establecido en tu plan de estudio. Tratándose de una misma unidad de aprendizaje procederá la baja en un máximo de dos ocasiones. En ambos casos deberas presentar la solicitud por escrito antes la Subdirección de Servicios Educativos e Integración Social o el Colegio de Profesores, esto durante las primeras tres semanas del comienzo de tu periodo escolar. Considera que: Si la materia que quieras dar de baja es una materia que estes recursando, la baja de la materia no procedera."
+2025-12-02 08:21:05,cuales son mis materias?,"Claro, estas son las materias que tienes inscritas en el periodo 2023-2, todas con estado CERRADO:
+
+- Fundamentos de Programación
+- Matemáticas Discretas
+- Cálculo
+- Comunicación Oral y Escrita
+- Mecánica y Electromagnetismo
+- Fundamentos Económicos
+- Algoritmos y Estructuras de Datos
+- Fundamentos de Diseño Digital
+- Cálculo Multivariable
+- Ingeniería, Ética y Sociedad
+- Álgebra Lineal
+- Finanzas Empresariales
+- Análisis y Diseño de Algoritmos
+- Paradigmas de Programación
+- Ecuaciones Diferenciales
+- Bases de Datos
+- Diseño de Sistemas Digitales
+- Liderazgo Personal
+- Fundamentos de Inteligencia Artificial
+- Probabilidad y Estadística
+- Matemáticas Avanzadas para la Ingeniería
+- Tecnologías para el Desarrollo de Aplicaciones Web
+- Análisis y Diseño de Sistemas
+- Procesamiento Digital de Imágenes
+- Aprendizaje de Máquina
+- Visión Artificial
+- Teoría de la Computación
+- Procesamiento de Señales
+- Algoritmos Bioinspirados
+- Tecnologías de Lenguaje Natural"
+2025-12-02 08:22:34,cuales materias tengo inscritas actualmente?,"De acuerdo a la información de tu consulta, tienes inscrita la materia de Ingeniería, Ética y Sociedad en el periodo 2025-2, con estado ABIERTO. Recuerda que puedes consultar tu historial académico completo y las calificaciones obtenidas en el Sistema de Administración Escolar (SAES)."
+2025-12-02 15:50:59,cual es mi promedio,No se encontraron calificaciones registradas para tu boleta.
+2025-12-02 15:51:31,que materias tengo inscritas,"De acuerdo a la información consultada, actualmente tienes inscrita la materia de Ingeniería, Ética y Sociedad en el periodo 2025-2. Su estado actual es ABIERTO. Recuerda que puedes consultar tu historial académico y kardex en el sistema de gestión escolar (SAES) para obtener más detalles sobre tus materias inscritas y calificaciones."

@@ -802,6 +802,7 @@ function Reinscripcion() {
               <th style={styles.th}>Grupo</th>
               <th style={styles.th}>Materia</th>
               <th style={styles.th}>Profesor</th>
+              <th style={styles.th}>Horario</th>
               <th style={styles.th}>Cr</th>
               <th style={styles.th}>Lugares</th>
               <th style={styles.th}></th>
@@ -813,6 +814,7 @@ function Reinscripcion() {
                 <td style={styles.td}>{r.id_grupo}</td>
                 <td style={styles.td}>{`${r.clave} ${r.nombre}`}</td>
                 <td style={styles.td}>{r.profesor || '—'}</td>
+                <td style={styles.td}><small>{r.horario || '—'}</small></td>
                 <td style={styles.td}>{r.creditos}</td>
                 <td style={styles.td}>{r.lugares_disponibles}</td>
                 <td style={styles.td}>
@@ -829,7 +831,7 @@ function Reinscripcion() {
             ))}
             {oferta.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ ...styles.td, textAlign: 'center', padding: '24px', color: '#6a7aae' }}>
+                <td colSpan={7} style={{ ...styles.td, textAlign: 'center', padding: '24px', color: '#6a7aae' }}>
                   No hay grupos disponibles con los filtros aplicados.
                 </td>
               </tr>
