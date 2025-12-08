@@ -3,6 +3,8 @@ import random
 import json
 import csv
 import re
+import uuid
+import shutil
 import psycopg2
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -14,6 +16,7 @@ load_dotenv()
 class ChatbotESCOMGemini:
     def __init__(self, dataset_path, db_config=None, conversation_file="conversation_history.csv"):
         self.dataset = self._cargar_dataset(dataset_path)
+        # Configuración original de BD preservada
         self.db_config = db_config or {
             "host": os.getenv("DB_HOST", "localhost"),
             "database": os.getenv("DB_NAME", "lytebd1"),
@@ -22,12 +25,159 @@ class ChatbotESCOMGemini:
             "port": os.getenv("DB_PORT", "5432"),
         }
         self.conversation_file = conversation_file
-        self.conversation_history = self._cargar_historial_conversacion()
+        self._inicializar_archivo_historial()
         self.db_connection = self._conectar_bd()
         self.model = self._inicializar_gemini()
-        self.contexto_dataset = self._preparar_contexto_dataset()
+        # El contexto ya no es estático, se genera por chat_id
 
-    # ------------------ utilidades básicas ------------------
+    # ------------------ Gestión de Archivos y Chats (NUEVO) ------------------
+
+    def _inicializar_archivo_historial(self):
+        """Crea el archivo CSV con soporte para chat_id y boleta si no existe."""
+        if not os.path.exists(self.conversation_file):
+            try:
+                with open(self.conversation_file, "w", encoding="utf-8", newline="") as file:
+                    # Columnas actualizadas para soporte multi-chat [cite: 18]
+                    writer = csv.DictWriter(file, fieldnames=["chat_id", "boleta", "timestamp", "rol", "mensaje"])
+                    writer.writeheader()
+                print("📄 Nuevo archivo de historial creado con estructura multi-chat")
+            except Exception as e:
+                print(f"⚠️ Error al crear historial: {e}")
+
+    def crear_chat(self, boleta):
+        """Crea un nuevo ID de conversación[cite: 18]."""
+        chat_id = str(uuid.uuid4())
+        self._guardar_mensaje(chat_id, boleta, "sistema", "Inicio de nueva conversación")
+        return chat_id
+
+    def listar_chats(self, boleta):
+        """Devuelve todos los chat_id asociados a una boleta[cite: 30]."""
+        if not os.path.exists(self.conversation_file):
+            return []
+        
+        chats_encontrados = set()
+        try:
+            with open(self.conversation_file, "r", encoding="utf-8") as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    if row.get("boleta") == str(boleta):
+                        chats_encontrados.add(row["chat_id"])
+        except Exception as e:
+            print(f"Error listando chats: {e}")
+            return []
+        
+        return list(chats_encontrados)
+
+    def eliminar_chat(self, boleta, chat_id):
+        """Elimina físicamente los registros de un chat específico[cite: 46]."""
+        if not os.path.exists(self.conversation_file):
+            return False
+
+        temp_file = self.conversation_file + ".tmp"
+        chat_deleted = False
+
+        try:
+            with open(self.conversation_file, "r", encoding="utf-8") as infile, \
+                 open(temp_file, "w", encoding="utf-8", newline="") as outfile:
+                
+                reader = csv.DictReader(infile)
+                writer = csv.DictWriter(outfile, fieldnames=reader.fieldnames)
+                writer.writeheader()
+
+                for row in reader:
+                    # Si coincide chat_id Y boleta, NO lo escribimos (borrado lógico)
+                    if row["chat_id"] == chat_id and row["boleta"] == str(boleta):
+                        chat_deleted = True
+                        continue
+                    writer.writerow(row)
+            
+            shutil.move(temp_file, self.conversation_file)
+            return chat_deleted
+        except Exception as e:
+            print(f"Error al eliminar chat: {e}")
+            return False
+
+    def _guardar_mensaje(self, chat_id, boleta, rol, mensaje_texto):
+        """Guarda mensaje con contexto de chat y usuario."""
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            row = {
+                "chat_id": chat_id,
+                "boleta": boleta,
+                "timestamp": timestamp,
+                "rol": rol,     # 'usuario', 'modelo' o 'sistema'
+                "mensaje": mensaje_texto,
+            }
+            with open(self.conversation_file, "a", encoding="utf-8", newline="") as file:
+                writer = csv.DictWriter(file, fieldnames=["chat_id", "boleta", "timestamp", "rol", "mensaje"])
+                writer.writerow(row)
+        except Exception as e:
+            print(f"⚠️ Error al guardar mensaje: {e}")
+
+    def _obtener_contexto_historico(self, chat_id, num_mensajes=6):
+        """Recupera historial filtrado solo para el chat_id actual[cite: 42]."""
+        if not os.path.exists(self.conversation_file) or not chat_id:
+            return ""
+
+        mensajes_chat = []
+        try:
+            with open(self.conversation_file, "r", encoding="utf-8") as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    # Filtramos por ID de chat
+                    if row.get("chat_id") == chat_id and row.get("rol") != "sistema":
+                        mensajes_chat.append(row)
+        except Exception:
+            return ""
+
+        contexto = "\nCONTEXTO DE ESTA CONVERSACIÓN:\n"
+        mensajes_recientes = mensajes_chat[-num_mensajes:]
+
+        for m in mensajes_recientes:
+            if m["rol"] == "usuario":
+                contexto += f"Usuario: {m['mensaje']}\n"
+            elif m["rol"] == "modelo":
+                contexto += f"Asistente: {m['mensaje']}\n"
+
+        return contexto
+
+    def obtener_historial_chat(self, boleta, chat_id):
+        """Devuelve el historial completo de un chat específico como lista de dicts."""
+        if not os.path.exists(self.conversation_file):
+            return []
+            
+        mensajes = []
+        try:
+            with open(self.conversation_file, "r", encoding="utf-8") as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    # Validamos boleta y chat_id
+                    if row.get("chat_id") == chat_id and row.get("boleta") == str(boleta):
+                         # Convertimos rol de 'modelo' a 'bot' para consistencia con frontend si es necesario,
+                         # o lo dejamos tal cual. El front usa 'bot' y 'user'.
+                         # En csv guardamos: 'usuario', 'modelo', 'sistema'.
+                         
+                         rol_csv = row.get("rol")
+                         rol_front = "bot"
+                         if rol_csv == "usuario":
+                             rol_front = "user"
+                         elif rol_csv == "modelo":
+                             rol_front = "bot"
+                         elif rol_csv == "sistema":
+                             continue # Omitimos mensajes de sistema si queremos
+                             
+                         mensajes.append({
+                             "from": rol_front,
+                             "text": row.get("mensaje"),
+                             "timestamp": row.get("timestamp")
+                         })
+        except Exception as e:
+             print(f"Error recuperando historial: {e}")
+             return []
+             
+        return mensajes
+
+    # ------------------ utilidades básicas (Originales) ------------------
 
     def _cargar_dataset(self, dataset_path):
         try:
@@ -35,54 +185,6 @@ class ChatbotESCOMGemini:
                 return json.load(file)
         except Exception as e:
             raise ValueError(f"Error al cargar el dataset: {e}")
-
-    def _cargar_historial_conversacion(self):
-        historial = []
-        try:
-            if os.path.exists(self.conversation_file):
-                with open(self.conversation_file, "r", encoding="utf-8") as file:
-                    reader = csv.DictReader(file)
-                    for row in reader:
-                        historial.append(row)
-                print(f"📖 Historial cargado: {len(historial)} mensajes anteriores")
-            else:
-                with open(self.conversation_file, "w", encoding="utf-8", newline="") as file:
-                    writer = csv.DictWriter(file, fieldnames=["timestamp", "usuario", "modelo"])
-                    writer.writeheader()
-                print("📄 Nuevo archivo de historial creado")
-        except Exception as e:
-            print(f"⚠️ Error al cargar historial: {e}")
-        return historial
-
-    def _guardar_mensaje(self, usuario, modelo):
-        try:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            mensaje = {
-                "timestamp": timestamp,
-                "usuario": usuario,
-                "modelo": modelo,
-            }
-            with open(self.conversation_file, "a", encoding="utf-8", newline="") as file:
-                writer = csv.DictWriter(file, fieldnames=["timestamp", "usuario", "modelo"])
-                writer.writerow(mensaje)
-            self.conversation_history.append(mensaje)
-        except Exception as e:
-            print(f"⚠️ Error al guardar mensaje: {e}")
-
-    def _obtener_contexto_historico(self, num_mensajes=5):
-        if not self.conversation_history:
-            return ""
-
-        contexto = "\nCONTEXTO DE CONVERSACIÓN ANTERIOR:\n"
-        mensajes_recientes = self.conversation_history[-num_mensajes:]
-
-        for mensaje in mensajes_recientes:
-            if mensaje["usuario"].strip():
-                contexto += f"Usuario: {mensaje['usuario']}\n"
-            if mensaje["modelo"].strip():
-                contexto += f"Asistente: {mensaje['modelo']}\n"
-
-        return contexto
 
     def _conectar_bd(self):
         try:
@@ -110,8 +212,9 @@ class ChatbotESCOMGemini:
 
     # ------------------ contexto para Gemini ------------------
 
-    def _preparar_contexto_dataset(self):
-        contexto_historico = self._obtener_contexto_historico()
+    def _preparar_contexto_dataset(self, chat_id):
+        # El contexto ahora depende del chat_id específico
+        contexto_historico = self._obtener_contexto_historico(chat_id)
 
         return f"""
         Eres un asistente virtual especializado en ESCOM (Escuela Superior de Cómputo). 
@@ -157,7 +260,7 @@ class ChatbotESCOMGemini:
         - Usuario: "Necesito mis calificaciones" -> DB_QUERY:CALIFICACIONES:DEFAULT
         """
 
-    # ------------------ acceso BD ------------------
+    # ------------------ acceso BD (Originales) ------------------
 
     def _ejecutar_query_bd(self, query):
         if not self.db_connection:
@@ -346,7 +449,7 @@ class ChatbotESCOMGemini:
             resultado += f"  Calificación: {promedio:.1f}/5 | Comentario: {comentario or 'Sin comentario'}\n"
         return resultado
 
-    # ------------------ reglas rápidas antes de Gemini ------------------
+    # ------------------ reglas rápidas (Actualizadas) ------------------
 
     def _reglas_directas(self, pregunta, boleta_default=None):
         t = pregunta.lower()
@@ -390,23 +493,27 @@ class ChatbotESCOMGemini:
 
         return None
 
-    # ------------------ núcleo: procesar pregunta ------------------
+    # ------------------ núcleo: procesar pregunta (Actualizado) ------------------
 
-    def procesar_pregunta(self, pregunta, boleta_default=None):
+    def procesar_pregunta(self, pregunta, boleta, chat_id):
         """
-        Procesa la pregunta usando Gemini con el contexto del dataset.
-        La boleta NUNCA se envía a Gemini: sólo se usa localmente para
-        consultar la BD cuando el modelo devuelve un comando DB_QUERY.
+        Procesa la pregunta dentro de un chat específico. [cite: 55]
         """
+        # Validación
+        if not chat_id:
+            return "Error: Se requiere un ID de chat para procesar el mensaje."
+        
+        # 0) Guardar mensaje del usuario
+        self._guardar_mensaje(chat_id, boleta, "usuario", pregunta)
 
-        # 0) Atajos sin pasar por Gemini
-        directa = self._reglas_directas(pregunta, boleta_default)
+        # 0.5) Atajos sin pasar por Gemini (Reglas directas)
+        directa = self._reglas_directas(pregunta, boleta)
         if directa is not None:
-            self._guardar_mensaje(pregunta, directa)
+            self._guardar_mensaje(chat_id, boleta, "modelo", directa)
             return directa
 
-        # 1) Actualizar contexto
-        self.contexto_dataset = self._preparar_contexto_dataset()
+        # 1) Actualizar contexto ESPECÍFICO para este chat_id
+        self.contexto_dataset = self._preparar_contexto_dataset(chat_id)
 
         prompt = f"""
         {self.contexto_dataset}
@@ -435,9 +542,9 @@ class ChatbotESCOMGemini:
             if respuesta_gemini.startswith("DB_QUERY:"):
                 cmd = respuesta_gemini[len("DB_QUERY:"):].strip()
                 tipo, _, _ = cmd.partition(":")
-
                 tipo = tipo.strip().upper()
 
+                # Consultas válidas
                 consultas_validas = {
                     "PROMEDIO",
                     "CALIFICACIONES",
@@ -448,20 +555,21 @@ class ChatbotESCOMGemini:
                     "EVALUACION_DOCENTE",
                 }
 
-                if boleta_default and tipo in consultas_validas:
-                    query_real = f"{tipo}:{boleta_default}"
+                if boleta and tipo in consultas_validas:
+                    # Usamos la boleta que viene del request, no una extraída del texto
+                    query_real = f"{tipo}:{boleta}"
                 else:
                     respuesta_final = (
                         "Por seguridad no puedo consultar información personal, "
-                        "porque el sistema no me envió tu boleta."
+                        "porque el sistema no me envió tu boleta válida."
                     )
-                    self._guardar_mensaje(pregunta, respuesta_final)
+                    self._guardar_mensaje(chat_id, boleta, "modelo", respuesta_final)
                     return respuesta_final
 
                 # 3) Ejecutar consulta en BD
                 resultado_bd = self._ejecutar_query_bd(query_real)
 
-                # 4) Pedir a Gemini que redacte la respuesta bonita (sin boleta)
+                # 4) Pedir a Gemini que redacte la respuesta bonita
                 prompt_final = f"""
                 Contexto del dataset ESCOM: {json.dumps(self.dataset, ensure_ascii=False)}
 
@@ -469,18 +577,17 @@ class ChatbotESCOMGemini:
                 La consulta a la base de datos devolvió: "{resultado_bd}"
 
                 Genera una respuesta natural, útil y profesional combinando esta información.
-                Si es relevante, incorpora también información general del dataset ESCOM.
                 
                 Respuesta final:
                 """
                 respuesta_final_obj = self.model.generate_content(prompt_final)
                 respuesta_final = respuesta_final_obj.text.strip()
 
-                self._guardar_mensaje(pregunta, respuesta_final)
+                self._guardar_mensaje(chat_id, boleta, "modelo", respuesta_final)
                 return respuesta_final
 
             # 5) Respuesta directa del modelo
-            self._guardar_mensaje(pregunta, respuesta_gemini)
+            self._guardar_mensaje(chat_id, boleta, "modelo", respuesta_gemini)
             return respuesta_gemini
 
         except Exception as e:
@@ -491,20 +598,19 @@ class ChatbotESCOMGemini:
                     ["Lo siento, ocurrió un error. Por favor, intenta de nuevo."],
                 )
             )
-            self._guardar_mensaje(pregunta, respuesta_error)
+            self._guardar_mensaje(chat_id, boleta, "modelo", respuesta_error)
             return respuesta_error
 
-    # ------------------ modo consola (opcional) ------------------
+    # ------------------ modo consola (opcional/debug) ------------------
 
     def chat(self):
         print("🤖 Chatbot ESCOM con Gemini: ¡Hola! Soy tu asistente virtual inteligente.")
-        print("📚 Tengo acceso a información institucional de ESCOM.")
-        print("👤 Puedo consultar tu información personal cuando sea necesario.")
-        print("💾 Conversación guardada en:", self.conversation_file)
-        print("💡 Ejemplos: 'mi promedio', 'inscripciones', 'requisitos reinscripción', 'horario'\n")
-
-        if self.conversation_history:
-            print(f"📖 Contexto cargado: {len(self.conversation_history)} mensajes anteriores")
+        print("💾 Sistema Multi-Chat activado.")
+        
+        # Para pruebas en consola, creamos un chat temporal con boleta falsa
+        boleta_debug = "2020630000" 
+        chat_id_debug = self.crear_chat(boleta_debug)
+        print(f"🆔 Chat ID temporal: {chat_id_debug}")
 
         while True:
             try:
@@ -513,25 +619,19 @@ class ChatbotESCOMGemini:
                     continue
 
                 if usuario_input.lower() in ["salir", "exit", "quit", "adiós", "adios", "bye"]:
-                    despedida = random.choice(self.dataset.get("despedidas", ["¡Hasta luego!"]))
-                    print(f"🤖 Chatbot: {despedida}")
-                    self._guardar_mensaje(usuario_input, despedida)
+                    print("🤖 Chatbot: ¡Hasta luego!")
                     break
 
                 print("🔄 Procesando tu pregunta...")
-                respuesta = self.procesar_pregunta(usuario_input)
+                # Llamada actualizada con los 3 argumentos
+                respuesta = self.procesar_pregunta(usuario_input, boleta_debug, chat_id_debug)
                 print(f"🤖 Chatbot: {respuesta}\n")
 
             except KeyboardInterrupt:
-                despedida = random.choice(self.dataset.get("despedidas", ["¡Hasta luego!"]))
-                print(f"\n🤖 Chatbot: {despedida}")
+                print("\n🤖 Chatbot: ¡Hasta luego!")
                 break
             except Exception as e:
-                error_msg = f"Ocurrió un error. Por favor, intenta de nuevo. Error: {e}"
-                print(f"🤖 Chatbot: {error_msg}")
-                self._guardar_mensaje(
-                    usuario_input if "usuario_input" in locals() else "Unknown", error_msg
-                )
+                print(f"Error: {e}")
 
     def __del__(self):
         if hasattr(self, "db_connection") and self.db_connection:
@@ -541,7 +641,7 @@ class ChatbotESCOMGemini:
 
 if __name__ == "__main__":
     try:
-        dataset_path = "gembto/dataset_escom.json"
+        dataset_path = "ISSI_6BM2/ai/dataset_escom.json" # Asegúrate que la ruta sea correcta
         chatbot_escom = ChatbotESCOMGemini(
             dataset_path=dataset_path,
             conversation_file="conversation_history.csv",
@@ -549,11 +649,3 @@ if __name__ == "__main__":
         chatbot_escom.chat()
     except Exception as e:
         print(f"❌ Error al inicializar el chatbot: {e}")
-        print("\n🔧 Configuración necesaria:")
-        print("1. Crea un archivo .env con:")
-        print("   GEMINI_API_KEY=tu_clave_api_real")
-        print("   DB_HOST=localhost")
-        print("   DB_NAME=lytebd1")
-        print("   DB_USER=postgres")
-        print("   DB_PASSWORD=tu_password")
-        print("   DB_PORT=5432")

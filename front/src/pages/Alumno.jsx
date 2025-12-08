@@ -11,11 +11,21 @@ export default function Alumno() {
   const [sending, setSending] = useState(false)
   const [profile, setProfile] = useState(null)
 
+  // Chat management state
+  const [chats, setChats] = useState([])
+  const [currentChatId, setCurrentChatId] = useState(null)
+  const [chatLoading, setChatLoading] = useState(false)
+
   useEffect(() => {
     const t = localStorage.getItem('access_token') || ''
     fetch(`${API}/alumno/profile`, { headers: { Authorization: `Bearer ${t}` } })
       .then(r => r.json())
-      .then(d => setProfile(d))
+      .then(d => {
+        setProfile(d)
+        if (d && d.boleta && view === 'chat') {
+          loadChats(d.boleta)
+        }
+      })
       .catch(console.error)
 
     const style = document.createElement('style')
@@ -47,11 +57,99 @@ export default function Alumno() {
   }
 
   useEffect(() => {
+    // Cuando cambiamos a la vista chat, cargamos los chats si tenemos perfil
+    if (view === 'chat' && profile?.boleta) {
+      loadChats(profile.boleta)
+    }
+  }, [view, profile])
+
+  useEffect(() => {
     const el = scrollRef.current
     if (el && stickBottom) {
       el.scrollTop = el.scrollHeight
     }
   }, [messages, stickBottom])
+
+  // --- Funciones de Gestión de Chat ---
+
+  function loadChats(boleta) {
+    if (!boleta) return
+    fetch(`${API}/ai/chats`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ boleta })
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && d.conversaciones) {
+          setChats(d.conversaciones)
+        }
+      })
+      .catch(console.error)
+  }
+
+  function createNewChat() {
+    if (!profile?.boleta) return
+    setChatLoading(true)
+    fetch(`${API}/ai/chat/new`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ boleta: profile.boleta })
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          loadChats(profile.boleta)
+          selectChat(d.chat_id)
+        }
+      })
+      .catch(console.error)
+      .finally(() => setChatLoading(false))
+  }
+
+  function selectChat(chatId) {
+    if (!profile?.boleta) return
+    setCurrentChatId(chatId)
+    setChatLoading(true)
+    setMessages([]) // limpiar previo
+
+    fetch(`${API}/ai/chat/history`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ boleta: profile.boleta, chat_id: chatId })
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && d.history) {
+          setMessages(d.history)
+        }
+      })
+      .catch(console.error)
+      .finally(() => setChatLoading(false))
+  }
+
+  function deleteChat(e, chatId) {
+    e.stopPropagation() // evitar seleccionar el chat al borrar
+    if (!profile?.boleta) return
+    if (!confirm('¿Eliminar esta conversación?')) return
+
+    fetch(`${API}/ai/chat/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ boleta: profile.boleta, chat_id: chatId })
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          loadChats(profile.boleta)
+          if (currentChatId === chatId) {
+            setCurrentChatId(null)
+            setMessages([{ from: 'bot', text: 'Selecciona o crea un chat para comenzar.' }])
+          }
+        }
+      })
+      .catch(console.error)
+  }
 
   async function sendMessage() {
     const clean = text.trim()
@@ -60,11 +158,24 @@ export default function Alumno() {
     setMessages(prev => [...prev, { from: 'user', text: clean }])
     setText('')
     try {
+      if (!currentChatId) {
+        setMessages(prev => [...prev, { from: 'bot', text: 'Por favor, crea o selecciona un chat primero.' }])
+        setSending(false)
+        return
+      }
+
       const token = localStorage.getItem('access_token') || ''
+
+      const payload = {
+        pregunta: clean,
+        boleta: profile?.boleta,
+        chat_id: currentChatId
+      }
+
       const res = await fetch(`${API}/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ pregunta: clean })
+        body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error()
       const data = await res.json();
@@ -124,19 +235,60 @@ export default function Alumno() {
         {view === 'chat' && (
           <>
             <h2 style={styles.h2}>Chat Bot</h2>
-            <section style={styles.chatSection}>
-              <div style={styles.chatScroll} ref={scrollRef} onScroll={handleScroll}>
-                {messages.map((m, i) => (
-                  <div key={i} style={m.from === 'user' ? styles.msgUser : styles.msgBot}>
-                    {m.text}
-                  </div>
-                ))}
+
+            <div style={{ display: 'flex', gap: '20px', height: 'calc(100vh - 200px)' }}>
+              {/* Sidebar de Chats */}
+              <div style={styles.chatListSidebar}>
+                <button style={styles.newChatBtn} onClick={createNewChat}>
+                  + Nuevo Chat
+                </button>
+                <div style={styles.chatListScroll}>
+                  {chats.length === 0 && <div style={{ padding: 10, color: '#6a7aae', fontSize: 13 }}>No hay conversaciones recientes</div>}
+                  {chats.map(chatId => (
+                    <div
+                      key={chatId}
+                      onClick={() => selectChat(chatId)}
+                      style={{
+                        ...styles.chatItem,
+                        ...(chatId === currentChatId ? styles.chatItemActive : {})
+                      }}
+                    >
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                        Comversación...{chatId.slice(0, 5)}
+                      </span>
+                      <button onClick={(e) => deleteChat(e, chatId)} style={styles.deleteChatBtn}>×</button>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div style={styles.chatInput}>
-                <textarea value={text} onChange={e => setText(e.target.value)} onKeyDown={onKey} placeholder="Escribe..." disabled={sending} style={styles.textarea} />
-                <button style={styles.sendBtn} onClick={sendMessage} disabled={sending}>▶</button>
-              </div>
-            </section>
+
+              {/* Area de Mensajes */}
+              <section style={styles.chatSection}>
+                <div style={styles.chatScroll} ref={scrollRef} onScroll={handleScroll}>
+                  {currentChatId ? (
+                    messages.map((m, i) => (
+                      <div key={i} style={m.from === 'user' ? styles.msgUser : styles.msgBot}>
+                        {m.text}
+                        {m.timestamp && <div style={{ fontSize: 10, opacity: 0.6, marginTop: 4 }}>{m.timestamp}</div>}
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: 40, color: '#6a7aae' }}>Selecciona una conversación</div>
+                  )}
+                </div>
+                <div style={styles.chatInput}>
+                  <textarea
+                    value={text}
+                    onChange={e => setText(e.target.value)}
+                    onKeyDown={onKey}
+                    placeholder={currentChatId ? "Escribe..." : "Selecciona un chat"}
+                    disabled={sending || !currentChatId}
+                    style={styles.textarea}
+                  />
+                  <button style={styles.sendBtn} onClick={sendMessage} disabled={sending || !currentChatId}>▶</button>
+                </div>
+              </section>
+            </div>
           </>
         )}
         {view === 'perfil' && <DatosPersonales />}
@@ -203,33 +355,33 @@ function Kardex() {
             </tr>
           </thead>
           <tbody>
-  {kardex.map((k, i) => {
-    // Soportar tanto el esquema nuevo como el viejo del backend
-    const materia =
-      k.materia ??
-      k.materia_nombre ??   // por si viene como materia_nombre
-      k.nombre ??           // por si el view manda nombre
-      '';
+            {kardex.map((k, i) => {
+              // Soportar tanto el esquema nuevo como el viejo del backend
+              const materia =
+                k.materia ??
+                k.materia_nombre ??   // por si viene como materia_nombre
+                k.nombre ??           // por si el view manda nombre
+                '';
 
-    const estado =
-      k.estado ??
-      k.estatus ??          // por si viene como estatus
-      k.status ??           // por si algún día se llama status
-      '';
+              const estado =
+                k.estado ??
+                k.estatus ??          // por si viene como estatus
+                k.status ??           // por si algún día se llama status
+                '';
 
-    return (
-      <tr key={i} style={styles.tableRow}>
-        <td style={styles.td}>{k.periodo}</td>
-        <td style={styles.td}>{k.semestre}</td>
-        <td style={styles.td}>{k.materia_clave}</td>
-        <td style={styles.td}>{materia}</td>
-        <td style={styles.td}>{k.creditos}</td>
-        <td style={styles.td}>{k.calificacion}</td>
-        <td style={styles.td}>{estado}</td>
-      </tr>
-    );
-  })}
-</tbody>
+              return (
+                <tr key={i} style={styles.tableRow}>
+                  <td style={styles.td}>{k.periodo}</td>
+                  <td style={styles.td}>{k.semestre}</td>
+                  <td style={styles.td}>{k.materia_clave}</td>
+                  <td style={styles.td}>{materia}</td>
+                  <td style={styles.td}>{k.creditos}</td>
+                  <td style={styles.td}>{k.calificacion}</td>
+                  <td style={styles.td}>{estado}</td>
+                </tr>
+              );
+            })}
+          </tbody>
 
         </table>
       </div>
@@ -424,7 +576,7 @@ function Calificaciones() {
 
 function Reinscripcion() {
   const t = () => localStorage.getItem('access_token') || ''
- // puedes dejarlo fijo por ahora
+  // puedes dejarlo fijo por ahora
   const [periodos] = useState(['2025-2', '2025-1', '2024-2', '2024-1'])
   const [periodo, setPeriodo] = useState('2025-2')
 
@@ -1090,7 +1242,13 @@ const styles = {
   main: { flex: 1, padding: '40px', overflowY: 'auto', position: 'relative', zIndex: 10 },
   h2: { fontSize: '32px', fontWeight: '700', marginBottom: '28px', background: 'linear-gradient(135deg, #ffffff 0%, #6a7aae 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '-1px' },
   h3: { fontSize: '22px', fontWeight: '600', marginTop: '32px', marginBottom: '16px', color: '#d1d5e8' },
-  chatSection: { background: 'rgba(30, 43, 79, 0.6)', backdropFilter: 'blur(20px)', borderRadius: '20px', border: '1px solid rgba(106, 122, 174, 0.2)', padding: '24px', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)' },
+  chatListSidebar: { width: '250px', background: 'rgba(30, 43, 79, 0.4)', borderRadius: '20px', border: '1px solid rgba(106, 122, 174, 0.2)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' },
+  chatListScroll: { flex: 1, overflowY: 'auto' },
+  newChatBtn: { width: '100%', background: 'linear-gradient(135deg, #5a6a9e 0%, #6a7aae 100%)', border: 'none', borderRadius: '10px', padding: '12px', color: '#fff', cursor: 'pointer', fontWeight: '600', marginBottom: '8px' },
+  chatItem: { padding: '12px', borderRadius: '10px', background: 'rgba(58, 74, 122, 0.2)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#d1d5e8', transition: 'all 0.2s', marginBottom: '6px' },
+  chatItemActive: { background: 'rgba(106, 122, 174, 0.3)', border: '1px solid rgba(106, 122, 174, 0.4)', color: '#fff' },
+  deleteChatBtn: { background: 'transparent', border: 'none', color: '#ff8888', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold', padding: '0 6px' },
+  chatSection: { flex: 1, background: 'rgba(30, 43, 79, 0.6)', backdropFilter: 'blur(20px)', borderRadius: '20px', border: '1px solid rgba(106, 122, 174, 0.2)', padding: '24px', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)' },
   chatScroll: { flex: 1, overflowY: 'auto', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '8px' },
   msgBot: { background: 'linear-gradient(135deg, rgba(106, 122, 174, 0.3) 0%, rgba(90, 106, 158, 0.3) 100%)', border: '1px solid rgba(106, 122, 174, 0.3)', padding: '14px 18px', borderRadius: '16px 16px 16px 4px', maxWidth: '75%', alignSelf: 'flex-start', color: '#ffffff', fontSize: '15px', lineHeight: '1.5', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)' },
   msgUser: { background: 'linear-gradient(135deg, #5a6a9e 0%, #6a7aae 100%)', padding: '14px 18px', borderRadius: '16px 16px 4px 16px', maxWidth: '75%', alignSelf: 'flex-end', color: '#ffffff', fontSize: '15px', lineHeight: '1.5', boxShadow: '0 4px 12px rgba(106, 122, 174, 0.4)' },
