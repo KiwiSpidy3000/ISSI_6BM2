@@ -4,7 +4,7 @@ import 'dotenv/config';
 const { Pool } = pg;
 
 const {
-    DATABASE_URL = 'postgres://postgres:admin@localhost:5432/lytebd1',
+    DATABASE_URL = 'postgresql://lyteuser:Mi6ftLAB8WcTnfwMzNksICgYGcRu97Rv@dpg-d4s1t124d50c73b6noag-a.virginia-postgres.render.com/lytebd1',
     DB_SCHEMA = 'escom_aliz'
 } = process.env;
 
@@ -12,9 +12,10 @@ if (!DATABASE_URL) {
     console.warn('DATABASE_URL missing, using default');
 }
 
-// Create a new pool instance with the connection string from env
+// 🔹 AQUÍ ES DONDE FALTABA SSL
 const pool = new Pool({
-    connectionString: DATABASE_URL,
+  connectionString: DATABASE_URL,
+  ssl: { rejectUnauthorized: false }  // <- esto obliga HTTPS con Render
 });
 
 // Optional: Log when a new client connects to the pool
