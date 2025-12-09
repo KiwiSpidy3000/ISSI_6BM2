@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import ChatComponent from '../components/ChatComponent'
 
 const API = import.meta.env?.VITE_API_URL || 'http://localhost:3000'
 
@@ -132,7 +133,13 @@ export default function Profesor() {
         {view === 'grupos' && <Grupos />}
         {view === 'horario' && <Horario />}
         {view === 'calificaciones' && <Calificaciones />}
-        {view === 'chat' && <ChatBot />}
+        {view === 'chat' && (
+          <ChatComponent
+            userIdentifier={profile?.num_empleado || profile?.rfc}
+            userName={profile?.nombre_completo?.split(' ')[0]}
+            userRole="Profesor"
+          />
+        )}
       </main>
     </div>
   )
@@ -170,88 +177,7 @@ function DatosPersonales({ profile }) {
   )
 }
 
-function ChatBot() {
-  const [messages, setMessages] = useState([{ from: 'bot', text: '¡Hola Profesor! ¿En qué te puedo ayudar?' }])
-  const [text, setText] = useState('')
-  const [sending, setSending] = useState(false)
-  const [isTyping, setIsTyping] = useState(false)
-  const scrollRef = useRef(null)
-  const [stickBottom, setStickBottom] = useState(true)
 
-  function handleScroll() {
-    const el = scrollRef.current
-    if (!el) return
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
-    setStickBottom(nearBottom)
-  }
-
-  useEffect(() => {
-    const el = scrollRef.current
-    if (el && stickBottom) {
-      el.scrollTop = el.scrollHeight
-    }
-  }, [messages, stickBottom, isTyping])
-
-  async function sendMessage() {
-    const clean = text.trim()
-    if (!clean || sending) return
-    setSending(true)
-    setMessages(prev => [...prev, { from: 'user', text: clean }])
-    setText('')
-    setIsTyping(true)
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      const token = localStorage.getItem?.('access_token') || ''
-      const res = await fetch(`${API}/ai/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ message: clean })
-      })
-      const data = await res.json()
-      setMessages(prev => [...prev, { from: 'bot', text: data?.reply || 'Sin respuesta.' }])
-    } catch {
-      setMessages(prev => [...prev, { from: 'bot', text: 'AI service unavailable.' }])
-    } finally {
-      setIsTyping(false)
-      setSending(false)
-    }
-  }
-
-  function onKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }
-
-  return (
-    <>
-      <h2 style={styles.h2}>Chat Bot</h2>
-      <section style={styles.chatSection}>
-        <div style={styles.chatScroll} ref={scrollRef} onScroll={handleScroll}>
-          {messages.map((m, i) => (
-            <div key={i} style={m.from === 'user' ? styles.msgUser : styles.msgBot}>{m.text}</div>
-          ))}
-          {isTyping && (
-            <div style={styles.typingIndicator}>
-              <div style={{ ...styles.dot, animationDelay: '0s' }}></div>
-              <div style={{ ...styles.dot, animationDelay: '0.2s' }}></div>
-              <div style={{ ...styles.dot, animationDelay: '0.4s' }}></div>
-            </div>
-          )}
-        </div>
-        <div style={styles.chatInput}>
-          <textarea
-            value={text}
-            onChange={e => setText(e.target.value)}
-            onKeyDown={onKey}
-            placeholder="Escribe tu mensaje…"
-            disabled={sending || isTyping}
-            style={styles.textarea}
-          />
-          <button style={styles.sendBtn} onClick={sendMessage} disabled={sending || isTyping}>▶</button>
-        </div>
-      </section>
-    </>
-  )
-}
 
 function Grupos() {
   const [periodos, setPeriodos] = useState(['2025-2', '2025-1', '2024-2'])
@@ -259,25 +185,25 @@ function Grupos() {
   const [grupos, setGrupos] = useState([])
   const [dataLoading, setDataLoading] = useState(false)
 
- useEffect(() => {
-  if (!periodo) return
-  setDataLoading(true)
-  const token = localStorage.getItem('access_token') || ''
-  fetch(`${API}/profesor/grupos?periodo=${periodo}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-    .then(r => r.json())
-    .then(data => {
-      console.log('Respuesta /profesor/grupos:', data) // 👈 agrega esto
-      if (Array.isArray(data)) setGrupos(data)
-      else setGrupos([])
+  useEffect(() => {
+    if (!periodo) return
+    setDataLoading(true)
+    const token = localStorage.getItem('access_token') || ''
+    fetch(`${API}/profesor/grupos?periodo=${periodo}`, {
+      headers: { Authorization: `Bearer ${token}` }
     })
-    .catch(err => {
-      console.error('Error fetch grupos:', err)
-      setGrupos([])
-    })
-    .finally(() => setDataLoading(false))
-}, [periodo])
+      .then(r => r.json())
+      .then(data => {
+        console.log('Respuesta /profesor/grupos:', data) // 👈 agrega esto
+        if (Array.isArray(data)) setGrupos(data)
+        else setGrupos([])
+      })
+      .catch(err => {
+        console.error('Error fetch grupos:', err)
+        setGrupos([])
+      })
+      .finally(() => setDataLoading(false))
+  }, [periodo])
 
 
   return (

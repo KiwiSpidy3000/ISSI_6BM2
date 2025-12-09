@@ -12,7 +12,7 @@ load_dotenv()
 
 
 class ChatbotESCOMGemini:
-    def __init__(self, dataset_path, db_config=None, conversation_file="conversation_history.csv"):
+    def __init__(self, dataset_path, db_config=None):
         self.dataset = self._cargar_dataset(dataset_path)
         self.db_config = db_config or {
             "host": os.getenv("DB_HOST", "localhost"),
@@ -21,11 +21,9 @@ class ChatbotESCOMGemini:
             "password": os.getenv("DB_PASSWORD", ""),
             "port": os.getenv("DB_PORT", "5432"),
         }
-        self.conversation_file = conversation_file
-        self.conversation_history = self._cargar_historial_conversacion()
         self.db_connection = self._conectar_bd()
         self.model = self._inicializar_gemini()
-        self.contexto_dataset = self._preparar_contexto_dataset()
+        # self.contexto_dataset se generará dinámicamente
 
     # ------------------ utilidades básicas ------------------
 
@@ -36,25 +34,21 @@ class ChatbotESCOMGemini:
         except Exception as e:
             raise ValueError(f"Error al cargar el dataset: {e}")
 
-    def _cargar_historial_conversacion(self):
+    def _leer_historial(self, conversation_file):
         historial = []
         try:
-            if os.path.exists(self.conversation_file):
-                with open(self.conversation_file, "r", encoding="utf-8") as file:
+            if conversation_file and os.path.exists(conversation_file):
+                with open(conversation_file, "r", encoding="utf-8") as file:
                     reader = csv.DictReader(file)
                     for row in reader:
                         historial.append(row)
-                print(f"📖 Historial cargado: {len(historial)} mensajes anteriores")
-            else:
-                with open(self.conversation_file, "w", encoding="utf-8", newline="") as file:
-                    writer = csv.DictWriter(file, fieldnames=["timestamp", "usuario", "modelo"])
-                    writer.writeheader()
-                print("📄 Nuevo archivo de historial creado")
         except Exception as e:
-            print(f"⚠️ Error al cargar historial: {e}")
+            print(f"⚠️ Error al leer historial: {e}")
         return historial
 
-    def _guardar_mensaje(self, usuario, modelo):
+    def _guardar_mensaje(self, usuario, modelo, conversation_file):
+        if not conversation_file:
+            return
         try:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             mensaje = {
@@ -62,19 +56,23 @@ class ChatbotESCOMGemini:
                 "usuario": usuario,
                 "modelo": modelo,
             }
-            with open(self.conversation_file, "a", encoding="utf-8", newline="") as file:
+            # Asegurar headers si el archivo está vacío (aunque ChatManager lo crea)
+            file_exists = os.path.exists(conversation_file)
+            with open(conversation_file, "a", encoding="utf-8", newline="") as file:
                 writer = csv.DictWriter(file, fieldnames=["timestamp", "usuario", "modelo"])
+                if not file_exists:
+                    writer.writeheader()
                 writer.writerow(mensaje)
-            self.conversation_history.append(mensaje)
         except Exception as e:
             print(f"⚠️ Error al guardar mensaje: {e}")
 
-    def _obtener_contexto_historico(self, num_mensajes=5):
-        if not self.conversation_history:
+    def _obtener_contexto_historico(self, conversation_file, num_mensajes=5):
+        historial = self._leer_historial(conversation_file)
+        if not historial:
             return ""
 
         contexto = "\nCONTEXTO DE CONVERSACIÓN ANTERIOR:\n"
-        mensajes_recientes = self.conversation_history[-num_mensajes:]
+        mensajes_recientes = historial[-num_mensajes:]
 
         for mensaje in mensajes_recientes:
             if mensaje["usuario"].strip():
@@ -109,9 +107,9 @@ class ChatbotESCOMGemini:
         return genai.GenerativeModel("gemini-2.0-flash")
 
     # ------------------ contexto para Gemini ------------------
-
-    def _preparar_contexto_dataset(self):
-        contexto_historico = self._obtener_contexto_historico()
+    
+    def _preparar_contexto_dataset(self, conversation_file):
+        contexto_historico = self._obtener_contexto_historico(conversation_file)
 
         return f"""
         Eres un asistente virtual especializado en ESCOM (Escuela Superior de Cómputo). 
@@ -392,7 +390,7 @@ class ChatbotESCOMGemini:
 
     # ------------------ núcleo: procesar pregunta ------------------
 
-    def procesar_pregunta(self, pregunta, boleta_default=None):
+    def procesar_pregunta(self, pregunta, boleta_default=None, conversation_file=None):
         """
         Procesa la pregunta usando Gemini con el contexto del dataset.
         La boleta NUNCA se envía a Gemini: sólo se usa localmente para
@@ -402,14 +400,14 @@ class ChatbotESCOMGemini:
         # 0) Atajos sin pasar por Gemini
         directa = self._reglas_directas(pregunta, boleta_default)
         if directa is not None:
-            self._guardar_mensaje(pregunta, directa)
+            self._guardar_mensaje(pregunta, directa, conversation_file)
             return directa
 
-        # 1) Actualizar contexto
-        self.contexto_dataset = self._preparar_contexto_dataset()
+        # 1) Actualizar contexto (AHORA DEPENDE DE conversation_file)
+        contexto_dataset = self._preparar_contexto_dataset(conversation_file)
 
         prompt = f"""
-        {self.contexto_dataset}
+        {contexto_dataset}
         
         PREGUNTA DEL USUARIO: "{pregunta}"
 
@@ -455,7 +453,7 @@ class ChatbotESCOMGemini:
                         "Por seguridad no puedo consultar información personal, "
                         "porque el sistema no me envió tu boleta."
                     )
-                    self._guardar_mensaje(pregunta, respuesta_final)
+                    self._guardar_mensaje(pregunta, respuesta_final, conversation_file)
                     return respuesta_final
 
                 # 3) Ejecutar consulta en BD
@@ -476,11 +474,11 @@ class ChatbotESCOMGemini:
                 respuesta_final_obj = self.model.generate_content(prompt_final)
                 respuesta_final = respuesta_final_obj.text.strip()
 
-                self._guardar_mensaje(pregunta, respuesta_final)
+                self._guardar_mensaje(pregunta, respuesta_final, conversation_file)
                 return respuesta_final
 
             # 5) Respuesta directa del modelo
-            self._guardar_mensaje(pregunta, respuesta_gemini)
+            self._guardar_mensaje(pregunta, respuesta_gemini, conversation_file)
             return respuesta_gemini
 
         except Exception as e:
@@ -491,7 +489,7 @@ class ChatbotESCOMGemini:
                     ["Lo siento, ocurrió un error. Por favor, intenta de nuevo."],
                 )
             )
-            self._guardar_mensaje(pregunta, respuesta_error)
+            self._guardar_mensaje(pregunta, respuesta_error, conversation_file)
             return respuesta_error
 
     # ------------------ modo consola (opcional) ------------------

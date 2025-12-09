@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import ChatComponent from '../components/ChatComponent'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 export default function Alumno() {
   const nav = useNavigate()
   const [view, setView] = useState('chat')
-  const [messages, setMessages] = useState([{ from: 'bot', text: '¡Hola! ¿En qué te puedo ayudar?' }])
-  const [text, setText] = useState('')
-  const [sending, setSending] = useState(false)
   const [profile, setProfile] = useState(null)
 
   useEffect(() => {
@@ -36,46 +34,7 @@ export default function Alumno() {
     nav('/');
   }
 
-  const scrollRef = useRef(null)
-  const [stickBottom, setStickBottom] = useState(true)
 
-  function handleScroll() {
-    const el = scrollRef.current
-    if (!el) return
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
-    setStickBottom(nearBottom)
-  }
-
-  useEffect(() => {
-    const el = scrollRef.current
-    if (el && stickBottom) {
-      el.scrollTop = el.scrollHeight
-    }
-  }, [messages, stickBottom])
-
-  async function sendMessage() {
-    const clean = text.trim()
-    if (!clean || sending) return
-    setSending(true)
-    setMessages(prev => [...prev, { from: 'user', text: clean }])
-    setText('')
-    try {
-      const token = localStorage.getItem('access_token') || ''
-      const res = await fetch(`${API}/ai/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ pregunta: clean })
-      });
-      if (!res.ok) throw new Error()
-      const data = await res.json();
-      const reply = data.reply ?? data.respuesta ?? 'No entendí';
-      setMessages(prev => [...prev, { from: 'bot', text: reply }]);
-    } catch {
-      setMessages(prev => [...prev, { from: 'bot', text: 'Error de conexión.' }])
-    } finally { setSending(false) }
-  }
-
-  function onKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }
 
   return (
     <div style={styles.container}>
@@ -122,22 +81,11 @@ export default function Alumno() {
 
       <main style={styles.main}>
         {view === 'chat' && (
-          <>
-            <h2 style={styles.h2}>Chat Bot</h2>
-            <section style={styles.chatSection}>
-              <div style={styles.chatScroll} ref={scrollRef} onScroll={handleScroll}>
-                {messages.map((m, i) => (
-                  <div key={i} style={m.from === 'user' ? styles.msgUser : styles.msgBot}>
-                    {m.text}
-                  </div>
-                ))}
-              </div>
-              <div style={styles.chatInput}>
-                <textarea value={text} onChange={e => setText(e.target.value)} onKeyDown={onKey} placeholder="Escribe..." disabled={sending} style={styles.textarea} />
-                <button style={styles.sendBtn} onClick={sendMessage} disabled={sending}>▶</button>
-              </div>
-            </section>
-          </>
+          <ChatComponent
+            userIdentifier={profile?.boleta}
+            userName={profile?.nombre_completo?.split(' ')[0]}
+            userRole="Alumno"
+          />
         )}
         {view === 'perfil' && <DatosPersonales />}
         {view === 'kardex' && <Kardex />}

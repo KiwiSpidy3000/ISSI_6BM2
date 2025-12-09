@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import ChatComponent from "../components/ChatComponent"
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000"
 
@@ -8,15 +9,6 @@ export default function Admin() {
   const [view, setView] = useState("datos")
   const [profile, setProfile] = useState(null)
 
-  // Chat bot
-  const [messages, setMessages] = useState([
-    { from: "bot", text: "¡Hola Admin! ¿En qué te puedo ayudar?" }
-  ])
-  const [text, setText] = useState("")
-  const [sending, setSending] = useState(false)
-  const scrollRef = useRef(null)
-  const [stickBottom, setStickBottom] = useState(true)
-
   useEffect(() => {
     const t = localStorage.getItem("access_token") || ""
     fetch(`${API}/admin/profile`, {
@@ -24,7 +16,7 @@ export default function Admin() {
     })
       .then(r => r.json())
       .then(d => setProfile(d))
-      .catch(() => {})
+      .catch(() => { })
 
     // animaciones como Alumno / Profesor
     const style = document.createElement("style")
@@ -63,57 +55,7 @@ export default function Admin() {
     nav("/")
   }
 
-  function handleScroll() {
-    const el = scrollRef.current
-    if (!el) return
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80
-    setStickBottom(nearBottom)
-  }
 
-  useEffect(() => {
-    const el = scrollRef.current
-    if (el && stickBottom) {
-      el.scrollTop = el.scrollHeight
-    }
-  }, [messages, stickBottom])
-
-  async function sendMessage() {
-    const clean = text.trim()
-    if (!clean || sending) return
-    setSending(true)
-    setMessages(prev => [...prev, { from: "user", text: clean }])
-    setText("")
-
-    try {
-      const token = localStorage.getItem("access_token") || ""
-      const res = await fetch(`${API}/ai/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ pregunta: clean })
-      })
-      if (!res.ok) throw new Error()
-      const data = await res.json()
-      const reply = data.reply ?? data.respuesta ?? "Lo siento, no entendí."
-      setMessages(prev => [...prev, { from: "bot", text: reply }])
-    } catch (e) {
-      setMessages(prev => [
-        ...prev,
-        { from: "bot", text: "Error de conexión con el bot." }
-      ])
-    } finally {
-      setSending(false)
-    }
-  }
-
-  function onKey(e) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage()
-    }
-  }
 
   return (
     <div style={styles.container}>
@@ -209,42 +151,11 @@ export default function Admin() {
         {view === "reinscripcion" && <AdminReinscripcion />}
 
         {view === "chat" && (
-          <>
-            <h2 style={styles.h2}>Chat Bot</h2>
-            <section style={styles.chatSection}>
-              <div
-                style={styles.chatScroll}
-                ref={scrollRef}
-                onScroll={handleScroll}
-              >
-                {messages.map((m, i) => (
-                  <div
-                    key={i}
-                    style={m.from === "user" ? styles.msgUser : styles.msgBot}
-                  >
-                    {m.text}
-                  </div>
-                ))}
-              </div>
-              <div style={styles.chatInput}>
-                <textarea
-                  style={styles.textarea}
-                  value={text}
-                  onChange={e => setText(e.target.value)}
-                  onKeyDown={onKey}
-                  placeholder="Escribe tu mensaje..."
-                  disabled={sending}
-                />
-                <button
-                  style={styles.sendBtn}
-                  onClick={sendMessage}
-                  disabled={sending}
-                >
-                  ▶
-                </button>
-              </div>
-            </section>
-          </>
+          <ChatComponent
+            userIdentifier={profile?.correo || profile?.id}
+            userName={profile?.nombre?.split(" ")[0]}
+            userRole="Admin"
+          />
         )}
       </main>
     </div>
@@ -437,15 +348,15 @@ function AdminUsuarios() {
         prev.map(u =>
           String(u.id) === String(userForm.id)
             ? {
-                ...u,
-                nombre: userForm.nombre,
-                tipo: userForm.tipo,
-                estado: userForm.estado,
-                carrera: userForm.carrera,
-                grupo: userForm.grupo,
-                semestre: Number(userForm.semestre) || "",
-                email: userForm.email
-              }
+              ...u,
+              nombre: userForm.nombre,
+              tipo: userForm.tipo,
+              estado: userForm.estado,
+              carrera: userForm.carrera,
+              grupo: userForm.grupo,
+              semestre: Number(userForm.semestre) || "",
+              email: userForm.email
+            }
             : u
         )
       )
@@ -554,8 +465,8 @@ function AdminUsuarios() {
                       ...(u.tipo === "Alumno"
                         ? styles.badgeAlumno
                         : u.tipo === "Maestro"
-                        ? styles.badgeMaestro
-                        : styles.badgeAdmin)
+                          ? styles.badgeMaestro
+                          : styles.badgeAdmin)
                     }}
                   >
                     {u.tipo}
@@ -821,17 +732,17 @@ function AdminClases() {
         prev.map(c =>
           c.id === claseForm.id
             ? {
-                ...c,
-                grupo: claseForm.grupo,
-                materia: claseForm.materia,
-                profesor: claseForm.profesor,
-                carrera: claseForm.carrera,
-                semestre: claseForm.semestre,
-                horario: claseForm.horario,
-                cupo: Number(claseForm.cupo) || 0,
-                inscritos: Number(claseForm.inscritos) || 0,
-                estado: claseForm.estado
-              }
+              ...c,
+              grupo: claseForm.grupo,
+              materia: claseForm.materia,
+              profesor: claseForm.profesor,
+              carrera: claseForm.carrera,
+              semestre: claseForm.semestre,
+              horario: claseForm.horario,
+              cupo: Number(claseForm.cupo) || 0,
+              inscritos: Number(claseForm.inscritos) || 0,
+              estado: claseForm.estado
+            }
             : c
         )
       )
