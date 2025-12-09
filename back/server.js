@@ -26,7 +26,11 @@ if (!DATABASE_URL) throw new Error('Falta DATABASE_URL en .env');
 if (!JWT_SECRET) throw new Error('Falta JWT_SECRET en .env');
 
 const app = express();
-const pool = new Pool({ connectionString: DATABASE_URL });
+//const pool = new Pool({ connectionString: DATABASE_URL });
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 const { AI_URL = 'http://localhost:8000' } = process.env;
 
 app.use(helmet());
