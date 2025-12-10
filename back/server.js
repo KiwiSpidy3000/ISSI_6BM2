@@ -5,9 +5,10 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { Pool } from 'pg';
+import { pool } from './db/pool.js';
 import { z } from 'zod';
 import * as db from './db/queries.js';
+import adminRoutes from './admin_routes.js';
 
 
 const {
@@ -26,7 +27,8 @@ if (!DATABASE_URL) throw new Error('Falta DATABASE_URL en .env');
 if (!JWT_SECRET) throw new Error('Falta JWT_SECRET en .env');
 
 const app = express();
-const pool = new Pool({ connectionString: DATABASE_URL });
+// app.use('/admin', adminRoutes); // Moved down
+
 const { AI_URL = 'http://localhost:8000' } = process.env;
 
 app.use(helmet());
@@ -37,10 +39,13 @@ app.use(cors({
 }));
 app.use(rateLimit({ windowMs: 60_000, max: 30 }));
 
+// Mount admin routes AFTER middleware (CORS, JSON)
+app.use('/admin', requireAuth, adminRoutes);
+
 const loginBodySchema = z.object({
-  login: z.string().min(3).max(120),
-  password: z.string().min(6).max(100),
-  captchaToken: z.string().optional(),
+  login: z.string().min(1).max(120),
+  password: z.string().min(1).max(100),
+  captchaToken: z.string().nullable().optional(),
   role: z.string().optional() // 'ALUMNO', 'PROFESOR', 'ADMIN'
 });
 
@@ -228,31 +233,36 @@ app.post('/ai/chat', requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Falta 'pregunta' o 'message' en el body" });
     }
 
-    console.log('[AI] req.user =', req.user);
+    // Use consistent identity resolution
+    const userId = await resolveChatUserId(req.user);
+    const chatId = req.body.chat_id;
 
-    let boleta = null;
+    const body = {
+      message: text,
+      user_id: userId,
+      chat_id: chatId
+    };
 
-    // solo alumnos tienen boleta
+    // If it's an Alumno, 'userId' IS the boleta (string). 
+    // AI service might expect 'boleta' specifically for DB queries.
     if (req.user?.rol === 'ALUMNO') {
-      try {
-        const userId = req.user.sub;              // 👈 AQUÍ el id correcto
-        boleta = await db.getBoletaByUserId(userId);
-        console.log('[AI] boleta encontrada =', boleta);
-      } catch (e) {
-        console.error('[AI] Error obteniendo boleta:', e);
-      }
+      body.boleta = userId;
     }
 
-    const body = { message: text };
-    if (boleta) body.boleta = String(boleta);     // 👈 se la mandamos al microservicio
-
-    console.log('[AI] Body enviado a IA:', body);
+    // console.log('[AI] Body enviado a IA:', body);
 
     const r = await fetch(`${AI_URL}/ai/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
+
+    if (!r.ok) {
+      // Handle AI service errors gracefully
+      const errText = await r.text();
+      console.error('[AI] Service Error:', r.status, errText);
+      return res.status(r.status).json({ error: 'AI Error', details: errText });
+    }
 
     const data = await r.json();
     return res.json({
@@ -264,6 +274,113 @@ app.post('/ai/chat', requireAuth, async (req, res) => {
     return res.status(502).json({ error: 'AI service unavailable' });
   }
 });
+
+// --- Chat Management (List, Create, Delete, History) ---
+
+async function resolveChatUserId(user) {
+  const userId = user.sub;
+  // Default to userId if nothing found
+  let chatUserId = userId;
+
+  if (user.rol === 'ALUMNO') {
+    try {
+      const b = await db.getBoletaByUserId(userId);
+      if (b) chatUserId = String(b);
+    } catch (e) {
+      console.error('Error resolving boleta:', e);
+    }
+  } else {
+    // For non-alumnos, try to use email as identifier for consistency with frontend expectations if any,
+    // or just fallback to ID. Let's try to get email.
+    try {
+      const res = await pool.query(`SELECT email FROM ${DB_SCHEMA}.usuario WHERE id_usuario = $1`, [userId]);
+      if (res.rows.length) chatUserId = res.rows[0].email;
+    } catch (e) {
+      console.error('Error resolving email:', e);
+    }
+  }
+  return chatUserId;
+}
+
+// 1. New Chat
+app.post('/ai/chats/new', requireAuth, async (req, res) => {
+  try {
+    const userId = await resolveChatUserId(req.user);
+    console.log('[AI] Creating chat for:', userId);
+
+    const r = await fetch(`${AI_URL}/ai/chats/new`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId })
+    });
+
+    if (!r.ok) {
+      const err = await r.text();
+      return res.status(r.status).send(err);
+    }
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    console.error('AI new chat error:', e);
+    res.status(502).json({ error: 'AI service unavailable' });
+  }
+});
+
+// 2. List Chats
+app.get('/ai/chats', requireAuth, async (req, res) => {
+  try {
+    const userId = await resolveChatUserId(req.user);
+    const r = await fetch(`${AI_URL}/ai/chats?user_id=${encodeURIComponent(userId)}`);
+    if (!r.ok) {
+      const err = await r.text();
+      return res.status(r.status).send(err);
+    }
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    console.error('AI list chats error:', e);
+    res.status(502).json({ error: 'AI service unavailable' });
+  }
+});
+
+// 3. Delete Chat
+app.delete('/ai/chats/:chatId', requireAuth, async (req, res) => {
+  try {
+    const userId = await resolveChatUserId(req.user);
+    const { chatId } = req.params;
+    const r = await fetch(`${AI_URL}/ai/chats/${chatId}?user_id=${encodeURIComponent(userId)}`, {
+      method: 'DELETE'
+    });
+    if (!r.ok) {
+      const err = await r.text();
+      return res.status(r.status).send(err);
+    }
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    console.error('AI delete chat error:', e);
+    res.status(502).json({ error: 'AI service unavailable' });
+  }
+});
+
+// 4. Get Chat History
+app.get('/ai/chats/:chatId', requireAuth, async (req, res) => {
+  try {
+    const userId = await resolveChatUserId(req.user);
+    const { chatId } = req.params;
+    const r = await fetch(`${AI_URL}/ai/chats/${chatId}?user_id=${encodeURIComponent(userId)}`);
+    if (!r.ok) {
+      const err = await r.text();
+      return res.status(r.status).send(err);
+    }
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    console.error('AI history error:', e);
+    res.status(502).json({ error: 'AI service unavailable' });
+  }
+});
+
 
 
 app.get('/health', (req, res) => res.json({ ok: true }));
@@ -653,11 +770,11 @@ app.delete('/alumno/inscripcion/baja/:id_grupo', requireAuth, async (req, res) =
     `, [userId]);
     const currentLoad = parseFloat(lRes.rows[0].total);
 
-//IMPORTANTE, CUANDO SEA LA PRESENTACION FINAL ACTIVAR DE VUELTA LA REGLA DE NEGOCIO DE ABAJO
+    //IMPORTANTE, CUANDO SEA LA PRESENTACION FINAL ACTIVAR DE VUELTA LA REGLA DE NEGOCIO DE ABAJO
 
     //if (currentLoad - dropCredits < minCreds) {
-   //  throw new Error(`No puedes dar de baja: quedarías con menos de ${minCreds} créditos.`);
-   // }
+    //  throw new Error(`No puedes dar de baja: quedarías con menos de ${minCreds} créditos.`);
+    // }
 
     // 3. Ejecutar baja
     const result = await pool.query(`
@@ -847,6 +964,59 @@ app.get('/profesor/grupos', requireAuth, async (req, res) => {
   }
 });
 
+app.get('/profesor/horario', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') return res.status(403).json({ error: 'Acceso denegado' });
+  try {
+    const periodo = req.query.periodo || null;
+    const idProfesor = req.user.sub;
+    const data = await db.getProfessorSchedule(idProfesor, periodo);
+    res.json(data);
+  } catch (e) {
+    console.error('Error /profesor/horario:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/profesor/periodos', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  try {
+    const idProfesor = req.user.sub;
+    const periodos = await db.getProfessorPeriods(idProfesor);
+    res.json(periodos);
+  } catch (e) {
+    console.error('Error en /profesor/periodos:', e);
+    res.status(500).json({ error: 'Error obteniendo periodos' });
+  }
+});
+
+app.get('/profesor/grupo/:id_grupo/alumnos', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') return res.status(403).json({ error: 'Acceso denegado' });
+  try {
+    const { id_grupo } = req.params;
+    // TODO: Verify if the group belongs to this professor for security
+    const data = await db.getGroupStudentsWithGrades(id_grupo);
+    res.json(data);
+  } catch (e) {
+    console.error('Error /profesor/grupo/alumnos:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/profesor/calificar', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') return res.status(403).json({ error: 'Acceso denegado' });
+  try {
+    const { id_grupo, boleta, field, value } = req.body;
+    // TODO: Verify if the group belongs to this professor
+    const result = await db.updateStudentGrade(id_grupo, boleta, field, value);
+    res.json(result);
+  } catch (e) {
+    console.error('Error /profesor/calificar:', e);
+    res.status(400).json({ error: e.message });
+  }
+});
+
 
 
 
@@ -1004,6 +1174,17 @@ app.get('/alumno/bajas/info', requireAuth, async (req, res) => {
   }
 });
 
+app.get('/profesor/grupo/:id_grupo/stats', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') return res.status(403).send('Acceso denegado');
+  const { id_grupo } = req.params;
+  try {
+    const stats = await db.getGroupStatistics(id_grupo);
+    res.json(stats);
+  } catch (e) {
+    console.error('Error fetching stats:', e);
+    res.status(500).json({ error: 'Error al obtener estadísticas' });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Auth API escuchando en http://localhost:${PORT}`);
