@@ -653,11 +653,11 @@ app.delete('/alumno/inscripcion/baja/:id_grupo', requireAuth, async (req, res) =
     `, [userId]);
     const currentLoad = parseFloat(lRes.rows[0].total);
 
-//IMPORTANTE, CUANDO SEA LA PRESENTACION FINAL ACTIVAR DE VUELTA LA REGLA DE NEGOCIO DE ABAJO
+    //IMPORTANTE, CUANDO SEA LA PRESENTACION FINAL ACTIVAR DE VUELTA LA REGLA DE NEGOCIO DE ABAJO
 
     //if (currentLoad - dropCredits < minCreds) {
-   //  throw new Error(`No puedes dar de baja: quedarías con menos de ${minCreds} créditos.`);
-   // }
+    //  throw new Error(`No puedes dar de baja: quedarías con menos de ${minCreds} créditos.`);
+    // }
 
     // 3. Ejecutar baja
     const result = await pool.query(`
@@ -847,6 +847,59 @@ app.get('/profesor/grupos', requireAuth, async (req, res) => {
   }
 });
 
+app.get('/profesor/horario', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') return res.status(403).json({ error: 'Acceso denegado' });
+  try {
+    const periodo = req.query.periodo || null;
+    const idProfesor = req.user.sub;
+    const data = await db.getProfessorSchedule(idProfesor, periodo);
+    res.json(data);
+  } catch (e) {
+    console.error('Error /profesor/horario:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/profesor/periodos', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') {
+    return res.status(403).json({ error: 'Acceso denegado' });
+  }
+  try {
+    const idProfesor = req.user.sub;
+    const periodos = await db.getProfessorPeriods(idProfesor);
+    res.json(periodos);
+  } catch (e) {
+    console.error('Error en /profesor/periodos:', e);
+    res.status(500).json({ error: 'Error obteniendo periodos' });
+  }
+});
+
+app.get('/profesor/grupo/:id_grupo/alumnos', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') return res.status(403).json({ error: 'Acceso denegado' });
+  try {
+    const { id_grupo } = req.params;
+    // TODO: Verify if the group belongs to this professor for security
+    const data = await db.getGroupStudentsWithGrades(id_grupo);
+    res.json(data);
+  } catch (e) {
+    console.error('Error /profesor/grupo/alumnos:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/profesor/calificar', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') return res.status(403).json({ error: 'Acceso denegado' });
+  try {
+    const { id_grupo, boleta, field, value } = req.body;
+    // TODO: Verify if the group belongs to this professor
+    const result = await db.updateStudentGrade(id_grupo, boleta, field, value);
+    res.json(result);
+  } catch (e) {
+    console.error('Error /profesor/calificar:', e);
+    res.status(400).json({ error: e.message });
+  }
+});
+
 
 
 
@@ -1004,6 +1057,17 @@ app.get('/alumno/bajas/info', requireAuth, async (req, res) => {
   }
 });
 
+app.get('/profesor/grupo/:id_grupo/stats', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') return res.status(403).send('Acceso denegado');
+  const { id_grupo } = req.params;
+  try {
+    const stats = await db.getGroupStatistics(id_grupo);
+    res.json(stats);
+  } catch (e) {
+    console.error('Error fetching stats:', e);
+    res.status(500).json({ error: 'Error al obtener estadísticas' });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Auth API escuchando en http://localhost:${PORT}`);
