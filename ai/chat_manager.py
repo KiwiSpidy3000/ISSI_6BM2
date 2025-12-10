@@ -21,11 +21,17 @@ class ChatManager:
     def create_chat(self, user_id, title="Nuevo Chat"):
         chat_id = str(uuid.uuid4())
         filename = self._get_filename(user_id, chat_id)
+        print(f"DEBUG: Intentando crear chat en: {os.path.abspath(filename)}")
         
         # Create empty CSV with header
-        with open(filename, "w", encoding="utf-8", newline="") as file:
-            writer = csv.DictWriter(file, fieldnames=["timestamp", "usuario", "modelo"])
-            writer.writeheader()
+        try:
+            with open(filename, "w", encoding="utf-8", newline="") as file:
+                writer = csv.DictWriter(file, fieldnames=["timestamp", "usuario", "modelo"])
+                writer.writeheader()
+            print(f"DEBUG: Chat file created successfully: {filename}")
+        except Exception as e:
+            print(f"ERROR: Failed to create chat file: {e}")
+            raise e
             
         return {
             "chat_id": chat_id,
@@ -37,6 +43,7 @@ class ChatManager:
         safe_user_id = str(user_id).replace("@", "_at_").replace(".", "_dot_")
         pattern = os.path.join(self.chats_dir, f"chat_{safe_user_id}_*.csv")
         files = glob.glob(pattern)
+        print(f"DEBUG: Buscando chats para {user_id} (pattern: {pattern}) -> Encontrados: {len(files)}")
         
         chats = []
         for f in files:
