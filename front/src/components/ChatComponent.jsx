@@ -14,14 +14,22 @@ export default function ChatComponent({ userIdentifier, userName, userRole }) {
 
     // -- Fetch Chats List --
     useEffect(() => {
-        if (!userIdentifier) return
+        // We no longer block if userIdentifier is missing, because backend handles identity.
+        // But we wait a tick to ensure auth is ready if needed, or just call it.
         listChats()
     }, [userIdentifier])
 
+
     async function listChats() {
         try {
-            // Need backend endpoint: GET /ai/chats?user_id=...
-            const res = await fetch(`${API}/ai/chats?user_id=${encodeURIComponent(userIdentifier)}`)
+            // Backend handles user_id resolution securely. We pass userIdentifier just in case,
+            // but even if undefined, backend resolves it from token.
+            const token = localStorage.getItem('access_token') || ''
+            const res = await fetch(`${API}/ai/chats?user_id=${encodeURIComponent(userIdentifier || '')}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+
+
             if (res.ok) {
                 const data = await res.json()
                 setChats(data)
@@ -41,13 +49,19 @@ export default function ChatComponent({ userIdentifier, userName, userRole }) {
 
     // -- Create New Chat --
     async function createNewChat() {
-        if (!userIdentifier) return
+        // Removed blocking check: if (!userIdentifier) return
+
         try {
+            const token = localStorage.getItem('access_token') || ''
             const res = await fetch(`${API}/ai/chats/new`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
                 body: JSON.stringify({ user_id: userIdentifier })
             })
+
             if (res.ok) {
                 const newChat = await res.json()
                 await listChats()
@@ -83,7 +97,11 @@ export default function ChatComponent({ userIdentifier, userName, userRole }) {
         setCurrentChatId(chatId)
         setMessages([])
         try {
-            const res = await fetch(`${API}/ai/chats/${chatId}?user_id=${encodeURIComponent(userIdentifier)}`)
+            const token = localStorage.getItem('access_token') || ''
+            const res = await fetch(`${API}/ai/chats/${chatId}?user_id=${encodeURIComponent(userIdentifier)}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+
             if (res.ok) {
                 const history = await res.json()
                 // Transform CSV history to UI messages
@@ -168,12 +186,11 @@ export default function ChatComponent({ userIdentifier, userName, userRole }) {
                     pregunta: clean,
                     chat_id: activeChatId,
                     user_id: userIdentifier,
-                    // Pass boleta/email if needed for DB lookups specific logic?
-                    // The backend extracts user info from DB or token usually, 
-                    // BUT instructions say we need to validate "correo o boleta".
-                    // The userIdentifier passed in IS the email/boleta.
-                    boleta: userRole === 'Alumno' ? userIdentifier : undefined
+                    // Backend resolves logic now.
+                    // We can send null or the identifier if we have it.
+                    // boleta logic handled by backend too.
                 })
+
             })
 
             const data = await res.json()
@@ -221,8 +238,9 @@ export default function ChatComponent({ userIdentifier, userName, userRole }) {
                     ))}
                     {chats.length === 0 && (
                         <div style={{ padding: '20px', textAlign: 'center', opacity: 0.5, fontSize: '0.9em' }}>
-                            {!userIdentifier ? 'Cargando perfil...' : 'No hay chats guardados.'}
+                            {'No hay chats guardados. Crea uno nuevo.'}
                         </div>
+
                     )}
                 </div>
             </div>

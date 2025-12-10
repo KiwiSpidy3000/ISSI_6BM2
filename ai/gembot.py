@@ -8,7 +8,12 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 from datetime import datetime
 
-load_dotenv()
+# Force UTF-8 or standard encoding for Windows
+try:
+    load_dotenv(encoding="utf-8")
+except:
+    load_dotenv()
+
 
 
 class ChatbotESCOMGemini:
@@ -84,14 +89,23 @@ class ChatbotESCOMGemini:
 
     def _conectar_bd(self):
         try:
-            conn = psycopg2.connect(**self.db_config)
+            # Add client_encoding to params to ensure consistent communication
+            params = self.db_config.copy()
+            params["client_encoding"] = "utf8"
+            conn = psycopg2.connect(**params)
             conn.autocommit = True
             print("✅ Conexión a la base de datos local establecida")
             return conn
         except Exception as e:
-            print(f"❌ Error al conectar con la base de datos local: {e}")
+            # Safely print error even if it contains non-utf8 chars (like Windows Spanish messages)
+            try:
+                msg = str(e)
+            except:
+                msg = "Error de codificación en el mensaje de error de BD"
+            print(f"❌ Error al conectar con la base de datos local: {msg}")
             print("🔧 Asegúrate de que PostgreSQL esté corriendo en localhost")
             return None
+
 
     def _extraer_boleta(self, texto):
         """Busca una cadena de 10 dígitos que parezca boleta."""

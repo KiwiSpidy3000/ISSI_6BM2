@@ -122,6 +122,7 @@ def reload_dataset():
 @app.post("/ai/chats/new")
 async def create_new_chat(request: Request):
     payload = await _parse_payload(request)
+    print(f"DEBUG: create_new_chat payload received: {payload}")
     user_id = payload.get("user_id")
     if not user_id:
          raise HTTPException(status_code=400, detail="Missing user_id")
