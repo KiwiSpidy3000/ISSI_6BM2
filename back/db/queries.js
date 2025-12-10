@@ -322,6 +322,17 @@ export async function insertEnrollment({ id_alumno, id_grupo }) {
   return rows[0];
 }
 
+export async function getProfessorPeriods(id_profesor) {
+  const query = `
+    SELECT DISTINCT periodo
+    FROM ${DB_SCHEMA}.grupo
+    WHERE id_profesor = $1
+    ORDER BY periodo DESC
+  `;
+  const { rows } = await pool.query(query, [id_profesor]);
+  return rows.map(r => r.periodo);
+}
+
 export async function getProfessorGroups(id_profesor, periodo) {
   // 👀 Debug útil en consola de Node
   console.log('getProfessorGroups called with:', { id_profesor, periodo });
@@ -454,8 +465,6 @@ export async function getAllGroupsForOffer() {
   return rows;
 }
 
-// al inicio del archivo ya tienes: import { pool, DB_SCHEMA } from './pool.js';
-
 export async function getBoletaByUserId(id_usuario) {
   const query = `
     SELECT boleta
@@ -465,3 +474,81 @@ export async function getBoletaByUserId(id_usuario) {
   const { rows } = await pool.query(query, [id_usuario]);
   return rows[0]?.boleta || null;
 }
+
+export async function getProfessorSchedule(id_profesor, periodo) {
+  const query = `
+    SELECT 
+      h.dia_semana, 
+      h.hora_ini, 
+      h.hora_fin, 
+      m.nombre AS materia_nombre, 
+      g.id_grupo, 
+      h.aula
+    FROM ${DB_SCHEMA}.horario h
+    JOIN ${DB_SCHEMA}.grupo g ON h.id_grupo = g.id_grupo
+    JOIN ${DB_SCHEMA}.materia m ON g.id_materia = m.id_materia
+    WHERE g.id_profesor = $1
+      AND ($2::text IS NULL OR g.periodo = $2)
+    ORDER BY h.dia_semana, h.hora_ini;
+  `;
+  const { rows } = await pool.query(query, [id_profesor, periodo]);
+  return rows;
+}
+
+export async function getGroupStudentsWithGrades(id_grupo) {
+  const query = `
+    SELECT 
+      a.boleta,
+      (u.nombre || ' ' || u.apellido) AS nombre_completo,
+      c.p1, 
+      c.p2, 
+      c.ordinario
+    FROM ${DB_SCHEMA}.inscripcion i
+    JOIN ${DB_SCHEMA}.alumno a ON i.id_alumno = a.id_alumno
+    JOIN ${DB_SCHEMA}.usuario u ON a.id_alumno = u.id_usuario
+    LEFT JOIN ${DB_SCHEMA}.calificacion c ON c.id_alumno = a.id_alumno AND c.id_grupo = i.id_grupo
+    WHERE i.id_grupo = $1 
+      AND i.estado = 'INSCRITO'
+    ORDER BY u.apellido, u.nombre;
+  `;
+  const { rows } = await pool.query(query, [id_grupo]);
+  return rows;
+}
+
+export async function updateStudentGrade(id_grupo, boleta, field, value) {
+  // 1. Get student ID from boleta
+  const sRes = await pool.query(`SELECT id_alumno FROM ${DB_SCHEMA}.alumno WHERE boleta = $1`, [boleta]);
+  if (!sRes.rows.length) throw new Error('Alumno no encontrado');
+  const id_alumno = sRes.rows[0].id_alumno;
+
+  // 2. Insert or Update calificacion
+  // We need to handle the dynamic field (p1, p2, ordinario) safely.
+  // Although "field" comes from our code, it's safer to whitelist it.
+  const allowedFields = ['p1', 'p2', 'ordinario'];
+  if (!allowedFields.includes(field)) throw new Error('Campo inválido');
+
+  const query = `
+    INSERT INTO ${DB_SCHEMA}.calificacion (id_alumno, id_grupo, ${field})
+    VALUES ($1, $2, $3)
+    ON CONFLICT (id_alumno, id_grupo)
+    DO UPDATE SET ${field} = EXCLUDED.${field};
+  `;
+
+  await pool.query(query, [id_alumno, id_grupo, value]);
+  return { ok: true };
+}
+export async function getGroupStatistics(id_grupo) {
+  const query = `
+    SELECT
+      COUNT(*) AS total_alumnos,
+      SUM(CASE WHEN (COALESCE(c.p1,0) + COALESCE(c.p2,0) + COALESCE(c.ordinario,0))/3.0 >= 6 THEN 1 ELSE 0 END) AS aprobados,
+      SUM(CASE WHEN (COALESCE(c.p1,0) + COALESCE(c.p2,0) + COALESCE(c.ordinario,0))/3.0 < 6 THEN 1 ELSE 0 END) AS reprobados,
+      AVG((COALESCE(c.p1,0) + COALESCE(c.p2,0) + COALESCE(c.ordinario,0))/3.0) AS promedio_general
+    FROM ${DB_SCHEMA}.inscripcion i
+    LEFT JOIN ${DB_SCHEMA}.calificacion c ON c.id_alumno = i.id_alumno AND c.id_grupo = i.id_grupo
+    WHERE i.id_grupo = $1 AND i.estado = 'INSCRITO';
+  `;
+  const { rows } = await pool.query(query, [id_grupo]);
+  return rows[0];
+}
+
