@@ -8,6 +8,7 @@ import bcrypt from 'bcrypt';
 import { pool } from './db/pool.js';
 import { z } from 'zod';
 import * as db from './db/queries.js';
+import adminRoutes from './admin_routes.js';
 
 
 const {
@@ -26,6 +27,7 @@ if (!DATABASE_URL) throw new Error('Falta DATABASE_URL en .env');
 if (!JWT_SECRET) throw new Error('Falta JWT_SECRET en .env');
 
 const app = express();
+// app.use('/admin', adminRoutes); // Moved down
 
 const { AI_URL = 'http://localhost:8000' } = process.env;
 
@@ -37,10 +39,13 @@ app.use(cors({
 }));
 app.use(rateLimit({ windowMs: 60_000, max: 30 }));
 
+// Mount admin routes AFTER middleware (CORS, JSON)
+app.use('/admin', requireAuth, adminRoutes);
+
 const loginBodySchema = z.object({
-  login: z.string().min(3).max(120),
-  password: z.string().min(6).max(100),
-  captchaToken: z.string().optional(),
+  login: z.string().min(1).max(120),
+  password: z.string().min(1).max(100),
+  captchaToken: z.string().nullable().optional(),
   role: z.string().optional() // 'ALUMNO', 'PROFESOR', 'ADMIN'
 });
 

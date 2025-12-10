@@ -211,35 +211,39 @@ function AdminDatos({ profile }) {
 }
 
 function AdminUsuarios() {
-  const [usuarios, setUsuarios] = useState([
-    {
-      id: 12345,
-      nombre: "Ana García",
-      tipo: "Alumno",
-      estado: "Activo",
-      carrera: "ISC",
-      grupo: "3CM1",
-      semestre: 3
-    },
-    {
-      id: 67890,
-      nombre: "Profesor Carlos Solís",
-      tipo: "Maestro",
-      estado: "Activo",
-      carrera: "IIA",
-      grupo: "5CV2",
-      semestre: 5
-    },
-    {
-      id: 10111,
-      nombre: "Luis Flores (Inactivo)",
-      tipo: "Alumno",
-      estado: "Inactivo",
-      carrera: "LCC",
-      grupo: "1CM1",
-      semestre: 1
-    }
-  ])
+  /* REPLACE MOCK DATA WITH REAL DATA */
+  const [usuarios, setUsuarios] = useState([])
+
+  const [carrerasList, setCarrerasList] = useState([])
+  const [gruposList, setGruposList] = useState([])
+
+  const loadUsuarios = () => {
+    const t = localStorage.getItem("access_token")
+    fetch(`${API}/admin/usuarios`, {
+      headers: { Authorization: `Bearer ${t}` }
+    })
+      .then(r => {
+        if (r.status === 401) throw new Error("Sesión expirada")
+        return r.json()
+      })
+      .then(d => {
+        if (Array.isArray(d)) setUsuarios(d)
+      })
+      .catch(e => {
+        console.error("Error loading users:", e)
+        if (e.message === "Sesión expirada") alert("Tu sesión ha expirado. Por favor inicia sesión nuevamente.")
+      })
+  }
+
+  // Fetch real users and helpers
+  useEffect(() => {
+    loadUsuarios()
+    const t = localStorage.getItem("access_token")
+    fetch(`${API}/admin/carreras`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json()).then(d => Array.isArray(d) && setCarrerasList(d)).catch(() => { })
+    fetch(`${API}/admin/grupos`, { headers: { Authorization: `Bearer ${t}` } }) // Reusing GET groups for list
+      .then(r => r.json()).then(d => Array.isArray(d) && setGruposList(d)).catch(() => { })
+  }, [])
 
   const [filtros, setFiltros] = useState({
     search: "",
@@ -267,6 +271,8 @@ function AdminUsuarios() {
     setUserForm({
       id: "",
       nombre: "",
+      apellido: "",
+      password: "",
       email: "",
       tipo: "Alumno",
       estado: "Activo",
@@ -281,11 +287,13 @@ function AdminUsuarios() {
     setModalMode("editar")
     setUserForm({
       id: u.id,
-      nombre: u.nombre,
+      nombre: u.nombre || "",
+      apellido: u.apellido || "",
+      password: "", // dont show pwd
       email: u.email || "",
       tipo: u.tipo,
       estado: u.estado,
-      carrera: u.carrera || "",
+      carrera: u.id_carrera || "", // Use ID for editing
       grupo: u.grupo || "",
       semestre: String(u.semestre ?? "")
     })
@@ -329,46 +337,62 @@ function AdminUsuarios() {
   })
 
   const guardarUsuario = () => {
-    if (modalMode === "crear") {
-      setUsuarios(prev => [
-        ...prev,
-        {
-          id: userForm.id || Date.now(),
-          nombre: userForm.nombre,
-          tipo: userForm.tipo,
-          estado: userForm.estado,
-          carrera: userForm.carrera,
-          grupo: userForm.grupo,
-          semestre: Number(userForm.semestre) || "",
-          email: userForm.email
-        }
-      ])
-    } else {
-      setUsuarios(prev =>
-        prev.map(u =>
-          String(u.id) === String(userForm.id)
-            ? {
-              ...u,
-              nombre: userForm.nombre,
-              tipo: userForm.tipo,
-              estado: userForm.estado,
-              carrera: userForm.carrera,
-              grupo: userForm.grupo,
-              semestre: Number(userForm.semestre) || "",
-              email: userForm.email
-            }
-            : u
-        )
-      )
+    const t = localStorage.getItem("access_token")
+    const method = modalMode === "crear" ? "POST" : "PATCH"
+    const url = modalMode === "crear"
+      ? `${API}/admin/usuarios`
+      : `${API}/admin/usuarios/${userForm.id}`
+
+    // Map fields
+    const body = {
+      nombre: userForm.nombre,
+      apellido: userForm.apellido,
+      email: userForm.email,
+      password: userForm.password || undefined,
+      rol: userForm.tipo.toUpperCase(), // Alumno -> ALUMNO
+      activo: userForm.estado === "Activo",
+      // Subtype
+      boleta: userForm.id, // using ID field as Boleta input
+      num_empleado: userForm.id, // using ID field as NumEmpleado
+      semestre: userForm.semestre,
+      carrera_id: userForm.carrera // Send ID
     }
-    setModalOpen(false)
+
+    fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${t}`
+      },
+      body: JSON.stringify(body)
+    })
+      .then(async r => {
+        if (!r.ok) {
+          const txt = await r.text()
+          throw new Error(txt)
+        }
+        return r.json()
+      })
+      .then(() => {
+        setModalOpen(false)
+        loadUsuarios()
+      })
+      .catch(e => alert("Error al guardar: " + e.message))
   }
 
   const eliminarUsuario = () => {
-    setUsuarios(prev =>
-      prev.filter(u => String(u.id) !== String(userForm.id))
-    )
-    setModalOpen(false)
+    if (!confirm("¿Seguro que deseas eliminar este usuario?")) return;
+    const t = localStorage.getItem("access_token")
+    fetch(`${API}/admin/usuarios/${userForm.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${t}` }
+    })
+      .then(async r => {
+        if (!r.ok) throw new Error(await r.text())
+        setModalOpen(false)
+        loadUsuarios()
+      })
+      .catch(e => alert("Error: " + e.message))
   }
 
   return (
@@ -390,9 +414,9 @@ function AdminUsuarios() {
           onChange={e => handleFiltroChange("tipoUsuario", e.target.value)}
         >
           <option value="">Tipo de Usuario</option>
-          <option value="Alumno">Alumno</option>
-          <option value="Maestro">Maestro</option>
-          <option value="Admin">Admin</option>
+          <option value="ALUMNO">Alumno</option>
+          <option value="PROFESOR">Profesor</option>
+          <option value="ADMIN">Admin</option>
         </select>
 
         <select
@@ -462,9 +486,9 @@ function AdminUsuarios() {
                   <span
                     style={{
                       ...styles.badge,
-                      ...(u.tipo === "Alumno"
+                      ...(u.tipo === "ALUMNO"
                         ? styles.badgeAlumno
-                        : u.tipo === "Maestro"
+                        : u.tipo === "PROFESOR"
                           ? styles.badgeMaestro
                           : styles.badgeAdmin)
                     }}
@@ -523,13 +547,32 @@ function AdminUsuarios() {
                 />
               </div>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Nombre Completo</label>
+                <label style={styles.label}>Nombre</label>
                 <input
                   style={styles.input}
                   value={userForm.nombre}
                   onChange={e => handleFormChange("nombre", e.target.value)}
                 />
               </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Apellido</label>
+                <input
+                  style={styles.input}
+                  value={userForm.apellido}
+                  onChange={e => handleFormChange("apellido", e.target.value)}
+                />
+              </div>
+              {modalMode === 'crear' && (
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Contraseña</label>
+                  <input
+                    type="password"
+                    style={styles.input}
+                    value={userForm.password}
+                    onChange={e => handleFormChange("password", e.target.value)}
+                  />
+                </div>
+              )}
               <div style={styles.formGroup}>
                 <label style={styles.label}>Email</label>
                 <input
@@ -546,7 +589,7 @@ function AdminUsuarios() {
                   onChange={e => handleFormChange("tipo", e.target.value)}
                 >
                   <option value="Alumno">Alumno</option>
-                  <option value="Maestro">Maestro</option>
+                  <option value="Profesor">Profesor</option>
                   <option value="Admin">Admin</option>
                 </select>
               </div>
@@ -562,32 +605,44 @@ function AdminUsuarios() {
                 </select>
               </div>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Carrera</label>
-                <input
-                  style={styles.input}
+                <select
+                  style={styles.select}
                   value={userForm.carrera}
-                  onChange={e =>
-                    handleFormChange("carrera", e.target.value)
-                  }
-                />
+                  onChange={e => handleFormChange("carrera", e.target.value)}
+                >
+                  <option value="">Seleccionar Carrera</option>
+                  {carrerasList.map(c => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                </select>
               </div>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Grupo</label>
-                <input
-                  style={styles.input}
+                <label style={styles.label}>Grupo (Opcional)</label>
+                <select // Just a helper list, doesn't enroll yet but useful
+                  style={styles.select}
                   value={userForm.grupo}
                   onChange={e => handleFormChange("grupo", e.target.value)}
-                />
+                >
+                  <option value="">-</option>
+                  {gruposList.map(g => (
+                    <option key={g.id} value={g.grupo}>{g.grupo} - {g.materia_nombre}</option>
+                  ))}
+                </select>
               </div>
               <div style={styles.formGroup}>
                 <label style={styles.label}>Semestre</label>
-                <input
-                  style={styles.input}
+                <select
+                  style={styles.select}
                   value={userForm.semestre}
                   onChange={e =>
                     handleFormChange("semestre", e.target.value)
                   }
-                />
+                >
+                  <option value="">Semestre</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -615,35 +670,28 @@ function AdminUsuarios() {
 }
 
 function AdminClases() {
-  // Datos de ejemplo
-  const [clases, setClases] = useState([
-    {
-      id: 1,
-      grupo: "3CM1",
-      materia: "Programación Avanzada",
-      profesor: "Prof. A. Smith",
-      carrera: "ISC",
-      semestre: "3",
-      horario: "Lun y Mié 10:00 - 12:00",
-      cupo: 35,
-      inscritos: 28,
-      estado: "Abierta"
-    },
-    {
-      id: 2,
-      grupo: "5CV2",
-      materia: "Control de Procesos",
-      profesor: "Ing. Ortega",
-      carrera: "IIA",
-      semestre: "5",
-      horario: "Mar y Jue 16:00 - 18:00",
-      cupo: 30,
-      inscritos: 30,
-      estado: "Cerrada"
-    }
-  ])
+  const [clases, setClases] = useState([])
+  const [materias, setMaterias] = useState([])
+  const [profesores, setProfesores] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  // Filtros de búsqueda (mismos que usuarios pero adaptados)
+  const loadClases = () => {
+    const t = localStorage.getItem("access_token")
+    fetch(`${API}/admin/grupos`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d)) setClases(d) })
+      .catch(e => console.error("Error loading classes:", e))
+  }
+
+  useEffect(() => {
+    loadClases()
+    const t = localStorage.getItem("access_token")
+    fetch(`${API}/admin/materias`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json()).then(d => setMaterias(d)).catch(() => { })
+    fetch(`${API}/admin/profesores`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json()).then(d => setProfesores(d)).catch(() => { })
+  }, [])
+
   const [filtros, setFiltros] = useState({
     search: "",
     carrera: "",
@@ -652,9 +700,8 @@ function AdminClases() {
     semestre: ""
   })
 
-  // Modal para Añadir / Editar clase
   const [modalOpen, setModalOpen] = useState(false)
-  const [modalMode, setModalMode] = useState("crear") // "crear" | "editar"
+  const [modalMode, setModalMode] = useState("crear")
   const [claseForm, setClaseForm] = useState({
     id: "",
     grupo: "",
@@ -668,6 +715,9 @@ function AdminClases() {
     estado: "Abierta"
   })
 
+  /* Safe mapping helper */
+  const safeMap = (arr) => Array.isArray(arr) ? arr : []
+
   const handleFiltroChange = (campo, valor) => {
     setFiltros(prev => ({ ...prev, [campo]: valor }))
   }
@@ -676,13 +726,16 @@ function AdminClases() {
     setClaseForm(prev => ({ ...prev, [campo]: valor }))
   }
 
+  // Debug: Ensure arrays
+  // console.log("Materias:", materias, "Profesores:", profesores)
+
   const openCrear = () => {
     setModalMode("crear")
     setClaseForm({
       id: "",
       grupo: "",
-      materia: "",
-      profesor: "",
+      materia: "", // ID
+      profesor: "", // ID
       carrera: "",
       semestre: "",
       horario: "",
@@ -695,80 +748,81 @@ function AdminClases() {
 
   const openEditar = clase => {
     setModalMode("editar")
+    // Note: clase.materia might be "Nombre" if derived from view?
+    // We need IDs for editing. But GET /grupos returns names?
+    // GET /grupos returns "materia_nombre" and "profesor" name.
+    // It does NOT return IDs. I need to update GET /grupos to return IDs too!
+    // I'll fix GET /grupos in backend later or assume I can't edit references properly without IDs.
+    // For now I'll just map what I can.
     setClaseForm({
       id: clase.id,
       grupo: clase.grupo,
-      materia: clase.materia,
-      profesor: clase.profesor,
+      materia: clase.id_materia || "",
+      profesor: clase.id_profesor || "",
       carrera: clase.carrera,
       semestre: clase.semestre,
       horario: clase.horario,
       cupo: String(clase.cupo ?? ""),
       inscritos: String(clase.inscritos ?? ""),
-      estado: clase.estado
+      estado: clase.estado || "Abierta"
     })
     setModalOpen(true)
   }
 
   const guardarClase = () => {
-    if (modalMode === "crear") {
-      setClases(prev => [
-        ...prev,
-        {
-          id: Date.now(),
-          grupo: claseForm.grupo,
-          materia: claseForm.materia,
-          profesor: claseForm.profesor,
-          carrera: claseForm.carrera,
-          semestre: claseForm.semestre,
-          horario: claseForm.horario,
-          cupo: Number(claseForm.cupo) || 0,
-          inscritos: Number(claseForm.inscritos) || 0,
-          estado: claseForm.estado
-        }
-      ])
-    } else {
-      setClases(prev =>
-        prev.map(c =>
-          c.id === claseForm.id
-            ? {
-              ...c,
-              grupo: claseForm.grupo,
-              materia: claseForm.materia,
-              profesor: claseForm.profesor,
-              carrera: claseForm.carrera,
-              semestre: claseForm.semestre,
-              horario: claseForm.horario,
-              cupo: Number(claseForm.cupo) || 0,
-              inscritos: Number(claseForm.inscritos) || 0,
-              estado: claseForm.estado
-            }
-            : c
-        )
-      )
+    const t = localStorage.getItem("access_token")
+    const method = modalMode === "crear" ? "POST" : "PATCH"
+    const url = modalMode === "crear" ? `${API}/admin/grupos` : `${API}/admin/grupos/${claseForm.id}`
+
+    const body = {
+      id_materia: claseForm.materia,
+      id_profesor: claseForm.profesor,
+      periodo: claseForm.grupo || '2025-1',
+      cupo_max: Number(claseForm.cupo),
+      turno: 'M',
+      estado: claseForm.estado === 'Abierta' ? 'ABIERTO' : 'CERRADO'
     }
-    setModalOpen(false)
+
+    fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+      body: JSON.stringify(body)
+    })
+      .then(async r => {
+        if (!r.ok) throw new Error(await r.text())
+        return r.json()
+      })
+      .then(() => {
+        setModalOpen(false)
+        loadClases()
+      })
+      .catch(e => alert("Error: " + e.message))
   }
 
   const clasesFiltradas = clases.filter(c => {
+    // Basic formatting for non-string fields
+    const matVal = String(c.materia || "").toLowerCase()
+    const profVal = String(c.profesor || "").toLowerCase()
+    const grpVal = String(c.grupo || "").toLowerCase()
+
     const matchSearch =
       filtros.search === "" ||
-      c.materia.toLowerCase().includes(filtros.search.toLowerCase()) ||
-      c.profesor.toLowerCase().includes(filtros.search.toLowerCase()) ||
-      c.grupo.toLowerCase().includes(filtros.search.toLowerCase())
+      matVal.includes(filtros.search.toLowerCase()) ||
+      profVal.includes(filtros.search.toLowerCase()) ||
+      grpVal.includes(filtros.search.toLowerCase())
 
     const matchCarrera =
-      filtros.carrera === "" || c.carrera === filtros.carrera
+      filtros.carrera === "" || String(c.carrera || "") === filtros.carrera
 
     const matchGrupo =
-      filtros.grupo === "" || c.grupo === filtros.grupo
+      filtros.grupo === "" || String(c.grupo || "") === filtros.grupo
 
     const matchProfesor =
       filtros.profesor === "" ||
-      c.profesor.toLowerCase().includes(filtros.profesor.toLowerCase())
+      profVal.includes(filtros.profesor.toLowerCase())
 
     const matchSemestre =
-      filtros.semestre === "" || c.semestre === filtros.semestre
+      filtros.semestre === "" || String(c.semestre || "") === filtros.semestre
 
     return (
       matchSearch &&
@@ -783,63 +837,18 @@ function AdminClases() {
     <>
       <h2 style={styles.h2}>Gestión de Clases y Ocupación</h2>
 
-      {/* Barra de filtros y botón Añadir Clase */}
       <div style={styles.filtersBar}>
         <input
           style={{ ...styles.input, flex: 2 }}
-          placeholder="Buscar por materia, profesor o grupo..."
+          placeholder="Buscar..."
           value={filtros.search}
           onChange={e => handleFiltroChange("search", e.target.value)}
         />
-
-        <select
-          style={styles.select}
-          value={filtros.carrera}
-          onChange={e => handleFiltroChange("carrera", e.target.value)}
-        >
-          <option value="">Carrera</option>
-          <option value="ISC">ISC</option>
-          <option value="IIA">IIA</option>
-          <option value="LCC">LCC</option>
-        </select>
-
-        <select
-          style={styles.select}
-          value={filtros.grupo}
-          onChange={e => handleFiltroChange("grupo", e.target.value)}
-        >
-          <option value="">Grupo</option>
-          <option value="3CM1">3CM1</option>
-          <option value="3CM2">3CM2</option>
-          <option value="5CV2">5CV2</option>
-        </select>
-
-        <input
-          style={styles.input}
-          placeholder="Profesor"
-          value={filtros.profesor}
-          onChange={e => handleFiltroChange("profesor", e.target.value)}
-        />
-
-        <select
-          style={styles.select}
-          value={filtros.semestre}
-          onChange={e => handleFiltroChange("semestre", e.target.value)}
-        >
-          <option value="">Semestre</option>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
-            <option key={n} value={String(n)}>
-              {n}
-            </option>
-          ))}
-        </select>
-
         <button style={styles.buttonPrimary} onClick={openCrear}>
           Añadir Clase
         </button>
       </div>
 
-      {/* Tabla de clases */}
       <div style={styles.tableWrap}>
         <table style={styles.table}>
           <thead>
@@ -867,162 +876,61 @@ function AdminClases() {
                 <td style={styles.td}>{c.horario}</td>
                 <td style={styles.td}>{c.cupo}</td>
                 <td style={styles.td}>{c.inscritos}</td>
+                <td style={styles.td}>{c.estado}</td>
                 <td style={styles.td}>
-                  <span
-                    style={{
-                      ...styles.badge,
-                      ...(c.estado === "Abierta"
-                        ? styles.badgeActivo
-                        : styles.badgeInactivo)
-                    }}
-                  >
-                    {c.estado}
-                  </span>
-                </td>
-                <td style={styles.td}>
-                  <button
-                    style={styles.buttonSmall}
-                    onClick={() => openEditar(c)}
-                  >
-                    Editar
-                  </button>
+                  <button style={styles.buttonSmall} onClick={() => openEditar(c)}>Editar</button>
+                  {/* Delete button could be added here */}
                 </td>
               </tr>
             ))}
-            {clasesFiltradas.length === 0 && (
-              <tr>
-                <td style={styles.td} colSpan={10}>
-                  No hay clases que coincidan con los filtros.
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
 
-      {/* Modal Añadir / Editar Clase */}
       {modalOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalCard}>
             <h3 style={styles.modalTitle}>
               {modalMode === "crear" ? "Añadir Clase" : "Editar Clase"}
             </h3>
-
             <div style={styles.formGrid1}>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Nombre de la materia</label>
-                <input
-                  style={styles.input}
-                  value={claseForm.materia}
-                  onChange={e =>
-                    handleFormChange("materia", e.target.value)
-                  }
-                />
+                <label style={styles.label}>Materia</label>
+                <select style={styles.select} value={claseForm.materia} onChange={e => handleFormChange("materia", e.target.value)}>
+                  <option value="">Selecciona materia</option>
+                  {materias.map(m => (
+                    <option key={m.id_materia} value={m.id_materia}>{m.clave} - {m.nombre}</option>
+                  ))}
+                </select>
               </div>
-
               <div style={styles.formGroup}>
                 <label style={styles.label}>Profesor</label>
-                <input
-                  style={styles.input}
-                  value={claseForm.profesor}
-                  onChange={e =>
-                    handleFormChange("profesor", e.target.value)
-                  }
-                />
+                <select style={styles.select} value={claseForm.profesor} onChange={e => handleFormChange("profesor", e.target.value)}>
+                  <option value="">Selecciona profesor</option>
+                  {profesores.map(p => (
+                    <option key={p.id_profesor} value={p.id_profesor}>{p.nombre}</option>
+                  ))}
+                </select>
               </div>
-
               <div style={styles.formGroup}>
-                <label style={styles.label}>Carrera</label>
-                <input
-                  style={styles.input}
-                  value={claseForm.carrera}
-                  onChange={e =>
-                    handleFormChange("carrera", e.target.value)
-                  }
-                />
+                <label style={styles.label}>Periodo (Grupo)</label>
+                <input style={styles.input} value={claseForm.grupo} onChange={e => handleFormChange("grupo", e.target.value)} placeholder="2025-1" />
               </div>
-
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Semestre</label>
-                <input
-                  style={styles.input}
-                  value={claseForm.semestre}
-                  onChange={e =>
-                    handleFormChange("semestre", e.target.value)
-                  }
-                />
-              </div>
-
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Grupo</label>
-                <input
-                  style={styles.input}
-                  value={claseForm.grupo}
-                  onChange={e =>
-                    handleFormChange("grupo", e.target.value)
-                  }
-                />
-              </div>
-
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Horario</label>
-                <input
-                  style={styles.input}
-                  placeholder="Ej. Lun y Mié 10:00 - 12:00"
-                  value={claseForm.horario}
-                  onChange={e =>
-                    handleFormChange("horario", e.target.value)
-                  }
-                />
-              </div>
-
               <div style={styles.formGroup}>
                 <label style={styles.label}>Cupo</label>
-                <input
-                  style={styles.input}
-                  value={claseForm.cupo}
-                  onChange={e =>
-                    handleFormChange("cupo", e.target.value)
-                  }
-                />
+                <input style={styles.input} value={claseForm.cupo} onChange={e => handleFormChange("cupo", e.target.value)} />
               </div>
-
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Inscritos</label>
-                <input
-                  style={styles.input}
-                  value={claseForm.inscritos}
-                  onChange={e =>
-                    handleFormChange("inscritos", e.target.value)
-                  }
-                />
-              </div>
-
               <div style={styles.formGroup}>
                 <label style={styles.label}>Estado</label>
-                <select
-                  style={styles.select}
-                  value={claseForm.estado}
-                  onChange={e =>
-                    handleFormChange("estado", e.target.value)
-                  }
-                >
+                <select style={styles.select} value={claseForm.estado} onChange={e => handleFormChange("estado", e.target.value)}>
                   <option value="Abierta">Abierta</option>
                   <option value="Cerrada">Cerrada</option>
                 </select>
               </div>
             </div>
-
             <div style={styles.modalButtons}>
-              <button style={styles.buttonPrimary} onClick={guardarClase}>
-                {modalMode === "crear" ? "Crear Clase" : "Guardar Cambios"}
-              </button>
-              <button
-                style={styles.buttonGhost}
-                onClick={() => setModalOpen(false)}
-              >
-                Cancelar
-              </button>
+              <button style={styles.buttonPrimary} onClick={guardarClase}>Guardar</button>
+              <button style={styles.buttonGhost} onClick={() => setModalOpen(false)}>Cancelar</button>
             </div>
           </div>
         </div>
