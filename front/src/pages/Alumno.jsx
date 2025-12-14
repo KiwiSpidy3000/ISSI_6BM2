@@ -494,8 +494,9 @@ function Reinscripcion() {
 
       setMsg('Grupo agregado al carrito de reinscripción.')
       refresh()
-    } catch {
-      setMsg('Error de red al agregar grupo.')
+    } catch (e) {
+      console.error('Error al agregar grupo:', e);
+      setMsg(`Error al agregar grupo: ${e.message || 'Error de red'}`);
     }
   }
 

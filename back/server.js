@@ -631,9 +631,14 @@ app.get('/alumno/reins/oferta', requireAuth, async (req, res) => {
 // validar choque antes de preinscribir
 app.get('/alumno/reins/conflictos', requireAuth, async (req, res) => {
   const userId = req.user.sub; const { id_grupo } = req.query;
-  const q = `SELECT * FROM ${DB_SCHEMA}.sp_validar_choque_horario($1,$2);`;
-  const { rows } = await pool.query(q, [userId, id_grupo]);
-  res.json(rows); // vacío = sin choque
+  try {
+    const q = `SELECT * FROM ${DB_SCHEMA}.sp_validar_choque_horario($1,$2);`;
+    const { rows } = await pool.query(q, [userId, id_grupo]);
+    res.json(rows); // vacío = sin choque
+  } catch (e) {
+    console.error('Error en /alumno/reins/conflictos:', e);
+    return res.status(500).json({ error: e.message });
+  }
 });
 
 // preinscribir (si no hay choque y cumple reglas SAES)

@@ -709,14 +709,16 @@ function AdminClases() {
     profesor: "",
     carrera: "",
     semestre: "",
-    horario: "",
+    horario: "", // Display only
     cupo: "",
     inscritos: "",
-    estado: "Abierta"
+    estado: "Abierta",
+    turno: "M"
   })
 
-  /* Safe mapping helper */
-  const safeMap = (arr) => Array.isArray(arr) ? arr : []
+  // Local state for adding schedules in the modal
+  const [scheduleList, setScheduleList] = useState([])
+  const [newSlot, setNewSlot] = useState({ dia: 1, hora_ini: '07:00', hora_fin: '08:30', aula: '' })
 
   const handleFiltroChange = (campo, valor) => {
     setFiltros(prev => ({ ...prev, [campo]: valor }))
@@ -726,34 +728,27 @@ function AdminClases() {
     setClaseForm(prev => ({ ...prev, [campo]: valor }))
   }
 
-  // Debug: Ensure arrays
-  // console.log("Materias:", materias, "Profesores:", profesores)
-
   const openCrear = () => {
     setModalMode("crear")
     setClaseForm({
       id: "",
       grupo: "",
-      materia: "", // ID
-      profesor: "", // ID
+      materia: "",
+      profesor: "",
       carrera: "",
       semestre: "",
       horario: "",
       cupo: "",
       inscritos: "",
-      estado: "Abierta"
+      estado: "Abierta",
+      turno: "M"
     })
+    setScheduleList([])
     setModalOpen(true)
   }
 
   const openEditar = clase => {
     setModalMode("editar")
-    // Note: clase.materia might be "Nombre" if derived from view?
-    // We need IDs for editing. But GET /grupos returns names?
-    // GET /grupos returns "materia_nombre" and "profesor" name.
-    // It does NOT return IDs. I need to update GET /grupos to return IDs too!
-    // I'll fix GET /grupos in backend later or assume I can't edit references properly without IDs.
-    // For now I'll just map what I can.
     setClaseForm({
       id: clase.id,
       grupo: clase.grupo,
@@ -764,12 +759,27 @@ function AdminClases() {
       horario: clase.horario,
       cupo: String(clase.cupo ?? ""),
       inscritos: String(clase.inscritos ?? ""),
-      estado: clase.estado || "Abierta"
+      estado: clase.estado || "Abierta",
+      turno: 'M' // Default as we might not have it in list view yet? (check backup)
     })
+    // NOTE: retrieving existing schedules to edit is complex, 
+    // for now we only support adding new ones on creation clearly.
+    // Editing schedule is out of scope unless valid endpoint exists to fetch specific group schedules.
+    setScheduleList([])
     setModalOpen(true)
   }
 
-  const guardarClase = () => {
+  const addSlot = () => {
+    if (!newSlot.aula) return alert("Falta Aula")
+    setScheduleList([...scheduleList, { ...newSlot }])
+    setNewSlot({ dia: 1, hora_ini: '07:00', hora_fin: '08:30', aula: '' })
+  }
+
+  const removeSlot = (idx) => {
+    setScheduleList(scheduleList.filter((_, i) => i !== idx))
+  }
+
+  const guardarClase = async () => {
     const t = localStorage.getItem("access_token")
     const method = modalMode === "crear" ? "POST" : "PATCH"
     const url = modalMode === "crear" ? `${API}/admin/grupos` : `${API}/admin/grupos/${claseForm.id}`
@@ -779,28 +789,45 @@ function AdminClases() {
       id_profesor: claseForm.profesor,
       periodo: claseForm.grupo || '2025-1',
       cupo_max: Number(claseForm.cupo),
-      turno: 'M',
+      turno: claseForm.turno,
       estado: claseForm.estado === 'Abierta' ? 'ABIERTO' : 'CERRADO'
     }
 
-    fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
-      body: JSON.stringify(body)
-    })
-      .then(async r => {
-        if (!r.ok) throw new Error(await r.text())
-        return r.json()
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        body: JSON.stringify(body)
       })
-      .then(() => {
-        setModalOpen(false)
-        loadClases()
-      })
-      .catch(e => alert("Error: " + e.message))
+      if (!res.ok) throw new Error(await res.text())
+
+      const data = await res.json()
+      const groupId = modalMode === 'crear' ? data.id_grupo : claseForm.id
+
+      // Save Schedules
+      if (modalMode === 'crear' && scheduleList.length > 0) {
+        for (const slot of scheduleList) {
+          await fetch(`${API}/admin/grupos/${groupId}/horarios`, {
+            method: 'POST',
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+            body: JSON.stringify({
+              dia: Number(slot.dia),
+              hora_inicio: slot.hora_ini,
+              hora_fin: slot.hora_fin,
+              aula: slot.aula
+            })
+          })
+        }
+      }
+
+      setModalOpen(false)
+      loadClases()
+    } catch (e) {
+      alert("Error: " + e.message)
+    }
   }
 
   const clasesFiltradas = clases.filter(c => {
-    // Basic formatting for non-string fields
     const matVal = String(c.materia || "").toLowerCase()
     const profVal = String(c.profesor || "").toLowerCase()
     const grpVal = String(c.grupo || "").toLowerCase()
@@ -825,11 +852,7 @@ function AdminClases() {
       filtros.semestre === "" || String(c.semestre || "") === filtros.semestre
 
     return (
-      matchSearch &&
-      matchCarrera &&
-      matchGrupo &&
-      matchProfesor &&
-      matchSemestre
+      matchSearch && matchCarrera && matchGrupo && matchProfesor && matchSemestre
     )
   })
 
@@ -879,7 +902,6 @@ function AdminClases() {
                 <td style={styles.td}>{c.estado}</td>
                 <td style={styles.td}>
                   <button style={styles.buttonSmall} onClick={() => openEditar(c)}>Editar</button>
-                  {/* Delete button could be added here */}
                 </td>
               </tr>
             ))}
@@ -889,11 +911,11 @@ function AdminClases() {
 
       {modalOpen && (
         <div style={styles.modalOverlay}>
-          <div style={styles.modalCard}>
+          <div style={styles.modalCard} style={{ ...styles.modalCard, width: '700px' }}>
             <h3 style={styles.modalTitle}>
               {modalMode === "crear" ? "Añadir Clase" : "Editar Clase"}
             </h3>
-            <div style={styles.formGrid1}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
               <div style={styles.formGroup}>
                 <label style={styles.label}>Materia</label>
                 <select style={styles.select} value={claseForm.materia} onChange={e => handleFormChange("materia", e.target.value)}>
@@ -917,6 +939,13 @@ function AdminClases() {
                 <input style={styles.input} value={claseForm.grupo} onChange={e => handleFormChange("grupo", e.target.value)} placeholder="2025-1" />
               </div>
               <div style={styles.formGroup}>
+                <label style={styles.label}>Turno</label>
+                <select style={styles.select} value={claseForm.turno} onChange={e => handleFormChange("turno", e.target.value)}>
+                  <option value="M">Matutino</option>
+                  <option value="V">Vespertino</option>
+                </select>
+              </div>
+              <div style={styles.formGroup}>
                 <label style={styles.label}>Cupo</label>
                 <input style={styles.input} value={claseForm.cupo} onChange={e => handleFormChange("cupo", e.target.value)} />
               </div>
@@ -928,6 +957,40 @@ function AdminClases() {
                 </select>
               </div>
             </div>
+
+            {/* SECTION HORARIOS */}
+            <div style={{ marginTop: '20px', borderTop: '1px solid #ccc', paddingTop: '10px' }}>
+              <h4 style={{ ...styles.label, fontSize: '14px', marginBottom: '10px' }}>Horarios (Solo al crear)</h4>
+
+              {/* Controls */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                <select style={{ ...styles.select, width: '100px' }} value={newSlot.dia} onChange={e => setNewSlot({ ...newSlot, dia: e.target.value })}>
+                  <option value="1">Lun</option>
+                  <option value="2">Mar</option>
+                  <option value="3">Mié</option>
+                  <option value="4">Jue</option>
+                  <option value="5">Vie</option>
+                </select>
+                <input style={{ ...styles.input, width: '80px' }} type="time" value={newSlot.hora_ini} onChange={e => setNewSlot({ ...newSlot, hora_ini: e.target.value })} />
+                <input style={{ ...styles.input, width: '80px' }} type="time" value={newSlot.hora_fin} onChange={e => setNewSlot({ ...newSlot, hora_fin: e.target.value })} />
+                <input style={{ ...styles.input, width: '80px' }} placeholder="Aula" value={newSlot.aula} onChange={e => setNewSlot({ ...newSlot, aula: e.target.value })} />
+                <button style={styles.buttonSmall} onClick={addSlot}>+</button>
+              </div>
+
+              {/* List */}
+              <div style={{ maxHeight: '100px', overflowY: 'auto', background: 'rgba(0,0,0,0.1)', borderRadius: '8px', padding: '8px' }}>
+                {scheduleList.map((s, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                    <span>
+                      {['D', 'L', 'M', 'Mi', 'J', 'V', 'S'][s.dia]} {s.hora_ini}-{s.hora_fin} ({s.aula})
+                    </span>
+                    <button style={{ ...styles.buttonGhost, padding: '2px 6px', fontSize: '10px', color: '#f87171' }} onClick={() => removeSlot(i)}>x</button>
+                  </div>
+                ))}
+                {scheduleList.length === 0 && <span style={{ fontSize: '12px', color: '#888' }}>Sin horarios agregados</span>}
+              </div>
+            </div>
+
             <div style={styles.modalButtons}>
               <button style={styles.buttonPrimary} onClick={guardarClase}>Guardar</button>
               <button style={styles.buttonGhost} onClick={() => setModalOpen(false)}>Cancelar</button>
@@ -941,19 +1004,78 @@ function AdminClases() {
 
 
 function AdminReinscripcion() {
+  const [config, setConfig] = useState({
+    INICIO_INSCRIPCION: '',
+    FIN_INSCRIPCION: '',
+    INICIO_BAJA: '',
+    FIN_BAJA: '',
+    MIN_CREDITOS: '30',
+    MAX_CREDITOS: '90'
+  })
+  const [msg, setMsg] = useState('')
+
+  useEffect(() => {
+    loadConfig()
+  }, [])
+
+  const loadConfig = () => {
+    const t = localStorage.getItem("access_token")
+    fetch(`${API}/admin/config`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json())
+      .then(d => {
+        // Merge with defaults to ensure controlled inputs
+        setConfig(prev => ({ ...prev, ...d }))
+      })
+      .catch(console.error)
+  }
+
+  const handleChange = (field, val) => {
+    setConfig(prev => ({ ...prev, [field]: val }))
+  }
+
+  const saveConfig = () => {
+    setMsg('')
+    const t = localStorage.getItem("access_token")
+    fetch(`${API}/admin/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+      body: JSON.stringify(config)
+    })
+      .then(r => {
+        if (!r.ok) throw new Error('Error al guardar')
+        return r.json()
+      })
+      .then(() => {
+        setMsg('Configuración guardada correctamente')
+        loadConfig()
+      })
+      .catch(() => setMsg('Error al guardar la configuración'))
+  }
+
   return (
     <>
       <h2 style={styles.h2}>Configuración del Periodo</h2>
+
       <div style={styles.card}>
         <div style={styles.sectionTitle}>Inscripciones</div>
         <div style={styles.formGrid2}>
           <div style={styles.formGroup}>
-            <label style={styles.label}>Inicio</label>
-            <input style={styles.input} placeholder="dd/mm/aaaa --:--" />
+            <label style={styles.label}>Inicio (YYYY-MM-DDTHH:mm)</label>
+            <input
+              style={styles.input}
+              type="datetime-local"
+              value={config.INICIO_INSCRIPCION}
+              onChange={e => handleChange('INICIO_INSCRIPCION', e.target.value)}
+            />
           </div>
           <div style={styles.formGroup}>
-            <label style={styles.label}>Fin</label>
-            <input style={styles.input} placeholder="dd/mm/aaaa --:--" />
+            <label style={styles.label}>Fin (YYYY-MM-DDTHH:mm)</label>
+            <input
+              style={styles.input}
+              type="datetime-local"
+              value={config.FIN_INSCRIPCION}
+              onChange={e => handleChange('FIN_INSCRIPCION', e.target.value)}
+            />
           </div>
         </div>
 
@@ -962,12 +1084,22 @@ function AdminReinscripcion() {
         </div>
         <div style={styles.formGrid2}>
           <div style={styles.formGroup}>
-            <label style={styles.label}>Inicio</label>
-            <input style={styles.input} placeholder="dd/mm/aaaa --:--" />
+            <label style={styles.label}>Inicio (YYYY-MM-DDTHH:mm)</label>
+            <input
+              style={styles.input}
+              type="datetime-local"
+              value={config.INICIO_BAJA}
+              onChange={e => handleChange('INICIO_BAJA', e.target.value)}
+            />
           </div>
           <div style={styles.formGroup}>
-            <label style={styles.label}>Fin</label>
-            <input style={styles.input} placeholder="dd/mm/aaaa --:--" />
+            <label style={styles.label}>Fin (YYYY-MM-DDTHH:mm)</label>
+            <input
+              style={styles.input}
+              type="datetime-local"
+              value={config.FIN_BAJA}
+              onChange={e => handleChange('FIN_BAJA', e.target.value)}
+            />
           </div>
         </div>
 
@@ -977,16 +1109,48 @@ function AdminReinscripcion() {
         <div style={styles.formGrid2}>
           <div style={styles.formGroup}>
             <label style={styles.label}>Mínimo</label>
-            <input style={styles.input} defaultValue="30" />
+            <input
+              style={styles.input}
+              type="number"
+              value={config.MIN_CREDITOS}
+              onChange={e => handleChange('MIN_CREDITOS', e.target.value)}
+            />
           </div>
           <div style={styles.formGroup}>
             <label style={styles.label}>Máximo</label>
-            <input style={styles.input} defaultValue="90" />
+            <input
+              style={styles.input}
+              type="number"
+              value={config.MAX_CREDITOS}
+              onChange={e => handleChange('MAX_CREDITOS', e.target.value)}
+            />
           </div>
         </div>
 
         <div style={{ marginTop: "24px", textAlign: "right" }}>
-          <button style={styles.buttonPrimary}>Guardar Configuración</button>
+          <button style={styles.buttonPrimary} onClick={saveConfig}>Guardar Configuración</button>
+        </div>
+        {msg && <div style={{ marginTop: '10px', color: '#bbf7d0', textAlign: 'right' }}>{msg}</div>}
+      </div>
+
+      {/* Visual List of Current Config */}
+      <div style={{ marginTop: '30px' }}>
+        <h3 style={styles.h3}>Resumen de Configuración Actual</h3>
+        <div style={{ ...styles.card, marginTop: '10px' }}>
+          <ul style={{ listStyle: 'none', padding: 0 }}>
+            <li style={{ padding: '8px 0', borderBottom: '1px solid rgba(106,122,174,0.2)' }}>
+              <strong style={{ color: '#a8b2d1' }}>Periodo de Inscripción:</strong> <br />
+              {config.INICIO_INSCRIPCION ? new Date(config.INICIO_INSCRIPCION).toLocaleString() : 'No definido'} — {config.FIN_INSCRIPCION ? new Date(config.FIN_INSCRIPCION).toLocaleString() : 'No definido'}
+            </li>
+            <li style={{ padding: '8px 0', borderBottom: '1px solid rgba(106,122,174,0.2)' }}>
+              <strong style={{ color: '#a8b2d1' }}>Periodo de Bajas:</strong> <br />
+              {config.INICIO_BAJA ? new Date(config.INICIO_BAJA).toLocaleString() : 'No definido'} — {config.FIN_BAJA ? new Date(config.FIN_BAJA).toLocaleString() : 'No definido'}
+            </li>
+            <li style={{ padding: '8px 0' }}>
+              <strong style={{ color: '#a8b2d1' }}>Límites de Créditos:</strong> <br />
+              Mín: {config.MIN_CREDITOS} / Máx: {config.MAX_CREDITOS}
+            </li>
+          </ul>
         </div>
       </div>
     </>

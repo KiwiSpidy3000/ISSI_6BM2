@@ -370,4 +370,37 @@ router.post('/grupos/:grupoId/horarios', async (req, res) => {
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
+// ---- CONFIGURACIÓN ----
+router.get('/config', async (req, res) => {
+  try {
+    const r = await pool.query(`SELECT clave, valor FROM ${DB_SCHEMA}.configuracion`);
+    const config = {};
+    r.rows.forEach(row => { config[row.clave] = row.valor; });
+    res.json(config);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/config', async (req, res) => {
+  const updates = req.body; // { 'INICIO_INSCRIPCION': '...', 'MAX_CREDITOS': '...' }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const [key, value] of Object.entries(updates)) {
+      // Upsert
+      await client.query(`
+        INSERT INTO ${DB_SCHEMA}.configuracion (clave, valor)
+        VALUES ($1, $2)
+        ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor
+      `, [key, String(value)]);
+    }
+    await client.query('COMMIT');
+    res.json({ ok: true });
+  } catch (e) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: e.message });
+  } finally {
+    client.release();
+  }
+});
+
 export default router;

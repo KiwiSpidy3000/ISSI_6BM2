@@ -204,6 +204,23 @@ export async function getStudentGroupOffer(id_alumno, periodo, semestre, turno) 
     LEFT JOIN ${DB_SCHEMA}.usuario  u ON u.id_usuario = p.id_profesor
     LEFT JOIN ${DB_SCHEMA}.horario  h ON h.id_grupo   = g.id_grupo
     ${where}
+      -- Excluir materias ya aprobadas
+      AND NOT EXISTS (
+        SELECT 1
+        FROM ${DB_SCHEMA}.vw_kardex k
+        JOIN ${DB_SCHEMA}.materia m2 ON m2.clave = k.materia_clave
+        WHERE m2.id_materia = m.id_materia
+          AND k.id_alumno = a.id_alumno
+          AND k.estatus = 'APROBADO'
+      )
+      -- Excluir materias ya inscritas en este periodo (opcional, pero buena práctica para ofertas limpias)
+      AND NOT EXISTS (
+        SELECT 1
+        FROM ${DB_SCHEMA}.inscripcion i_curr
+        WHERE i_curr.id_alumno = a.id_alumno
+          AND i_curr.id_grupo = g.id_grupo
+          AND i_curr.estado IN ('INSCRITO', 'PREINSCRITO')
+      )
     GROUP BY
       g.id_grupo, g.periodo, g.turno,
       m.semestre, m.clave, m.nombre, m.creditos,
