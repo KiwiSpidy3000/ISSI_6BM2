@@ -19,9 +19,14 @@ router.get('/usuarios', async (req, res) => {
              u.email,
              u.rol AS tipo,
              CASE WHEN u.activo THEN 'Activo' ELSE 'Inactivo' END AS estado,
+             -- Alumno fields
+             a.boleta,
              a.semestre,
              c.id_carrera,
              c.clave AS carrera,
+             -- Profesor fields
+             p.num_empleado,
+             p.departamento,
              -- Grupo logic might be complex if they have multiple, taking one for now or leaving null
              (SELECT g.periodo || ' ' || mm.clave 
               FROM ${DB_SCHEMA}.inscripcion i 
@@ -31,6 +36,7 @@ router.get('/usuarios', async (req, res) => {
       FROM ${DB_SCHEMA}.usuario u
       LEFT JOIN ${DB_SCHEMA}.alumno a ON a.id_alumno = u.id_usuario
       LEFT JOIN ${DB_SCHEMA}.carrera c ON c.id_carrera = a.id_carrera
+      LEFT JOIN ${DB_SCHEMA}.profesor p ON p.id_profesor = u.id_usuario
       ORDER BY u.id_usuario DESC
     `);
     res.json(r.rows);
@@ -277,12 +283,12 @@ router.get('/grupos', async (req, res) => {
 });
 
 router.post('/grupos', async (req, res) => {
-  const { id_materia, id_profesor, periodo, cupo_max, turno } = req.body;
+  const { id_materia, id_profesor, periodo, cupo_max, turno, estado } = req.body;
   try {
     const r = await pool.query(
-      `INSERT INTO ${DB_SCHEMA}.grupo (id_materia, id_profesor, periodo, cupo_max, turno)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [id_materia, id_profesor, periodo, cupo_max, turno || 'M']
+      `INSERT INTO ${DB_SCHEMA}.grupo (id_materia, id_profesor, periodo, cupo_max, turno, estado)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [id_materia, id_profesor, periodo, cupo_max, turno || 'M', estado || 'ABIERTO']
     );
     res.status(201).json(r.rows[0]);
   } catch (e) { res.status(400).json({ error: e.message }); }

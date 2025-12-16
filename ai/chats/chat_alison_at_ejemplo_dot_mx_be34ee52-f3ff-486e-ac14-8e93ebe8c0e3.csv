@@ -1,0 +1,15 @@
+timestamp,usuario,modelo
+2025-12-15 23:46:49,dame el correo de el alumno con boleta 123,"Lo siento, no tengo acceso a información personal como correos electrónicos de alumnos. Puedo ayudarte con información general sobre ESCOM, trámites escolares o el reglamento."
+2025-12-15 23:50:24,dame el correo del alumno con nombre 123,"Lo siento, por razones de privacidad no puedo proporcionar el correo electrónico del alumno."
+2025-12-15 23:50:40,Dame los primeros 4 usuarios registrados,"Claro, aquí tienes los datos de los primeros 4 alumnos registrados:
+
+*   1231-123: 123 123 (Ingeniería en Inteligencia Artificial)
+*   2021301170: Miguel Angel Ocampo Porcayo (Ingeniería en Inteligencia Artificial)
+*   2021301171: Julia Martinez Rivera (Ingeniería en Inteligencia Artificial)
+*   2021301172: Carlos Hernandez Lopez (Ingeniería en Inteligencia Artificial)"
+2025-12-15 23:57:23,Dame los primeros 4 usuarios registrados,"Claro, aquí tienes la información de los primeros 4 alumnos registrados:
+
+*   **1231-123:** 123 123 (Ingeniería en Inteligencia Artificial)
+*   **2021301170:** Miguel Angel Ocampo Porcayo (Ingeniería en Inteligencia Artificial)
+*   **2021301171:** Julia Martinez Rivera (Ingeniería en Inteligencia Artificial)
+*   **2021301172:** Carlos Hernandez Lopez (Ingeniería en Inteligencia Artificial)"

@@ -69,10 +69,18 @@ class ChatManager:
 
     def delete_chat(self, user_id, chat_id):
         filename = self._get_filename(user_id, chat_id)
+        print(f"DEBUG: Request to delete chat. Path: {filename}")
         if os.path.exists(filename):
-            os.remove(filename)
-            return True
-        return False
+            try:
+                os.remove(filename)
+                print("DEBUG: File deleted successfully.")
+                return True
+            except Exception as e:
+                print(f"ERROR: Could not delete file: {e}")
+                return False
+        else:
+            print("ERROR: File not found to delete.")
+            return False
 
     def get_chat_file_path(self, user_id, chat_id):
         filename = self._get_filename(user_id, chat_id)

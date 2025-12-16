@@ -1,0 +1,17 @@
+timestamp,usuario,modelo
+2025-12-15 23:34:22,cuales son mis materias,"De acuerdo con tu horario actual, estas son tus materias:
+
+*   **Lunes:** Cálculo (07:00:00 - 08:30:00 en el Aula 2000)
+*   **Martes:** Cálculo (07:00:00 - 08:30:00 en el Aula 200)
+*   **Miércoles:** Mecánica y Electromagnetismo (07:00:00 - 08:30:00 en el Aula 200)
+*   **Jueves:** Cálculo (07:00:00 - 08:30:00 en el Aula 2000)
+
+Recuerda que puedes consultar tu horario y otra información relevante en el SAES."
+2025-12-15 23:34:40,cual es mi promedio,Tu promedio general es: 7.00
+2025-12-15 23:34:51,en que semestre estoy,"Hola, de acuerdo a la información consultada, actualmente te encuentras cursando el 1er semestre de la carrera de Ingeniería en Inteligencia Artificial. ¡Mucho éxito en tus estudios!"
+2025-12-15 23:35:06,cuales son mis profesores,"Hola, con gusto te ayudo. Para saber quiénes son tus profesores, te sugiero revisar tu horario en el Sistema de Administración Escolar (SAES), ya que ahí encontrarás los nombres de los profesores asignados a cada una de tus materias. Recuerda que, como alumno, tienes derecho a conocer el programa de estudios de cada unidad de aprendizaje al inicio del periodo."
+2025-12-15 23:51:28,Dame los primeros 4 usuarios registrados,"Como alumno, no tengo acceso a la lista de todos los usuarios registrados. Esa función está reservada para el rol de Administrador."
+2025-12-16 00:16:56,Dame los primeros 4 usuarios registrados,"Como alumno, no tengo acceso a la lista de todos los usuarios registrados. Esa función está reservada para el rol de Administrador."
+2025-12-16 00:17:03,cuales son mis profesores,"De acuerdo a tu horario actual, tus profesores son los de las materias de Cálculo y Mecánica y Electromagnetismo. Para saber el nombre de tus profesores, puedes consultar el Sistema de Administración Escolar (SAES) o preguntar directamente a la coordinación de tu programa académico."
+2025-12-16 00:17:19,cual es mi promedio,Tu promedio general es: 7.00
+2025-12-16 00:17:30,cuales son mis materias,"De acuerdo a tu horario actual, estas cursando las siguientes materias: Cálculo y Mecánica y Electromagnetismo."

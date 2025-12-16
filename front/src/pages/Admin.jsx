@@ -162,6 +162,342 @@ export default function Admin() {
   )
 }
 
+const styles = {
+  container: {
+    display: "flex",
+    minHeight: "100vh",
+    background: "#0f0c15",
+    color: "#fff",
+    fontFamily: "'Inter', sans-serif",
+    position: "relative",
+    overflow: "hidden"
+  },
+  // Floating Background Shapes
+  floatingShapes: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    pointerEvents: "none",
+    zIndex: 0
+  },
+  floatingSvg: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    opacity: 0.15
+  },
+  svg0: { stroke: "#a855f7", animation: "float1 25s infinite ease-in-out" },
+  svg1: { stroke: "#3b82f6", animation: "float2 28s infinite ease-in-out" },
+  svg2: { stroke: "#ec4899", animation: "float3 30s infinite ease-in-out" },
+  svg3: { stroke: "#14b8a6", animation: "float4 32s infinite ease-in-out" },
+  svg4: { stroke: "#f59e0b", animation: "float1 29s infinite ease-in-out" },
+
+  // Sidebar
+  sidebar: {
+    width: "260px",
+    background: "rgba(20, 20, 25, 0.6)",
+    backdropFilter: "blur(12px)",
+    borderRight: "1px solid rgba(255,255,255,0.08)",
+    display: "flex",
+    flexDirection: "column",
+    padding: "24px",
+    zIndex: 10
+  },
+  sidebarHeader: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    marginBottom: "40px",
+    position: "relative"
+  },
+  avatar: {
+    width: "64px",
+    height: "64px",
+    borderRadius: "50%",
+    background: "linear-gradient(135deg, #3b82f6, #9333ea)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "32px",
+    marginBottom: "12px",
+    boxShadow: "0 0 20px rgba(147, 51, 234, 0.5)",
+    zIndex: 2
+  },
+  avatarGlow: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "100px",
+    height: "100px",
+    background: "radial-gradient(circle, rgba(59,130,246,0.3) 0%, transparent 70%)",
+    zIndex: 1
+  },
+  sidebarTitle: {
+    fontSize: "18px",
+    fontWeight: "700",
+    color: "#e2e8f0"
+  },
+  sidebarSubtitle: {
+    fontSize: "14px",
+    color: "#94a3b8",
+    marginTop: "4px"
+  },
+  sidebarNav: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    flex: 1
+  },
+  sidebarBottom: {
+    marginTop: "auto",
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px"
+  },
+
+  // Navigation Pills
+  pill: {
+    padding: "12px 16px",
+    borderRadius: "12px",
+    background: "transparent",
+    border: "none",
+    color: "#cbd5e1",
+    textAlign: "left",
+    cursor: "pointer",
+    fontSize: "15px",
+    fontWeight: "500",
+    transition: "all 0.2s",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px"
+  },
+  pillActive: {
+    background: "rgba(255, 255, 255, 0.1)",
+    color: "#fff",
+    boxShadow: "0 0 10px rgba(255,255,255,0.05)"
+  },
+  pillDanger: {
+    padding: "12px 16px",
+    borderRadius: "12px",
+    background: "rgba(239, 68, 68, 0.1)",
+    border: "1px solid rgba(239, 68, 68, 0.2)",
+    color: "#f87171",
+    textAlign: "center",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "600",
+    transition: "all 0.2s"
+  },
+
+  // Main Content
+  main: {
+    flex: 1,
+    padding: "40px",
+    overflowY: "auto",
+    zIndex: 5,
+    position: "relative"
+  },
+  h2: {
+    fontSize: "28px",
+    fontWeight: "700",
+    marginBottom: "24px",
+    background: "linear-gradient(to right, #fff, #cbd5e1)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent"
+  },
+  card: {
+    background: "rgba(30, 41, 59, 0.6)",
+    backdropFilter: "blur(16px)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: "20px",
+    padding: "32px",
+    boxShadow: "0 4px 30px rgba(0,0,0,0.3)"
+  },
+
+  // Forms
+  formGrid2: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "24px"
+  },
+  formGrid1: {
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    gap: "20px"
+  },
+  formGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px"
+  },
+  label: {
+    fontSize: "14px",
+    color: "#94a3b8",
+    fontWeight: "500"
+  },
+  input: {
+    background: "rgba(15, 23, 42, 0.8)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: "10px",
+    padding: "12px 16px",
+    color: "#fff",
+    fontSize: "15px",
+    outline: "none",
+    transition: "border-color 0.2s"
+  },
+  select: {
+    background: "rgba(15, 23, 42, 0.8)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: "10px",
+    padding: "12px 16px",
+    color: "#fff",
+    fontSize: "15px",
+    outline: "none"
+  },
+
+  // Buttons
+  buttonPrimary: {
+    background: "linear-gradient(135deg, #3b82f6, #2563eb)",
+    border: "none",
+    borderRadius: "10px",
+    padding: "10px 24px",
+    color: "#fff",
+    fontSize: "15px",
+    fontWeight: "600",
+    cursor: "pointer",
+    boxShadow: "0 4px 15px rgba(37, 99, 235, 0.4)",
+    transition: "transform 0.1s"
+  },
+  buttonSmall: {
+    background: "rgba(59, 130, 246, 0.15)",
+    border: "1px solid rgba(59, 130, 246, 0.3)",
+    borderRadius: "8px",
+    padding: "6px 12px",
+    color: "#60a5fa",
+    fontSize: "13px",
+    fontWeight: "600",
+    cursor: "pointer"
+  },
+  buttonGhost: {
+    background: "transparent",
+    border: "1px solid rgba(255,255,255,0.2)",
+    borderRadius: "10px",
+    padding: "10px 24px",
+    color: "#e2e8f0",
+    fontSize: "15px",
+    fontWeight: "500",
+    cursor: "pointer"
+  },
+  buttonDanger: {
+    background: "rgba(220, 38, 38, 0.2)",
+    border: "1px solid rgba(220, 38, 38, 0.4)",
+    borderRadius: "10px",
+    padding: "10px 24px",
+    color: "#f87171",
+    fontSize: "15px",
+    fontWeight: "600",
+    cursor: "pointer"
+  },
+
+  // Filter Bar
+  filtersBar: {
+    display: "flex",
+    gap: "12px",
+    marginBottom: "24px",
+    background: "rgba(30, 41, 59, 0.4)",
+    padding: "16px",
+    borderRadius: "16px",
+    border: "1px solid rgba(255,255,255,0.05)"
+  },
+
+  // Table
+  tableWrap: {
+    background: "rgba(30, 41, 59, 0.4)",
+    backdropFilter: "blur(12px)",
+    borderRadius: "16px",
+    border: "1px solid rgba(255,255,255,0.05)",
+    overflow: "hidden"
+  },
+  table: {
+    width: "100%",
+    borderCollapse: "collapse"
+  },
+  tableHeaderRow: {
+    background: "rgba(15, 23, 42, 0.6)",
+    borderBottom: "1px solid rgba(255,255,255,0.05)"
+  },
+  th: {
+    padding: "16px",
+    textAlign: "left",
+    fontSize: "13px",
+    fontWeight: "600",
+    color: "#94a3b8",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px"
+  },
+  tableRow: {
+    borderBottom: "1px solid rgba(255,255,255,0.02)"
+  },
+  td: {
+    padding: "16px",
+    fontSize: "14px",
+    color: "#cbd5e1"
+  },
+
+  // Badges
+  badge: {
+    padding: "4px 10px",
+    borderRadius: "20px",
+    fontSize: "12px",
+    fontWeight: "600"
+  },
+  badgeAlumno: { background: "rgba(52, 211, 153, 0.15)", color: "#34d399" },
+  badgeMaestro: { background: "rgba(251, 191, 36, 0.15)", color: "#fbbf24" },
+  badgeAdmin: { background: "rgba(167, 139, 250, 0.15)", color: "#a78bfa" },
+  badgeActivo: { background: "rgba(59, 130, 246, 0.15)", color: "#60a5fa" },
+  badgeInactivo: { background: "rgba(148, 163, 184, 0.2)", color: "#94a3b8" },
+
+  // Modal
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.6)",
+    backdropFilter: "blur(4px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 50
+  },
+  modalCard: {
+    width: "500px",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    background: "#1e293b",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: "20px",
+    padding: "32px",
+    boxShadow: "0 20px 50px rgba(0,0,0,0.5)"
+  },
+  modalTitle: {
+    fontSize: "22px",
+    fontWeight: "700",
+    marginBottom: "24px",
+    color: "#fff"
+  },
+  modalButtons: {
+    display: "flex",
+    gap: "12px",
+    marginTop: "32px",
+    justifyContent: "flex-end"
+  }
+}
+
 /* ------------------ SUBVISTAS ------------------ */
 
 function AdminDatos({ profile }) {
@@ -255,47 +591,63 @@ function AdminUsuarios() {
 
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState("crear") // "crear" | "editar"
+  /* State for Form */
   const [userForm, setUserForm] = useState({
-    id: "",
+    id: "",       // Internal DB ID (hidden)
+    identifier: "", // Boleta or NumEmpleado
     nombre: "",
+    apellido: "",
+    password: "",
     email: "",
-    tipo: "Alumno",
+    tipo: "ALUMNO", // Default Uppercase to match DB enum logic or mapping
     estado: "Activo",
     carrera: "",
     grupo: "",
-    semestre: ""
+    semestre: "",
+    departamento: ""
   })
 
+  // Start with clean state
   const openCrear = () => {
     setModalMode("crear")
     setUserForm({
       id: "",
+      identifier: "",
       nombre: "",
       apellido: "",
       password: "",
       email: "",
-      tipo: "Alumno",
+      tipo: "ALUMNO",
       estado: "Activo",
       carrera: "",
       grupo: "",
-      semestre: ""
+      semestre: "",
+      departamento: ""
     })
     setModalOpen(true)
   }
 
+  // Populate from existing user object
+  // Note: Backend now returns boleta, num_empleado, departamento
   const openEditar = u => {
     setModalMode("editar")
+    let currentIdentifier = ""
+    if (u.tipo === "ALUMNO") currentIdentifier = u.boleta
+    if (u.tipo === "PROFESOR") currentIdentifier = u.num_empleado
+
     setUserForm({
       id: u.id,
+      identifier: currentIdentifier || "",
       nombre: u.nombre || "",
       apellido: u.apellido || "",
       password: "", // dont show pwd
       email: u.email || "",
-      tipo: u.tipo,
+      tipo: u.tipo || "ALUMNO",
       estado: u.estado,
-      carrera: u.id_carrera || "", // Use ID for editing
+      carrera: u.id_carrera || "",
       grupo: u.grupo || "",
-      semestre: String(u.semestre ?? "")
+      semestre: String(u.semestre ?? ""),
+      departamento: u.departamento || ""
     })
     setModalOpen(true)
   }
@@ -349,13 +701,16 @@ function AdminUsuarios() {
       apellido: userForm.apellido,
       email: userForm.email,
       password: userForm.password || undefined,
-      rol: userForm.tipo.toUpperCase(), // Alumno -> ALUMNO
+      rol: userForm.tipo.toUpperCase(),
       activo: userForm.estado === "Activo",
-      // Subtype
-      boleta: userForm.id, // using ID field as Boleta input
-      num_empleado: userForm.id, // using ID field as NumEmpleado
-      semestre: userForm.semestre,
-      carrera_id: userForm.carrera // Send ID
+
+      // Dynamic fields
+      boleta: userForm.tipo.toUpperCase() === 'ALUMNO' ? userForm.identifier : undefined,
+      num_empleado: userForm.tipo.toUpperCase() === 'PROFESOR' ? userForm.identifier : undefined,
+      departamento: userForm.tipo.toUpperCase() === 'PROFESOR' ? userForm.departamento : undefined,
+
+      semestre: userForm.semestre, // Might be undefined for non-students in backend logic (it's fine)
+      carrera_id: userForm.carrera
     }
 
     fetch(url, {
@@ -538,14 +893,35 @@ function AdminUsuarios() {
             </h3>
 
             <div style={styles.formGrid1}>
+
               <div style={styles.formGroup}>
-                <label style={styles.label}>ID / Boleta</label>
-                <input
-                  style={styles.input}
-                  value={userForm.id}
-                  onChange={e => handleFormChange("id", e.target.value)}
-                />
+                <label style={styles.label}>Tipo de Usuario</label>
+                <select
+                  style={styles.select}
+                  value={userForm.tipo}
+                  onChange={e => handleFormChange("tipo", e.target.value)}
+                >
+                  <option value="ALUMNO">Alumno</option>
+                  <option value="PROFESOR">Profesor</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
               </div>
+
+              {/* Identifier Field: Label changes based on Type */}
+              {userForm.tipo !== 'ADMIN' && (
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>
+                    {userForm.tipo === 'ALUMNO' ? 'Boleta' : 'Número de Empleado'}
+                  </label>
+                  <input
+                    style={styles.input}
+                    value={userForm.identifier}
+                    onChange={e => handleFormChange("identifier", e.target.value)}
+                    placeholder={userForm.tipo === 'ALUMNO' ? '202564...' : 'P-00...'}
+                  />
+                </div>
+              )}
+
               <div style={styles.formGroup}>
                 <label style={styles.label}>Nombre</label>
                 <input
@@ -562,6 +938,7 @@ function AdminUsuarios() {
                   onChange={e => handleFormChange("apellido", e.target.value)}
                 />
               </div>
+
               {modalMode === 'crear' && (
                 <div style={styles.formGroup}>
                   <label style={styles.label}>Contraseña</label>
@@ -581,18 +958,7 @@ function AdminUsuarios() {
                   onChange={e => handleFormChange("email", e.target.value)}
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Tipo de Usuario</label>
-                <select
-                  style={styles.select}
-                  value={userForm.tipo}
-                  onChange={e => handleFormChange("tipo", e.target.value)}
-                >
-                  <option value="Alumno">Alumno</option>
-                  <option value="Profesor">Profesor</option>
-                  <option value="Admin">Admin</option>
-                </select>
-              </div>
+
               <div style={styles.formGroup}>
                 <label style={styles.label}>Estado</label>
                 <select
@@ -604,46 +970,66 @@ function AdminUsuarios() {
                   <option value="Inactivo">Inactivo</option>
                 </select>
               </div>
-              <div style={styles.formGroup}>
-                <select
-                  style={styles.select}
-                  value={userForm.carrera}
-                  onChange={e => handleFormChange("carrera", e.target.value)}
-                >
-                  <option value="">Seleccionar Carrera</option>
-                  {carrerasList.map(c => (
-                    <option key={c.id} value={c.id}>{c.nombre}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Grupo (Opcional)</label>
-                <select // Just a helper list, doesn't enroll yet but useful
-                  style={styles.select}
-                  value={userForm.grupo}
-                  onChange={e => handleFormChange("grupo", e.target.value)}
-                >
-                  <option value="">-</option>
-                  {gruposList.map(g => (
-                    <option key={g.id} value={g.grupo}>{g.grupo} - {g.materia_nombre}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Semestre</label>
-                <select
-                  style={styles.select}
-                  value={userForm.semestre}
-                  onChange={e =>
-                    handleFormChange("semestre", e.target.value)
-                  }
-                >
-                  <option value="">Semestre</option>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
+
+              {/* Student Specific Fields */}
+              {userForm.tipo === 'ALUMNO' && (
+                <>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Carrera</label>
+                    <select
+                      style={styles.select}
+                      value={userForm.carrera}
+                      onChange={e => handleFormChange("carrera", e.target.value)}
+                    >
+                      <option value="">Seleccionar Carrera</option>
+                      {carrerasList.map(c => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Semestre</label>
+                    <select
+                      style={styles.select}
+                      value={userForm.semestre}
+                      onChange={e => handleFormChange("semestre", e.target.value)}
+                    >
+                      <option value="">Semestre</option>
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {/* Grupo is optional helper */}
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Grupo (Opcional)</label>
+                    <select
+                      style={styles.select}
+                      value={userForm.grupo}
+                      onChange={e => handleFormChange("grupo", e.target.value)}
+                    >
+                      <option value="">-</option>
+                      {gruposList.map(g => (
+                        <option key={g.id} value={g.grupo}>{g.grupo} - {g.materia_nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+
+              {/* Professor Specific Fields */}
+              {userForm.tipo === 'PROFESOR' && (
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Departamento</label>
+                  <input
+                    style={styles.input}
+                    value={userForm.departamento}
+                    onChange={e => handleFormChange("departamento", e.target.value)}
+                    placeholder="Ej. Ciencias Básicas"
+                  />
+                </div>
+              )}
+
             </div>
 
             <div style={styles.modalButtons}>
@@ -712,7 +1098,7 @@ function AdminClases() {
     horario: "", // Display only
     cupo: "",
     inscritos: "",
-    estado: "Abierta",
+    estado: "ABIERTO",
     turno: "M"
   })
 
@@ -740,7 +1126,7 @@ function AdminClases() {
       horario: "",
       cupo: "",
       inscritos: "",
-      estado: "Abierta",
+      estado: "ABIERTO",
       turno: "M"
     })
     setScheduleList([])
@@ -759,7 +1145,7 @@ function AdminClases() {
       horario: clase.horario,
       cupo: String(clase.cupo ?? ""),
       inscritos: String(clase.inscritos ?? ""),
-      estado: clase.estado || "Abierta",
+      estado: clase.estado || "ABIERTO",
       turno: 'M' // Default as we might not have it in list view yet? (check backup)
     })
     // NOTE: retrieving existing schedules to edit is complex, 
@@ -790,42 +1176,60 @@ function AdminClases() {
       periodo: claseForm.grupo || '2025-1',
       cupo_max: Number(claseForm.cupo),
       turno: claseForm.turno,
-      estado: claseForm.estado === 'Abierta' ? 'ABIERTO' : 'CERRADO'
+      estado: claseForm.estado
     }
 
     try {
+      // 1. Create/Update Group
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
         body: JSON.stringify(body)
       })
-      if (!res.ok) throw new Error(await res.text())
+
+      if (!res.ok) {
+        const txt = await res.text()
+        throw new Error(txt)
+      }
 
       const data = await res.json()
-      const groupId = modalMode === 'crear' ? data.id_grupo : claseForm.id
+      const groupId = modalMode === 'crear' ? (data.id || data.id_grupo) : claseForm.id
 
-      // Save Schedules
-      if (modalMode === 'crear' && scheduleList.length > 0) {
+      // 2. Insert schedules (for both create and edit if user added new ones)
+      if (scheduleList.length > 0) {
+        // We do this sequentially or parallel. Sequential is safer for order/errors.
+        const errors = []
         for (const slot of scheduleList) {
-          await fetch(`${API}/admin/grupos/${groupId}/horarios`, {
+          const slotBody = {
+            dia: parseInt(slot.dia),
+            hora_inicio: slot.hora_ini,
+            hora_fin: slot.hora_fin,
+            aula: slot.aula
+          }
+          const sRes = await fetch(`${API}/admin/grupos/${groupId}/horarios`, {
             method: 'POST',
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
-            body: JSON.stringify({
-              dia: Number(slot.dia),
-              hora_inicio: slot.hora_ini,
-              hora_fin: slot.hora_fin,
-              aula: slot.aula
-            })
+            body: JSON.stringify(slotBody)
           })
+          if (!sRes.ok) {
+            const errTxt = await sRes.text()
+            console.error("Error saving schedule:", errTxt)
+            errors.push(`Día ${slot.dia}: ${errTxt}`)
+          }
+        }
+        if (errors.length > 0) {
+          alert("La clase se guardó, pero hubo errores al añadir horarios:\n" + errors.join("\n"))
         }
       }
 
       setModalOpen(false)
       loadClases()
+
     } catch (e) {
-      alert("Error: " + e.message)
+      alert("Error al guardar clase: " + e.message)
     }
   }
+
 
   const clasesFiltradas = clases.filter(c => {
     const matVal = String(c.materia || "").toLowerCase()
@@ -911,18 +1315,43 @@ function AdminClases() {
 
       {modalOpen && (
         <div style={styles.modalOverlay}>
-          <div style={styles.modalCard} style={{ ...styles.modalCard, width: '700px' }}>
+          <div style={{ ...styles.modalCard, width: '700px' }}>
             <h3 style={styles.modalTitle}>
               {modalMode === "crear" ? "Añadir Clase" : "Editar Clase"}
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Materia</label>
-                <select style={styles.select} value={claseForm.materia} onChange={e => handleFormChange("materia", e.target.value)}>
-                  <option value="">Selecciona materia</option>
-                  {materias.map(m => (
-                    <option key={m.id_materia} value={m.id_materia}>{m.clave} - {m.nombre}</option>
+                <label style={styles.label}>Filtrar por Semestre</label>
+                <select
+                  style={styles.select}
+                  value={claseForm.semestreFilter || ""}
+                  onChange={e => {
+                    const val = e.target.value
+                    setClaseForm(prev => ({ ...prev, semestreFilter: val, materia: "" })) // Reset materia on filter change
+                  }}
+                >
+                  <option value="">Todos</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
+                    <option key={n} value={n}>Semestre {n}</option>
                   ))}
+                </select>
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Materia</label>
+                <select
+                  style={styles.select}
+                  value={claseForm.materia}
+                  onChange={e => handleFormChange("materia", e.target.value)}
+                  disabled={!claseForm.semestreFilter && materias.length > 50} // Optional UX hint
+                >
+                  <option value="">Selecciona materia</option>
+                  {materias
+                    .filter(m => !claseForm.semestreFilter || String(m.semestre) === String(claseForm.semestreFilter))
+                    .map(m => (
+                      <option key={m.id_materia} value={m.id_materia}>
+                        {m.clave} - {m.nombre}
+                      </option>
+                    ))}
                 </select>
               </div>
               <div style={styles.formGroup}>
@@ -952,15 +1381,15 @@ function AdminClases() {
               <div style={styles.formGroup}>
                 <label style={styles.label}>Estado</label>
                 <select style={styles.select} value={claseForm.estado} onChange={e => handleFormChange("estado", e.target.value)}>
-                  <option value="Abierta">Abierta</option>
-                  <option value="Cerrada">Cerrada</option>
+                  <option value="ABIERTO">Abierta</option>
+                  <option value="CERRADO">Cerrada</option>
                 </select>
               </div>
             </div>
 
             {/* SECTION HORARIOS */}
             <div style={{ marginTop: '20px', borderTop: '1px solid #ccc', paddingTop: '10px' }}>
-              <h4 style={{ ...styles.label, fontSize: '14px', marginBottom: '10px' }}>Horarios (Solo al crear)</h4>
+              <h4 style={{ ...styles.label, fontSize: '14px', marginBottom: '10px' }}>Añadir Horarios</h4>
 
               {/* Controls */}
               <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
@@ -1159,459 +1588,5 @@ function AdminReinscripcion() {
 
 /* ------------------ ESTILOS COMPARTIDOS ------------------ */
 
-const styles = {
-  container: {
-    display: "flex",
-    minHeight: "100vh",
-    background:
-      "linear-gradient(135deg, #0f1620 0%, #1a2847 40%, #2d3a6a 100%)",
-    color: "#ffffff",
-    fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    position: "relative",
-    overflow: "hidden"
-  },
-  floatingShapes: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    pointerEvents: "none",
-    zIndex: 1
-  },
-  floatingSvg: {
-    position: "absolute",
-    stroke: "#4a5a8e",
-    transformStyle: "preserve-3d"
-  },
-  svg0: {
-    width: "180px",
-    height: "180px",
-    left: "5%",
-    bottom: "-25%",
-    animation: "float1 20s infinite ease-in-out",
-    opacity: 0.3
-  },
-  svg1: {
-    width: "140px",
-    height: "140px",
-    left: "20%",
-    bottom: "-20%",
-    animation: "float2 22s infinite ease-in-out",
-    opacity: 0.4
-  },
-  svg2: {
-    width: "160px",
-    height: "160px",
-    left: "40%",
-    bottom: "-22%",
-    animation: "float3 24s infinite ease-in-out",
-    opacity: 0.25
-  },
-  svg3: {
-    width: "120px",
-    height: "120px",
-    left: "60%",
-    bottom: "-18%",
-    animation: "float4 18s infinite ease-in-out",
-    opacity: 0.5
-  },
-  svg4: {
-    width: "150px",
-    height: "150px",
-    left: "75%",
-    bottom: "-21%",
-    animation: "float1 21s infinite ease-in-out",
-    opacity: 0.35
-  },
 
-  sidebar: {
-    width: "280px",
-    background:
-      "linear-gradient(180deg, rgba(30,43,79,0.95) 0%, rgba(42,54,88,0.95) 100%)",
-    backdropFilter: "blur(20px)",
-    borderRight: "1px solid rgba(106,122,174,0.2)",
-    display: "flex",
-    flexDirection: "column",
-    padding: "32px 20px",
-    position: "relative",
-    zIndex: 10,
-    boxShadow: "4px 0 24px rgba(0,0,0,0.3)"
-  },
-  sidebarHeader: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    marginBottom: "40px",
-    position: "relative"
-  },
-  avatarGlow: {
-    position: "absolute",
-    top: "-15px",
-    left: "50%",
-    transform: "translateX(-50%)",
-    width: "100px",
-    height: "100px",
-    background:
-      "radial-gradient(circle, rgba(106,122,174,0.4) 0%, transparent 70%)",
-    filter: "blur(25px)",
-    zIndex: -1
-  },
-  avatar: {
-    width: "80px",
-    height: "80px",
-    borderRadius: "50%",
-    background: "linear-gradient(135deg, #5a6a9e 0%, #6a7aae 100%)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "40px",
-    marginBottom: "16px",
-    border: "3px solid rgba(106,122,174,0.3)",
-    boxShadow: "0 8px 32px rgba(106,122,174,0.4)"
-  },
-  sidebarTitle: {
-    fontSize: "20px",
-    fontWeight: 700,
-    color: "#ffffff",
-    letterSpacing: "1px"
-  },
-  sidebarSubtitle: {
-    fontSize: "14px",
-    color: "#a8b2d1",
-    marginTop: "4px"
-  },
-  sidebarNav: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-    flex: 1
-  },
-  pill: {
-    background: "rgba(58,74,122,0.4)",
-    border: "1px solid rgba(106,122,174,0.3)",
-    color: "#d1d5e8",
-    padding: "14px 20px",
-    borderRadius: "12px",
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    fontSize: "14px",
-    fontWeight: 500,
-    textAlign: "left",
-    outline: "none"
-  },
-  pillActive: {
-    background:
-      "linear-gradient(135deg, rgba(106,122,174,0.4) 0%, rgba(90,106,158,0.4) 100%)",
-    border: "1px solid rgba(106,122,174,0.5)",
-    boxShadow: "0 4px 20px rgba(106,122,174,0.3)"
-  },
-  sidebarBottom: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-    marginTop: "20px",
-    paddingTop: "20px",
-    borderTop: "1px solid rgba(106,122,174,0.2)"
-  },
-  pillDanger: {
-    background:
-      "linear-gradient(135deg, rgba(185,28,28,0.3) 0%, rgba(220,38,38,0.3) 100%)",
-    border: "1px solid rgba(220,38,38,0.4)",
-    color: "#ffb3b3",
-    padding: "14px 20px",
-    borderRadius: "12px",
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    fontSize: "14px",
-    fontWeight: 600,
-    textAlign: "left",
-    outline: "none"
-  },
 
-  main: {
-    flex: 1,
-    padding: "40px",
-    position: "relative",
-    zIndex: 10,
-    overflowY: "auto"
-  },
-  h2: {
-    fontSize: "32px",
-    fontWeight: 700,
-    marginBottom: "28px",
-    background: "linear-gradient(135deg, #ffffff 0%, #6a7aae 100%)",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-    backgroundClip: "text",
-    letterSpacing: "-1px"
-  },
-
-  card: {
-    background: "rgba(30,43,79,0.75)",
-    backdropFilter: "blur(20px)",
-    borderRadius: "24px",
-    border: "1px solid rgba(106,122,174,0.25)",
-    padding: "28px 32px",
-    boxShadow: "0 16px 40px rgba(0,0,0,0.35)"
-  },
-
-  formGrid2: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
-    gap: "18px"
-  },
-  formGrid1: {
-    display: "grid",
-    gridTemplateColumns: "1fr",
-    gap: "18px"
-  },
-  formGroup: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px"
-  },
-  label: {
-    fontSize: "13px",
-    color: "#c3c8e5"
-  },
-  input: {
-    background: "rgba(58,74,122,0.7)",
-    border: "1px solid rgba(106,122,174,0.4)",
-    borderRadius: "10px",
-    padding: "10px 12px",
-    color: "#ffffff",
-    fontSize: "14px",
-    outline: "none"
-  },
-  select: {
-    background: "rgba(58,74,122,0.7)",
-    border: "1px solid rgba(106,122,174,0.4)",
-    borderRadius: "10px",
-    padding: "10px 12px",
-    color: "#ffffff",
-    fontSize: "14px",
-    outline: "none",
-    cursor: "pointer"
-  },
-
-  buttonPrimary: {
-    background: "linear-gradient(135deg,#5a6a9e 0%,#6a7aae 100%)",
-    border: "none",
-    color: "#ffffff",
-    padding: "10px 24px",
-    borderRadius: "12px",
-    cursor: "pointer",
-    fontSize: "14px",
-    fontWeight: 600,
-    boxShadow: "0 4px 16px rgba(106,122,174,0.45)"
-  },
-  buttonSmall: {
-    background: "rgba(58,74,122,0.85)",
-    border: "1px solid rgba(106,122,174,0.5)",
-    color: "#ffffff",
-    padding: "6px 16px",
-    borderRadius: "999px",
-    cursor: "pointer",
-    fontSize: "13px",
-    fontWeight: 600
-  },
-  buttonDanger: {
-    background: "rgba(220,38,38,0.9)",
-    border: "none",
-    color: "#ffffff",
-    padding: "10px 20px",
-    borderRadius: "12px",
-    cursor: "pointer",
-    fontSize: "14px",
-    fontWeight: 600
-  },
-  buttonGhost: {
-    background: "rgba(148,163,184,0.35)",
-    border: "none",
-    color: "#e5e7eb",
-    padding: "10px 20px",
-    borderRadius: "12px",
-    cursor: "pointer",
-    fontSize: "14px",
-    fontWeight: 500
-  },
-
-  filtersBar: {
-    display: "flex",
-    gap: "12px",
-    marginBottom: "22px",
-    alignItems: "center",
-    flexWrap: "wrap"
-  },
-
-  tableWrap: {
-    background: "rgba(30,43,79,0.8)",
-    backdropFilter: "blur(18px)",
-    borderRadius: "24px",
-    border: "1px solid rgba(106,122,174,0.25)",
-    overflow: "hidden",
-    boxShadow: "0 16px 40px rgba(0,0,0,0.35)"
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse"
-  },
-  tableHeaderRow: {
-    background: "rgba(47,64,112,0.95)"
-  },
-  th: {
-    padding: "14px 20px",
-    textAlign: "left",
-    color: "#c3c8e5",
-    fontSize: "12px",
-    letterSpacing: "1px",
-    textTransform: "uppercase",
-    borderBottom: "1px solid rgba(106,122,174,0.4)"
-  },
-  tableRow: {
-    borderBottom: "1px solid rgba(106,122,174,0.18)"
-  },
-  td: {
-    padding: "12px 20px",
-    fontSize: "14px",
-    color: "#e5e7f5"
-  },
-
-  badge: {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "4px 12px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: 600
-  },
-  badgeAlumno: {
-    background: "rgba(59,130,246,0.2)",
-    color: "#bfdbfe"
-  },
-  badgeMaestro: {
-    background: "rgba(234,179,8,0.2)",
-    color: "#facc15"
-  },
-  badgeAdmin: {
-    background: "rgba(168,85,247,0.25)",
-    color: "#e9d5ff"
-  },
-  badgeActivo: {
-    background: "rgba(34,197,94,0.2)",
-    color: "#bbf7d0"
-  },
-  badgeInactivo: {
-    background: "rgba(248,113,113,0.18)",
-    color: "#fecaca"
-  },
-
-  sectionTitle: {
-    fontSize: "16px",
-    fontWeight: 600,
-    color: "#e5e7f5",
-    marginBottom: "10px"
-  },
-
-  /* Chat */
-  chatSection: {
-    background: "rgba(30,43,79,0.8)",
-    backdropFilter: "blur(20px)",
-    borderRadius: "24px",
-    border: "1px solid rgba(106,122,174,0.25)",
-    padding: "20px",
-    display: "flex",
-    flexDirection: "column",
-    height: "calc(100vh - 200px)",
-    boxShadow: "0 16px 40px rgba(0,0,0,0.35)"
-  },
-  chatScroll: {
-    flex: 1,
-    overflowY: "auto",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-    paddingRight: "6px",
-    marginBottom: "14px"
-  },
-  msgBot: {
-    alignSelf: "flex-start",
-    background:
-      "linear-gradient(135deg, rgba(106,122,174,0.45) 0%, rgba(90,106,158,0.55) 100%)",
-    borderRadius: "18px 18px 18px 4px",
-    padding: "10px 14px",
-    fontSize: "14px",
-    maxWidth: "70%"
-  },
-  msgUser: {
-    alignSelf: "flex-end",
-    background: "linear-gradient(135deg,#5a6a9e 0%,#6a7aae 100%)",
-    borderRadius: "18px 18px 4px 18px",
-    padding: "10px 14px",
-    fontSize: "14px",
-    maxWidth: "70%"
-  },
-  chatInput: {
-    display: "flex",
-    gap: "12px",
-    alignItems: "flex-end"
-  },
-  textarea: {
-    flex: 1,
-    background: "rgba(58,74,122,0.7)",
-    border: "1px solid rgba(106,122,174,0.4)",
-    borderRadius: "14px",
-    padding: "10px 12px",
-    color: "#ffffff",
-    fontSize: "14px",
-    resize: "none",
-    minHeight: "50px",
-    maxHeight: "110px",
-    outline: "none"
-  },
-  sendBtn: {
-    background: "linear-gradient(135deg,#5a6a9e 0%,#6a7aae 100%)",
-    border: "none",
-    color: "#ffffff",
-    width: "48px",
-    height: "48px",
-    borderRadius: "14px",
-    cursor: "pointer",
-    fontSize: "20px",
-    boxShadow: "0 4px 16px rgba(106,122,174,0.5)"
-  },
-
-  /* Modal */
-  modalOverlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(15,23,42,0.75)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 100
-  },
-  modalCard: {
-    width: "520px",
-    maxWidth: "90vw",
-    background: "#f9fafb",
-    borderRadius: "18px",
-    padding: "24px 26px",
-    boxShadow: "0 25px 60px rgba(15,23,42,0.65)",
-    color: "#111827"
-  },
-  modalTitle: {
-    fontSize: "20px",
-    fontWeight: 700,
-    marginBottom: "18px",
-    color: "#1f2937"
-  },
-  modalButtons: {
-    display: "flex",
-    gap: "10px",
-    justifyContent: "flex-end",
-    marginTop: "22px"
-  }
-}

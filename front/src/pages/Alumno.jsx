@@ -502,11 +502,20 @@ function Reinscripcion() {
 
   async function delGrupo(id_grupo) {
     setMsg('')
-    await fetch(`${API}/alumno/reins/preinscribir/${id_grupo}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${t()}` }
-    })
-    refresh()
+    try {
+      const res = await fetch(`${API}/alumno/reins/preinscribir/${id_grupo}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${t()}` }
+      })
+      if (!res.ok) {
+        const txt = await res.text()
+        alert('Error al eliminar: ' + txt)
+        return
+      }
+      refresh()
+    } catch (e) {
+      alert('Error de red al eliminar grupo')
+    }
   }
 
   async function confirmar() {
@@ -582,7 +591,9 @@ function Reinscripcion() {
                 <td style={styles.td}>{r.profesor || '—'}</td>
                 <td style={styles.td}>{r.creditos}</td>
                 <td style={styles.td}>
-                  <button onClick={() => delGrupo(r.id_grupo)} style={styles.iconBtn}>🗑</button>
+                  {r.estado === 'PREINSCRITO' && (
+                    <button onClick={() => delGrupo(r.id_grupo)} style={styles.iconBtn}>🗑</button>
+                  )}
                 </td>
               </tr>
             ))}

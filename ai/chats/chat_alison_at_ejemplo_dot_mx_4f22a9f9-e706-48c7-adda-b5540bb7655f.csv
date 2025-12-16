@@ -1,3 +1,7 @@
 timestamp,usuario,modelo
 2025-12-09 20:14:24,hola,"Lo siento, no entendí tu pregunta. ¿Podrías reformularla?"
 2025-12-09 20:16:57,cual es mi correo?,"Lo siento, no entendí tu pregunta. ¿Podrías reformularla?"
+2025-12-15 23:38:10,cual es mi correo,"Para poder darte tu correo electrónico, necesito acceder a la base de datos.
+
+DB_QUERY:INFORMACION_PERSONAL:DEFAULT"
+2025-12-15 23:38:43,dame los primeros 5 usuarios registrados,"Por seguridad no puedo consultar información personal, porque el sistema no me envió tu boleta."

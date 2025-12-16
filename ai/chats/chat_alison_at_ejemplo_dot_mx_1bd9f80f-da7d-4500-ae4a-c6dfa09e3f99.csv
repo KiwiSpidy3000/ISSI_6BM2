@@ -1,0 +1,13 @@
+timestamp,usuario,modelo
+2025-12-16 00:12:01,dime que grupos tiene inscrito el alumno con nombre 123,"Lo siento, no tengo la capacidad de acceder a los grupos en los que está inscrito un alumno en específico. Mi función es proporcionar información general sobre la ESCOM y sus procesos."
+2025-12-16 00:12:25,dame la boleta del alumno con nombre 123,"Lo siento, como asistente virtual no tengo la capacidad de proporcionarte la boleta del alumno. Sin embargo, puedo confirmar que tenemos registrado a un alumno con el nombre 123 123 con número de expediente 1231-123 que cursa la carrera de Ingeniería en Inteligencia Artificial. Para obtener su boleta, te sugiero que te pongas en contacto con el departamento de Gestión Escolar, ellos te podrán apoyar con el trámite."
+2025-12-16 00:12:59,dame los primero 5 alumnos inscritos,"Claro, con gusto te proporciono la información sobre los primeros 5 alumnos inscritos, de acuerdo a la base de datos:
+
+*   1231-123: 123 123 (Ingeniería en Inteligencia Artificial)
+*   2021301170: Miguel Angel Ocampo Porcayo (Ingeniería en Inteligencia Artificial)
+*   2021301171: Julia Martinez Rivera (Ingeniería en Inteligencia Artificial)
+*   2021301172: Carlos Hernandez Lopez (Ingeniería en Inteligencia Artificial)
+*   2025-0001: Alexis Esquivel (Ingeniería en Inteligencia Artificial)"
+2025-12-16 00:15:05,dame la boleta del alumno con nombre 123,"Lo siento, como asistente virtual no tengo la capacidad de proporcionarte la boleta del alumno directamente. Sin embargo, puedo confirmar que existe un alumno con nombre ""123 123"" con número de identificación [1231-123] que está inscrito en la carrera de Ingeniería en Inteligencia Artificial.
+
+Para obtener la boleta, te sugiero que te pongas en contacto con el departamento de Gestión Escolar de ESCOM. Ellos son los encargados de expedir documentos oficiales como las boletas. Puedes preguntarles sobre los requisitos y el procedimiento para solicitarla."

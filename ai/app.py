@@ -1,7 +1,7 @@
 # app.py
 from fastapi import FastAPI, HTTPException, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
-import os, json
+import os, json, traceback
 
 from gembot import ChatbotESCOMGemini
 from chat_manager import ChatManager
@@ -86,27 +86,30 @@ async def ai_chat_alias(request: Request):
     if raw_boleta is None:
         boleta = None
     else:
-        boleta = str(raw_boleta).strip() or None   # 👈 seguro aunque venga numérica
+        boleta = str(raw_boleta).strip() or None
 
     # Chat ID management
     chat_id = payload.get("chat_id")
     user_id = payload.get("user_id") # Needed to locate the file
+    
+    # Fallback: if boleta is None, usage user_id as the default ID (for professors/admins)
+    if not boleta and user_id:
+        boleta = str(user_id).strip()
 
     conversation_file = None
     if chat_id and user_id:
         conversation_file = _chat_manager.get_chat_file_path(user_id, chat_id)
-        if not conversation_file:
-             # Auto-create if not exists? Or just fail? Let's fail for now or treat as transient.
-             # Better: backend creates on demand if valid user/chat provided? 
-             # No, let's enforce explicit creation via /ai/chat/new for clarity, 
-             # but if frontend sends a chat_id that file should exist.
-             # If it doesn't exist, we might fall back to no history or error.
-             # Let's try to ensure it exists or create it?
-             # For robustness, if file missing but ID provided, maybe just use it?
-             pass 
+        # If conversation_file is None (chat doesn't exist), we might process anyway or error out?
+        # For now, let it be None (no history).
 
-    reply = _bot.procesar_pregunta(q, boleta_default=boleta, conversation_file=conversation_file)
-    return {"reply": reply}
+    role = payload.get("role", "ALUMNO")
+
+    try:
+        reply = _bot.procesar_pregunta(q, boleta_default=boleta, conversation_file=conversation_file, role=role)
+        return {"reply": reply}
+    except Exception as e:
+        traceback.print_exc()
+        return {"reply": f"Error interno del servidor AI: {str(e)}"}
 
 
 @app.post("/reload")

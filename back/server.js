@@ -240,7 +240,8 @@ app.post('/ai/chat', requireAuth, async (req, res) => {
     const body = {
       message: text,
       user_id: userId,
-      chat_id: chatId
+      chat_id: chatId,
+      role: req.user?.rol || 'ALUMNO'
     };
 
     // If it's an Alumno, 'userId' IS the boleta (string). 
@@ -600,7 +601,7 @@ app.get('/alumno/reins/resumen', requireAuth, async (req, res) => {
 app.get('/alumno/reins/inscritas', requireAuth, async (req, res) => {
   const userId = req.user.sub; const { periodo } = req.query;
   const q = `
-    SELECT i.id_grupo, m.clave, m.nombre, m.creditos,
+    SELECT i.id_grupo, i.estado, m.clave, m.nombre, m.creditos,
            (u.nombre||' '||u.apellido) AS profesor
     FROM ${DB_SCHEMA}.inscripcion i
     JOIN ${DB_SCHEMA}.grupo g ON g.id_grupo=i.id_grupo

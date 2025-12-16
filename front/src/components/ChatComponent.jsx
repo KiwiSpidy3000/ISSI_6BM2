@@ -77,8 +77,12 @@ export default function ChatComponent({ userIdentifier, userName, userRole }) {
         e.stopPropagation() // Prevent selecting the chat when clicking delete
         if (!confirm("¿Borrar esta conversación?")) return
         try {
+            const token = localStorage.getItem('access_token') || ''
             const res = await fetch(`${API}/ai/chats/${chatId}?user_id=${encodeURIComponent(userIdentifier)}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             })
             if (res.ok) {
                 setChats(prev => prev.filter(c => c.chat_id !== chatId))

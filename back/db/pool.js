@@ -14,13 +14,14 @@ if (!DATABASE_URL) {
 
 // 🔹 AQUÍ ES DONDE FALTABA SSL
 const pool = new Pool({
-  connectionString: DATABASE_URL,
-  ssl: { rejectUnauthorized: false }  // <- esto obliga HTTPS con Render
+    connectionString: DATABASE_URL,
+    ssl: { rejectUnauthorized: false }  // <- esto obliga HTTPS con Render
 });
 
 // Optional: Log when a new client connects to the pool
-pool.on('connect', () => {
+pool.on('connect', (client) => {
     // console.log('New client connected to the pool');
+    client.query(`SET search_path TO ${DB_SCHEMA}, public`).catch(e => console.error('Error setting search_path', e));
 });
 
 pool.on('error', (err) => {

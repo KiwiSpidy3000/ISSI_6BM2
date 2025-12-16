@@ -1,0 +1,11 @@
+timestamp,usuario,modelo
+2025-12-15 23:57:57,Dame los primeros 4 usuarios registrados,"Claro, aquí tienes los primeros 4 alumnos registrados:
+
+*   1231-123: 123 123 (Ingeniería en Inteligencia Artificial)
+*   2021301170: Miguel Angel Ocampo Porcayo (Ingeniería en Inteligencia Artificial)
+*   2021301171: Julia Martinez Rivera (Ingeniería en Inteligencia Artificial)
+*   2021301172: Carlos Hernandez Lopez (Ingeniería en Inteligencia Artificial)"
+2025-12-15 23:58:08,dame el correo del alumno con nombre 123,"Lo siento, no puedo proporcionar información de contacto de alumnos por motivos de privacidad. Sin embargo, te puedo dar información sobre el alumno con nombre 123 y número de matrícula 1231-123: está inscrito en la carrera de Ingeniería en Inteligencia Artificial."
+2025-12-15 23:58:48,dime que grupos tiene inscrito el alumno  nombre 123,"No encontré información del alumno ""nombre 123"" en la base de datos. Por favor, verifica que el nombre y número de alumno sean correctos e inténtalo de nuevo. Si el error persiste, te sugiero contactar a la administración escolar para verificar el registro del alumno."
+2025-12-15 23:59:07,dime que grupos tiene inscrito el alumno con nombre 123,"Lo siento, no tengo acceso a la información de los grupos en los que está inscrito un alumno en específico. Mi función es brindarte información general sobre trámites y normatividad de ESCOM."
+2025-12-16 00:09:53,dime que grupos tiene inscrito el alumno con nombre 123,"Lo siento, no tengo la capacidad de consultar esa información. Puedo resolver tus dudas sobre trámites escolares, reglamento o información general de ESCOM."

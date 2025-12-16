@@ -1,0 +1,7 @@
+timestamp,usuario,modelo
+2025-12-15 23:39:12,cual es mi correo,"Lo siento, no se encontró información del estudiante, por lo que no puedo proporcionarte tu correo electrónico. Necesitaría que me proporciones información adicional para poder ayudarte."
+2025-12-15 23:39:37,dame los primeros 5 usuarios registrados,"Por seguridad no puedo consultar información personal, porque el sistema no me envió tu boleta."
+2025-12-15 23:39:55,dame las primeras 5 clases registradas,"Como administrador, entiendo que necesitas información sobre las primeras 5 clases registradas. Para acceder a esta información, necesito consultar la base de datos.
+
+DB_QUERY:STATS_GENERAL:DEFAULT"
+2025-12-15 23:40:14,cuando son las reincripciones,El próximo periodo de reinscripciones para alumnos de segundo semestre o superior será el 3 de Febrero de 2026.
