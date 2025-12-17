@@ -171,6 +171,16 @@ export default function Login() {
                 />
               </div>
 
+              <div style={{ textAlign: 'right', marginTop: '-10px', marginBottom: '4px' }}>
+                <button
+                  type="button"
+                  style={{ ...styles.link, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '12px' }}
+                  onClick={() => alert("Para cambiar la contraseña acude a gestión.")}
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+
               <div style={styles.captchaRow}>
                 <label style={styles.captchaLabel}>
                   <input
@@ -198,7 +208,7 @@ export default function Login() {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   )
 }
 

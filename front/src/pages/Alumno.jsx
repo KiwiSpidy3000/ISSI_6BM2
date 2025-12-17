@@ -159,11 +159,16 @@ function Kardex() {
                 k.nombre ??           // por si el view manda nombre
                 '';
 
-              const estado =
-                k.estado ??
-                k.estatus ??          // por si viene como estatus
-                k.status ??           // por si algún día se llama status
-                '';
+              // Lógica corregida: 0 a 10, Aprobado >= 6
+              let estado = k.estado ?? k.estatus ?? k.status ?? '';
+              let calif = parseFloat(k.calificacion);
+              let displayCalif = k.calificacion;
+
+              if (!isNaN(calif)) {
+                calif = Math.round(calif);
+                displayCalif = calif;
+                estado = calif >= 6 ? 'Aprobado' : 'Reprobado';
+              }
 
               return (
                 <tr key={i} style={styles.tableRow}>
@@ -172,7 +177,7 @@ function Kardex() {
                   <td style={styles.td}>{k.materia_clave}</td>
                   <td style={styles.td}>{materia}</td>
                   <td style={styles.td}>{k.creditos}</td>
-                  <td style={styles.td}>{k.calificacion}</td>
+                  <td style={styles.td}>{displayCalif}</td>
                   <td style={styles.td}>{estado}</td>
                 </tr>
               );
@@ -355,10 +360,14 @@ function Calificaciones() {
                 <tr key={i} style={styles.tableRow}>
                   <td style={styles.td}>{r.materia_clave}</td>
                   <td style={styles.td}>{r.materia_nombre}</td>
-                  <td style={styles.td}>{r.final_calc ?? '—'}</td>
+                  <td style={styles.td}>
+                    {r.final_calc ? Math.round(Number(r.final_calc)) : '—'}
+                  </td>
                   {/* cuando agregues la columna en la vista/consulta del back,
                       se llenará solo; mientras, se mostrará '—' */}
-                  <td style={styles.td}>{r.extraordinario ?? '—'}</td>
+                  <td style={styles.td}>
+                    {r.extraordinario ? Math.round(Number(r.extraordinario)) : '—'}
+                  </td>
                 </tr>
               ))
             )}
