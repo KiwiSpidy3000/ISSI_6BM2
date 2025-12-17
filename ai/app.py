@@ -152,3 +152,7 @@ async def get_chat_history(chat_id: str, user_id: str):
         raise HTTPException(status_code=400, detail="Missing parameters")
     history = _chat_manager.get_history(user_id, chat_id)
     return history
+
+@app.get("/")
+def root():
+    return {"ok": True, "service": "ai"}

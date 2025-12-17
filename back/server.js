@@ -29,7 +29,7 @@ if (!JWT_SECRET) throw new Error('Falta JWT_SECRET en .env');
 const app = express();
 // app.use('/admin', adminRoutes); // Moved down
 
-const { AI_URL = 'http://localhost:8000' } = process.env;
+const { AI_URL = 'https://issi-6bm2.onrender.com' } = process.env;
 
 app.use(helmet());
 app.use(express.json());
