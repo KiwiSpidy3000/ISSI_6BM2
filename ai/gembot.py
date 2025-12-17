@@ -145,23 +145,23 @@ class ChatbotESCOMGemini:
         return contexto
 
     def _conectar_bd(self):
-        try:
-            # Add client_encoding to params to ensure consistent communication
+    try:
+        db_url = os.getenv("DATABASE_URL")
+        if db_url:
+            conn = psycopg2.connect(db_url, sslmode=os.getenv("DB_SSLMODE", "prefer"))
+        else:
             params = self.db_config.copy()
             params["client_encoding"] = "utf8"
+            params["sslmode"] = os.getenv("DB_SSLMODE", "prefer")
             conn = psycopg2.connect(**params)
-            conn.autocommit = True
-            print("✅ Conexión a la base de datos local establecida")
-            return conn
-        except Exception as e:
-            # Safely print error even if it contains non-utf8 chars (like Windows Spanish messages)
-            try:
-                msg = str(e)
-            except:
-                msg = "Error de codificación en el mensaje de error de BD"
-            print(f"❌ Error al conectar con la base de datos local: {msg}")
-            print("🔧 Asegúrate de que PostgreSQL esté corriendo en localhost")
-            return None
+
+        conn.autocommit = True
+        print("✅ Conexión a la base de datos establecida")
+        return conn
+    except Exception as e:
+        print(f"❌ Error al conectar con la BD: {e}")
+        return None
+
 
 
     def _extraer_boleta(self, texto):
