@@ -7,17 +7,15 @@ const API = import.meta.env.VITE_API_URL || "http://localhost:3000"
 export default function Admin() {
   const nav = useNavigate()
   const [view, setView] = useState("datos")
-  const [profile, setProfile] = useState(null)
+  // Datos estáticos del admin
+  const [profile] = useState({
+    nombre: "Alison Estevez Pérez",
+    correo: "alison@ejemplo.mx",
+    id: "EPPA050928ERF",
+    plantel: "ESCOM"
+  })
 
   useEffect(() => {
-    const t = localStorage.getItem("access_token") || ""
-    fetch(`${API}/admin/profile`, {
-      headers: { Authorization: `Bearer ${t}` }
-    })
-      .then(r => r.json())
-      .then(d => setProfile(d))
-      .catch(() => { })
-
     // animaciones como Alumno / Profesor
     const style = document.createElement("style")
     style.textContent = `
@@ -500,7 +498,7 @@ const styles = {
 
 /* ------------------ SUBVISTAS ------------------ */
 
-function AdminDatos({ profile }) {
+function AdminDatos() {
   return (
     <>
       <h2 style={styles.h2}>Datos Personales</h2>
@@ -510,36 +508,34 @@ function AdminDatos({ profile }) {
             <label style={styles.label}>Nombre completo</label>
             <input
               style={styles.input}
-              defaultValue={profile?.nombre || ""}
-              placeholder="Nombre del administrador"
+              value="Alison Estevez Pérez"
+              readOnly
             />
           </div>
           <div style={styles.formGroup}>
             <label style={styles.label}>Correo institucional</label>
             <input
               style={styles.input}
-              defaultValue={profile?.correo || ""}
-              placeholder="correo@ipn.mx"
+              value="alison@ejemplo.mx"
+              readOnly
             />
           </div>
           <div style={styles.formGroup}>
             <label style={styles.label}>ID / RFC</label>
             <input
               style={styles.input}
-              defaultValue={profile?.id || ""}
-              placeholder="AAS901010"
+              value="EPPA050928ERF"
+              readOnly
             />
           </div>
           <div style={styles.formGroup}>
             <label style={styles.label}>Plantel</label>
             <input
               style={styles.input}
-              defaultValue={profile?.plantel || "ESCOM"}
+              value="ESCOM"
+              readOnly
             />
           </div>
-        </div>
-        <div style={{ marginTop: "24px", textAlign: "right" }}>
-          <button style={styles.buttonPrimary}>Guardar cambios</button>
         </div>
       </div>
     </>
@@ -669,9 +665,6 @@ function AdminUsuarios() {
     const matchTipo =
       filtros.tipoUsuario === "" || u.tipo === filtros.tipoUsuario
 
-    const matchCarrera =
-      filtros.carrera === "" || (u.carrera || "") === filtros.carrera
-
     const matchGrupo =
       filtros.grupo === "" || (u.grupo || "") === filtros.grupo
 
@@ -682,7 +675,6 @@ function AdminUsuarios() {
     return (
       matchSearch &&
       matchTipo &&
-      matchCarrera &&
       matchGrupo &&
       matchSemestre
     )
@@ -774,16 +766,7 @@ function AdminUsuarios() {
           <option value="ADMIN">Admin</option>
         </select>
 
-        <select
-          style={styles.select}
-          value={filtros.carrera}
-          onChange={e => handleFiltroChange("carrera", e.target.value)}
-        >
-          <option value="">Carrera</option>
-          <option value="ISC">ISC</option>
-          <option value="IIA">IIA</option>
-          <option value="LCC">LCC</option>
-        </select>
+
 
         <select
           style={styles.select}
