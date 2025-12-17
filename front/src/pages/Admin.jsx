@@ -120,6 +120,15 @@ export default function Admin() {
           >
             Reinscripción
           </button>
+          <button
+            style={{
+              ...styles.pill,
+              ...(view === "solicitudes" ? styles.pillActive : {})
+            }}
+            onClick={() => setView("solicitudes")}
+          >
+            Solicitudes Pass
+          </button>
         </nav>
 
         <div style={styles.sidebarBottom}>
@@ -147,6 +156,8 @@ export default function Admin() {
         {view === "clases" && <AdminClases />}
 
         {view === "reinscripcion" && <AdminReinscripcion />}
+
+        {view === "solicitudes" && <AdminSolicitudes />}
 
         {view === "chat" && (
           <ChatComponent
@@ -1568,6 +1579,95 @@ function AdminReinscripcion() {
             </li>
           </ul>
         </div>
+      </div>
+    </>
+  )
+}
+
+function AdminSolicitudes() {
+  const [requests, setRequests] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  const loadRequests = () => {
+    setLoading(true)
+    const t = localStorage.getItem("access_token")
+    fetch(`${API}/admin/solicitudes-pass`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json())
+      .then(d => {
+        if (Array.isArray(d)) setRequests(d)
+      })
+      .catch(e => console.error(e))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { loadRequests() }, [])
+
+  const handleApprove = (id) => {
+    if (!confirm("¿Aprobar cambio de contraseña? Esto actualizará la contraseña del usuario.")) return
+    const t = localStorage.getItem("access_token")
+    fetch(`${API}/admin/solicitudes-pass/${id}/aprobar`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${t}` }
+    })
+      .then(async r => {
+        if (!r.ok) throw new Error(await r.text())
+        alert("Solicitud aprobada y contraseña actualizada.")
+        loadRequests()
+      })
+      .catch(e => alert("Error: " + e.message))
+  }
+
+  const handleReject = (id) => {
+    if (!confirm("¿Rechazar solicitud?")) return
+    const t = localStorage.getItem("access_token")
+    fetch(`${API}/admin/solicitudes-pass/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${t}` }
+    })
+      .then(async r => {
+        if (!r.ok) throw new Error(await r.text())
+        loadRequests()
+      })
+      .catch(e => alert("Error: " + e.message))
+  }
+
+  return (
+    <>
+      <h2 style={styles.h2}>Solicitudes de Cambio de Contraseña</h2>
+      <div style={styles.tableWrap}>
+        <table style={styles.table}>
+          <thead>
+            <tr style={styles.tableHeaderRow}>
+              <th style={styles.th}>Fecha</th>
+              <th style={styles.th}>Nombre</th>
+              <th style={styles.th}>Email</th>
+              <th style={styles.th}>Rol</th>
+              <th style={styles.th}>Nueva Contraseña</th>
+              <th style={styles.th}>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && <tr><td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: '#ccc' }}>Cargando...</td></tr>}
+            {!loading && requests.length === 0 && (
+              <tr><td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: '#ccc' }}>No hay solicitudes pendientes.</td></tr>
+            )}
+            {requests.map(r => (
+              <tr key={r.id} style={styles.tableRow}>
+                <td style={styles.td}>{new Date(r.fecha).toLocaleString()}</td>
+                <td style={styles.td}>{r.nombre}</td>
+                <td style={styles.td}>{r.email}</td>
+                <td style={styles.td}><span style={styles.badge}>{r.rol}</span></td>
+                <td style={styles.td}><code style={{ background: 'rgba(0,0,0,0.3)', padding: '2px 4px', borderRadius: '4px' }}>{r.new_password}</code></td>
+                <td style={styles.td}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button style={styles.buttonSmall} onClick={() => handleApprove(r.id)}>✅ Aprobar</button>
+                    <button style={{ ...styles.buttonSmall, color: '#f87171', borderColor: 'rgba(248,113,113,0.3)', background: 'rgba(248,113,113,0.1)' }} onClick={() => handleReject(r.id)}>🗑️ Rechazar</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </>
   )

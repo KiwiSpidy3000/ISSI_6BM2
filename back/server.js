@@ -429,6 +429,23 @@ app.get('/auth/me', authMiddleware, async (req, res) => {
   return res.json({ user: req.user });
 });
 
+app.post('/auth/solicitar-cambio', async (req, res) => {
+  const { nombre, email, rol, new_password } = req.body;
+  if (!nombre || !email || !rol || !new_password) {
+    return res.status(400).json({ error: 'Faltan datos' });
+  }
+  try {
+    await pool.query(
+      `INSERT INTO ${DB_SCHEMA}.solicitud_pass (nombre, email, rol, new_password) VALUES ($1, $2, $3, $4)`,
+      [nombre, email, rol, new_password]
+    );
+    res.json({ message: 'Solicitud enviada al administrador.' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Error al guardar solicitud' });
+  }
+});
+
 
 
 

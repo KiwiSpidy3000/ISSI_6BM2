@@ -8,25 +8,28 @@ const images = [
   '/Images/Escom2.png'
 ]
 
-// 🟢 CORRECCIÓN CLAVE: Estas rutas deben coincidir EXACTAMENTE con tu App.jsx
 const ROUTES = {
-  alumno: '/me',        // En tu App.jsx la ruta del alumno es "/me"
-  profesor: '/profesor',// En tu App.jsx es "/profesor"
-  admin: '/admin'       // En tu App.jsx es "/admin"
+  alumno: '/me',
+  profesor: '/profesor',
+  admin: '/admin'
 };
 
 export default function Login() {
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
-
-  // Nuevo estado para el rol (por defecto alumno)
   const [role, setRole] = useState('alumno')
-
   const [captcha, setCaptcha] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [okMsg, setOkMsg] = useState('')
   const [currentImage, setCurrentImage] = useState(0)
+
+  // Forgot Password State
+  const [showForgot, setShowForgot] = useState(false)
+  const [forgotData, setForgotData] = useState({ nombre: '', email: '', rol: 'ALUMNO', new_password: '' })
+  const [forgotMsg, setForgotMsg] = useState('')
+  const [forgotErr, setForgotErr] = useState('')
+  const [forgotLoading, setForgotLoading] = useState(false)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -59,11 +62,10 @@ export default function Login() {
       const res = await fetch(`${API}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Nota: Enviamos el rol para validación en backend
         body: JSON.stringify({
           login,
           password,
-          role: role.toUpperCase(), // 'ALUMNO', 'PROFESOR', 'ADMIN'
+          role: role.toUpperCase(),
           captchaToken: 'SKIP_CAPTCHA'
         })
       })
@@ -71,11 +73,10 @@ export default function Login() {
       if (!res.ok) { throw new Error(data?.error || 'Error de autenticación') }
 
       localStorage.setItem('access_token', data.access_token)
-      localStorage.setItem('user_role', role) // Guardamos el rol para uso futuro
+      localStorage.setItem('user_role', role)
 
       setOkMsg(`¡Bienvenido! Ingresando como ${role}...`)
 
-      // 🟢 REDIRECCIÓN BASADA EN EL ROL SELECCIONADO
       setTimeout(() => {
         const path = ROUTES[role] || '/';
         window.location.href = path;
@@ -85,6 +86,36 @@ export default function Login() {
       setError(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleForgotPassword(e) {
+    e.preventDefault()
+    setForgotMsg(''); setForgotErr('')
+    if (!forgotData.nombre || !forgotData.email || !forgotData.new_password) {
+      setForgotErr('Todos los campos son obligatorios.'); return
+    }
+
+    setForgotLoading(true)
+    try {
+      const res = await fetch(`${API}/auth/solicitar-cambio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(forgotData)
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al enviar solicitud')
+
+      setForgotMsg('Solicitud enviada al administrador correctamente.')
+      setTimeout(() => {
+        setShowForgot(false)
+        setForgotData({ nombre: '', email: '', rol: 'ALUMNO', new_password: '' })
+        setForgotMsg('')
+      }, 3000)
+    } catch (e) {
+      setForgotErr(e.message)
+    } finally {
+      setForgotLoading(false)
     }
   }
 
@@ -98,43 +129,17 @@ export default function Login() {
         ))}
       </div>
 
-      {/* BOTONES DE ROL AGREGADOS */}
       <div style={styles.roleRow}>
-        <button
-          type="button"
-          onClick={() => setRole('alumno')}
-          style={role === 'alumno' ? styles.roleBtnActive : styles.roleBtn}
-        >
-          Soy Alumno
-        </button>
-        <button
-          type="button"
-          onClick={() => setRole('profesor')}
-          style={role === 'profesor' ? styles.roleBtnActive : styles.roleBtn}
-        >
-          Soy Profesor
-        </button>
-        <button
-          type="button"
-          onClick={() => setRole('admin')}
-          style={role === 'admin' ? styles.roleBtnSmallActive : styles.roleBtnSmall}
-        >
-          admin
-        </button>
+        <button type="button" onClick={() => setRole('alumno')} style={role === 'alumno' ? styles.roleBtnActive : styles.roleBtn}>Soy Alumno</button>
+        <button type="button" onClick={() => setRole('profesor')} style={role === 'profesor' ? styles.roleBtnActive : styles.roleBtn}>Soy Profesor</button>
+        <button type="button" onClick={() => setRole('admin')} style={role === 'admin' ? styles.roleBtnSmallActive : styles.roleBtnSmall}>admin</button>
       </div>
 
       <div style={styles.card}>
         <div style={styles.leftPanel}>
           <div style={styles.imageCarousel}>
             {images.map((img, idx) => (
-              <div
-                key={idx}
-                style={{
-                  ...styles.carouselImage,
-                  opacity: currentImage === idx ? 1 : 0,
-                  backgroundImage: `url(${img})`
-                }}
-              />
+              <div key={idx} style={{ ...styles.carouselImage, opacity: currentImage === idx ? 1 : 0, backgroundImage: `url(${img})` }} />
             ))}
           </div>
           <div style={styles.overlay} />
@@ -143,72 +148,91 @@ export default function Login() {
         <div style={styles.rightPanel}>
           <div style={styles.formContainer}>
             <div style={styles.header}>
-              <h2 style={styles.title}>
-                {role === 'admin' ? 'Admin Access' : role === 'profesor' ? 'Acceso Profesor' : 'Acceso Alumno'}
-              </h2>
-              <p style={styles.subtitle}>
-                Sistema de Gestión Académica
-              </p>
+              <h2 style={styles.title}>{role === 'admin' ? 'Admin Access' : role === 'profesor' ? 'Acceso Profesor' : 'Acceso Alumno'}</h2>
+              <p style={styles.subtitle}>Sistema de Gestión Académica</p>
             </div>
 
             <div style={styles.formWrapper}>
               <div style={styles.inputGroup}>
-                <input
-                  style={styles.input}
-                  value={login}
-                  onChange={e => setLogin(e.target.value)}
-                  placeholder={role === 'admin' ? "Usuario Admin" : "Boleta / Usuario"}
-                />
+                <input style={styles.input} value={login} onChange={e => setLogin(e.target.value)} placeholder={role === 'admin' ? "Usuario Admin" : "Boleta / Usuario"} />
               </div>
-
               <div style={styles.inputGroup}>
-                <input
-                  style={styles.input}
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Contraseña"
-                />
+                <input style={styles.input} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Contraseña" />
               </div>
-
               <div style={{ textAlign: 'right', marginTop: '-10px', marginBottom: '4px' }}>
-                <button
-                  type="button"
-                  style={{ ...styles.link, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '12px' }}
-                  onClick={() => alert("Para cambiar la contraseña acude a gestión.")}
-                >
-                  ¿Olvidaste tu contraseña?
+                <button type="button" style={{ ...styles.link, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '12px' }} onClick={() => setShowForgot(true)}>
+                  Restablecer contraseña
                 </button>
               </div>
-
               <div style={styles.captchaRow}>
                 <label style={styles.captchaLabel}>
-                  <input
-                    type="checkbox"
-                    checked={captcha}
-                    onChange={e => setCaptcha(e.target.checked)}
-                    style={styles.checkbox}
-                  />
+                  <input type="checkbox" checked={captcha} onChange={e => setCaptcha(e.target.checked)} style={styles.checkbox} />
                   <span style={styles.captchaText}>No soy un robot</span>
                 </label>
               </div>
-
               {error && <div style={styles.error}>{error}</div>}
               {okMsg && <div style={styles.success}>{okMsg}</div>}
-
-              <button
-                type="button"
-                onClick={handleSubmit}
-                style={styles.button}
-                disabled={loading}
-              >
+              <button type="button" onClick={handleSubmit} style={styles.button} disabled={loading}>
                 {loading ? 'Verificando...' : 'Ingresar'}
               </button>
             </div>
           </div>
         </div>
       </div>
-    </div >
+
+      {showForgot && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalCard}>
+            <h3 style={{ ...styles.title, fontSize: '20px', marginBottom: '16px' }}>Solicitar Cambio de Contraseña</h3>
+            <p style={{ ...styles.subtitle, marginBottom: '20px' }}>
+              Llena el formulario para solicitar el cambio al administrador.
+            </p>
+            <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input
+                style={styles.input}
+                value={forgotData.nombre}
+                onChange={e => setForgotData({ ...forgotData, nombre: e.target.value })}
+                placeholder="Nombre Completo"
+                required
+              />
+              <input
+                style={styles.input}
+                value={forgotData.email}
+                onChange={e => setForgotData({ ...forgotData, email: e.target.value })}
+                placeholder="Correo Electrónico"
+                type="email"
+                required
+              />
+              <select
+                style={styles.input}
+                value={forgotData.rol}
+                onChange={e => setForgotData({ ...forgotData, rol: e.target.value })}
+              >
+                <option value="ALUMNO">Alumno</option>
+                <option value="PROFESOR">Profesor</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+              <input
+                style={styles.input}
+                value={forgotData.new_password}
+                onChange={e => setForgotData({ ...forgotData, new_password: e.target.value })}
+                placeholder="Nueva Contraseña"
+                type="password"
+                required
+              />
+
+              {forgotErr && <div style={{ ...styles.error, marginTop: '12px' }}>{forgotErr}</div>}
+              {forgotMsg && <div style={{ ...styles.success, marginTop: '12px' }}>{forgotMsg}</div>}
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button type="button" onClick={() => { setShowForgot(false); setForgotMsg(''); setForgotErr(''); }} style={{ ...styles.button, background: 'rgba(255,255,255,0.1)', marginTop: 0 }}>Cancelar</button>
+                <button type="submit" style={{ ...styles.button, marginTop: 0 }} disabled={forgotLoading}>{forgotLoading ? 'Enviando...' : 'Enviar Solicitud'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -216,7 +240,7 @@ const styles = {
   container: {
     minHeight: '100vh',
     display: 'flex',
-    flexDirection: 'column', // Para apilar botones y card verticalmente
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     background: 'linear-gradient(135deg, #1a2847 0%, #2d3a6a 50%, #34446a 100%)',
@@ -225,7 +249,6 @@ const styles = {
     position: 'relative',
     overflow: 'hidden',
   },
-  // ... (Mantén aquí tus estilos de svg0 a svg9, card, leftPanel, etc. intactos) ...
   floatingShapes: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' },
   floatingSvg: { position: 'absolute', stroke: '#4a5a8e', transformStyle: 'preserve-3d' },
   svg0: { width: '200px', height: '200px', left: '5%', bottom: '-25%', animation: 'float1 20s infinite ease-in-out', opacity: 0.6, stroke: '#4a5a8e' },
@@ -261,10 +284,21 @@ const styles = {
   error: { background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#ffb3b3', padding: '12px', borderRadius: '10px', fontSize: '14px' },
   success: { background: 'rgba(34, 197, 94, 0.15)', border: '1px solid rgba(34, 197, 94, 0.4)', color: '#a3f3c3', padding: '12px', borderRadius: '10px', fontSize: '14px' },
 
-  // NUEVOS ESTILOS PARA LOS BOTONES DE ROL
   roleRow: { display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap', zIndex: 20 },
   roleBtn: { background: 'rgba(106,122,174,0.1)', color: '#a8b2d1', border: '1px solid rgba(106,122,174,0.3)', borderRadius: '10px', padding: '10px 14px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' },
   roleBtnActive: { background: 'linear-gradient(135deg, #4a5a8e 0%, #5a6a9e 100%)', color: '#fff', border: '1px solid #5a6a9e', borderRadius: '10px', padding: '10px 14px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 0 15px rgba(90, 106, 158, 0.5)', transform: 'scale(1.05)', transition: 'all 0.2s' },
   roleBtnSmall: { background: 'rgba(106,122,174,0.05)', color: '#6a7aae', border: '1px solid rgba(106,122,174,0.2)', borderRadius: '999px', padding: '6px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', marginLeft: 'auto' },
   roleBtnSmallActive: { background: '#6a7aae', color: '#fff', border: '1px solid #6a7aae', borderRadius: '999px', padding: '6px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 0 10px rgba(106,122,174,0.5)' },
+
+  modalOverlay: {
+    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100
+  },
+  modalCard: {
+    background: '#1e2b4f', padding: '30px', borderRadius: '16px',
+    width: '90%', maxWidth: '400px',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+    border: '1px solid rgba(106, 122, 174, 0.3)'
+  }
 }

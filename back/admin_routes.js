@@ -436,4 +436,62 @@ router.post('/config', async (req, res) => {
   }
 });
 
+// ---- SOLICITUDES DE CONTRASEÑA ----
+router.get('/solicitudes-pass', async (req, res) => {
+  try {
+    const r = await pool.query(`SELECT * FROM ${DB_SCHEMA}.solicitud_pass ORDER BY fecha DESC`);
+    res.json(r.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/solicitudes-pass/:id/aprobar', async (req, res) => {
+  const { id } = req.params;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Get request
+    const reqRes = await client.query(`SELECT * FROM ${DB_SCHEMA}.solicitud_pass WHERE id = $1`, [id]);
+    if (!reqRes.rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Solicitud no encontrada' });
+    }
+    const request = reqRes.rows[0];
+
+    // 2. Find user
+    let userRes = await client.query(`SELECT id_usuario FROM ${DB_SCHEMA}.usuario WHERE email = $1`, [request.email]);
+    if (!userRes.rows.length) {
+      // Try finding by boleta/num_empleado if email didn't match directly (though request stores email)
+      // The request form asks for "nombre, correo, rol, pass".
+      // We'll rely on email. If not found, admin should check manually.
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Usuario con ese correo no encontrado en la base de datos' });
+    }
+    const userId = userRes.rows[0].id_usuario;
+
+    // 3. Update Password
+    const hash = await bcrypt.hash(request.new_password, 10);
+    await client.query(`UPDATE ${DB_SCHEMA}.usuario SET pass_hash = $1 WHERE id_usuario = $2`, [hash, userId]);
+
+    // 4. Delete Request
+    await client.query(`DELETE FROM ${DB_SCHEMA}.solicitud_pass WHERE id = $1`, [id]);
+
+    await client.query('COMMIT');
+    res.json({ message: 'Contraseña actualizada y solicitud eliminada' });
+  } catch (e) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: e.message });
+  } finally {
+    client.release();
+  }
+});
+
+router.delete('/solicitudes-pass/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query(`DELETE FROM ${DB_SCHEMA}.solicitud_pass WHERE id = $1`, [id]);
+    res.status(204).send();
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 export default router;
