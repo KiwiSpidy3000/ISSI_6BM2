@@ -145,22 +145,27 @@ class ChatbotESCOMGemini:
         return contexto
 
     def _conectar_bd(self):
-    try:
-        db_url = os.getenv("DATABASE_URL")
-        if db_url:
-            conn = psycopg2.connect(db_url, sslmode=os.getenv("DB_SSLMODE", "prefer"))
-        else:
-            params = self.db_config.copy()
-            params["client_encoding"] = "utf8"
-            params["sslmode"] = os.getenv("DB_SSLMODE", "prefer")
-            conn = psycopg2.connect(**params)
+        try:
+            db_url = os.getenv("DATABASE_URL")
 
-        conn.autocommit = True
-        print("✅ Conexión a la base de datos establecida")
-        return conn
-    except Exception as e:
-        print(f"❌ Error al conectar con la BD: {e}")
-        return None
+            if db_url:
+                # Render suele dar una URL completa tipo: postgresql://user:pass@host:5432/db
+                conn = psycopg2.connect(db_url, sslmode=os.getenv("DB_SSLMODE", "require"))
+            else:
+                params = self.db_config.copy()
+                params["client_encoding"] = "utf8"
+                params["sslmode"] = os.getenv("DB_SSLMODE", "require")
+                conn = psycopg2.connect(**params)
+
+            conn.autocommit = True
+            print("✅ Conexión a la base de datos establecida")
+            return conn
+
+        except Exception as e:
+            print(f"❌ Error al conectar con la BD: {e}")
+            return None
+
+
 
 
 
