@@ -28,6 +28,10 @@ router.get('/usuarios', async (req, res) => {
              p.num_empleado,
              p.departamento,
              -- Grupo logic might be complex if they have multiple, taking one for now or leaving null
+             (SELECT g.id_grupo 
+              FROM ${DB_SCHEMA}.inscripcion i 
+              JOIN ${DB_SCHEMA}.grupo g ON g.id_grupo = i.id_grupo
+              WHERE i.id_alumno = u.id_usuario LIMIT 1) as grupo_id,
              (SELECT g.periodo || ' ' || mm.clave 
               FROM ${DB_SCHEMA}.inscripcion i 
               JOIN ${DB_SCHEMA}.grupo g ON g.id_grupo = i.id_grupo
@@ -78,6 +82,15 @@ router.post('/usuarios', async (req, res) => {
          VALUES ($1, $2, $3, $4)`,
         [userId, boleta || 'SIN_BOLETA', carrera_id || 1, semestre || 1]
       );
+      // Assign group if provided
+      if (req.body.grupo_id) {
+        await client.query(
+          `INSERT INTO ${DB_SCHEMA}.inscripcion (id_grupo, id_alumno, estado)
+           VALUES ($1, $2, 'INSCRITO')
+           ON CONFLICT DO NOTHING`,
+          [req.body.grupo_id, userId]
+        );
+      }
     } else if (rol === 'PROFESOR') {
       await client.query(
         `INSERT INTO ${DB_SCHEMA}.profesor (id_profesor, num_empleado, departamento)
@@ -126,6 +139,14 @@ router.patch('/usuarios/:id', async (req, res) => {
           WHERE id_alumno=$3`,
         [boleta, semestre, id]
       );
+      if (req.body.grupo_id) {
+        await client.query(
+          `INSERT INTO ${DB_SCHEMA}.inscripcion (id_grupo, id_alumno, estado)
+           VALUES ($1, $2, 'INSCRITO')
+           ON CONFLICT DO NOTHING`,
+          [req.body.grupo_id, id]
+        );
+      }
     }
     if (rol === 'PROFESOR' || (!rol)) {
       await client.query(

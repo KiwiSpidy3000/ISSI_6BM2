@@ -641,7 +641,8 @@ function AdminUsuarios() {
       tipo: u.tipo || "ALUMNO",
       estado: u.estado,
       carrera: u.id_carrera || "",
-      grupo: u.grupo || "",
+      carrera: u.id_carrera || "",
+      grupo: u.grupo_id || "",
       semestre: String(u.semestre ?? ""),
       departamento: u.departamento || ""
     })
@@ -702,7 +703,9 @@ function AdminUsuarios() {
       departamento: userForm.tipo.toUpperCase() === 'PROFESOR' ? userForm.departamento : undefined,
 
       semestre: userForm.semestre, // Might be undefined for non-students in backend logic (it's fine)
-      carrera_id: userForm.carrera
+      semestre: userForm.semestre, // Might be undefined for non-students in backend logic (it's fine)
+      carrera_id: userForm.carrera,
+      grupo_id: userForm.grupo
     }
 
     fetch(url, {
@@ -993,7 +996,7 @@ function AdminUsuarios() {
                     >
                       <option value="">-</option>
                       {gruposList.map(g => (
-                        <option key={g.id} value={g.grupo}>{g.grupo} - {g.materia_nombre}</option>
+                        <option key={g.id} value={g.id}>{g.grupo} - {g.materia_nombre}</option>
                       ))}
                     </select>
                   </div>
