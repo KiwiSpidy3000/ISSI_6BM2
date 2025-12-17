@@ -33,3 +33,9 @@ __pycache__/
 
 ai/.venv/
 .venv/
+
+.env
+*.env
+ai/.env
+back/.env
+front/.env
