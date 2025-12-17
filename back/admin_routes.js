@@ -113,11 +113,16 @@ router.post('/usuarios', async (req, res) => {
 
 router.patch('/usuarios/:id', async (req, res) => {
   const { id } = req.params;
-  const { email, nombre, apellido, rol, activo, boleta, semestre, num_empleado, departamento } = req.body;
+  const { email, nombre, apellido, rol, activo, boleta, semestre, num_empleado, departamento, password } = req.body;
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+
+    let newHash = null;
+    if (password && password.trim().length > 0) {
+      newHash = await bcrypt.hash(password, 10);
+    }
 
     // Update Usuario
     await client.query(
@@ -126,9 +131,10 @@ router.patch('/usuarios/:id', async (req, res) => {
            nombre = COALESCE($2, nombre),
            apellido = COALESCE($3, apellido),
            rol = COALESCE($4, rol),
-           activo = COALESCE($5, activo)
+           activo = COALESCE($5, activo),
+           pass_hash = COALESCE($7, pass_hash)
        WHERE id_usuario = $6`,
-      [email, nombre, apellido, rol, activo, id]
+      [email, nombre, apellido, rol, activo, id, newHash]
     );
 
     // Update Subtables if exists

@@ -925,17 +925,18 @@ function AdminUsuarios() {
                 />
               </div>
 
-              {modalMode === 'crear' && (
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Contraseña</label>
-                  <input
-                    type="password"
-                    style={styles.input}
-                    value={userForm.password}
-                    onChange={e => handleFormChange("password", e.target.value)}
-                  />
-                </div>
-              )}
+              <div style={styles.formGroup}>
+                <label style={styles.label}>
+                  {modalMode === 'crear' ? 'Contraseña' : 'Nueva Contraseña (opcional)'}
+                </label>
+                <input
+                  type="password"
+                  style={styles.input}
+                  value={userForm.password}
+                  onChange={e => handleFormChange("password", e.target.value)}
+                  placeholder={modalMode === 'editar' ? 'Dejar en blanco para no cambiar' : ''}
+                />
+              </div>
               <div style={styles.formGroup}>
                 <label style={styles.label}>Email</label>
                 <input
