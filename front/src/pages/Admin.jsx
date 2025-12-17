@@ -668,11 +668,14 @@ function AdminUsuarios() {
     setUserForm(prev => ({ ...prev, [campo]: valor }))
   }
 
+  const [showModalPassword, setShowModalPassword] = useState(false)
+
   const usuariosFiltrados = usuarios.filter(u => {
     const matchSearch =
       filtros.search === "" ||
       u.nombre.toLowerCase().includes(filtros.search.toLowerCase()) ||
-      String(u.id).includes(filtros.search)
+      String(u.id).includes(filtros.search) ||
+      (u.email && u.email.toLowerCase().includes(filtros.search.toLowerCase()))
 
     const matchTipo =
       filtros.tipoUsuario === "" || u.tipo === filtros.tipoUsuario
@@ -764,7 +767,7 @@ function AdminUsuarios() {
       <div style={styles.filtersBar}>
         <input
           style={{ ...styles.input, flex: 2 }}
-          placeholder="Buscar por Nombre, ID..."
+          placeholder="Buscar por Nombre, ID, Email..."
           value={filtros.search}
           onChange={e => handleFiltroChange("search", e.target.value)}
         />
@@ -830,7 +833,7 @@ function AdminUsuarios() {
             {usuariosFiltrados.map(u => (
               <tr key={u.id} style={styles.tableRow}>
                 <td style={styles.td}>{u.id}</td>
-                <td style={styles.td}>{u.nombre}</td>
+                <td style={styles.td}>{u.nombre} {u.apellido}</td>
                 <td style={styles.td}>{u.carrera || "—"}</td>
                 <td style={styles.td}>{u.grupo || "—"}</td>
                 <td style={styles.td}>{u.semestre || "—"}</td>
@@ -936,17 +939,42 @@ function AdminUsuarios() {
                 />
               </div>
 
-              <div style={styles.formGroup}>
+              <div style={{ ...styles.formGroup, position: 'relative' }}>
                 <label style={styles.label}>
                   {modalMode === 'crear' ? 'Contraseña' : 'Nueva Contraseña (opcional)'}
                 </label>
                 <input
-                  type="password"
-                  style={styles.input}
+                  type={showModalPassword ? "text" : "password"}
+                  style={{ ...styles.input, paddingRight: '40px' }}
                   value={userForm.password}
                   onChange={e => handleFormChange("password", e.target.value)}
                   placeholder={modalMode === 'editar' ? 'Dejar en blanco para no cambiar' : ''}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowModalPassword(!showModalPassword)}
+                  style={{
+                    position: 'absolute', right: '10px', top: '38px',
+                    background: 'none', border: 'none', cursor: 'pointer', color: '#a8b2d1',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}
+                >
+                  {showModalPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12c0 4 3.5 7 7 7s7-3 7-7" />
+                      <path d="M5 12l-1.5 2.5" />
+                      <path d="M8.5 16.5l-1.5 2.5" />
+                      <path d="M12 19l0 3" />
+                      <path d="M15.5 16.5l1.5 2.5" />
+                      <path d="M19 12l1.5 2.5" />
+                    </svg>
+                  )}
+                </button>
               </div>
               <div style={styles.formGroup}>
                 <label style={styles.label}>Email</label>
@@ -1557,6 +1585,24 @@ function AdminReinscripcion() {
         <div style={{ marginTop: "24px", textAlign: "right" }}>
           <button style={styles.buttonPrimary} onClick={saveConfig}>Guardar Configuración</button>
         </div>
+
+        <div style={{ marginTop: "24px", borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
+          <h4 style={{ color: '#fff', marginBottom: '10px' }}>Acciones Rápidas</h4>
+          <button
+            style={{ ...styles.buttonPrimary, background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
+            onClick={() => {
+              if (!confirm('¿Estás seguro? Esto abrirá todos los grupos para inscripción.')) return;
+              const t = localStorage.getItem("access_token");
+              fetch(`${API}/admin/config/abrir-inscripciones`, { method: 'POST', headers: { Authorization: `Bearer ${t}` } })
+                .then(r => r.json())
+                .then(d => alert(d.message || d.error))
+                .catch(e => alert(e.message));
+            }}
+          >
+            Abrir Inscripciones (Todos los grupos)
+          </button>
+        </div>
+
         {msg && <div style={{ marginTop: '10px', color: '#bbf7d0', textAlign: 'right' }}>{msg}</div>}
       </div>
 

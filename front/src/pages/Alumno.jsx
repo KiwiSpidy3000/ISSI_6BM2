@@ -24,6 +24,8 @@ export default function Alumno() {
       @keyframes float4 { 0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); } 25% { transform: translate3d(-95px, -135vh, 310px) rotate(-110deg) scale(1.25); } 50% { transform: translate3d(90px, -150vh, 370px) rotate(-220deg) scale(0.85); } 75% { transform: translate3d(-70px, -170vh, 340px) rotate(-330deg) scale(1.4); } }
       .pill-hover:hover { transform: translateX(8px); background: rgba(106, 122, 174, 0.3); box-shadow: 0 4px 20px rgba(106, 122, 174, 0.4); }
       .danger-hover:hover { background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); box-shadow: 0 8px 24px rgba(220, 38, 38, 0.5); }
+      .card-hover { transition: all 0.3s ease; cursor: pointer; }
+      .card-hover:hover { transform: translateY(-5px); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); border-color: rgba(106, 122, 174, 0.5); }
     `
     document.head.appendChild(style)
     return () => document.head.removeChild(style)
@@ -33,8 +35,6 @@ export default function Alumno() {
     localStorage.removeItem('access_token');
     nav('/');
   }
-
-
 
   return (
     <div style={styles.container}>
@@ -128,63 +128,70 @@ function DatosPersonales() {
 
 function Kardex() {
   const [kardex, setKardex] = useState([])
+
   useEffect(() => {
     const t = localStorage.getItem('access_token') || ''
     fetch(`${API}/alumno/kardex`, { headers: { Authorization: `Bearer ${t}` } })
-      .then(r => r.json()).then(setKardex).catch(console.error)
+      .then(r => r.json())
+      .then(setKardex)
+      .catch(console.error)
   }, [])
+
+  // Group by semester
+  const grouped = kardex.reduce((acc, item) => {
+    const sem = item.semestre || 'Desconocido'
+    if (!acc[sem]) acc[sem] = []
+    acc[sem].push(item)
+    return acc
+  }, {})
+
+  // Sort semesters (assuming numeric or simple string sort)
+  const sortedSemesters = Object.keys(grouped).sort((a, b) => Number(a) - Number(b))
 
   return (
     <div>
       <h2 style={styles.h2}>Kardex</h2>
-      <div style={styles.tableWrap}>
-        <table style={styles.table}>
-          <thead>
-            <tr style={styles.tableHeaderRow}>
-              <th style={styles.th}>Periodo</th>
-              <th style={styles.th}>Sem.</th>
-              <th style={styles.th}>Clave</th>
-              <th style={styles.th}>Materia</th>
-              <th style={styles.th}>Cr</th>
-              <th style={styles.th}>Calif</th>
-              <th style={styles.th}>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {kardex.map((k, i) => {
-              // Soportar tanto el esquema nuevo como el viejo del backend
-              const materia =
-                k.materia ??
-                k.materia_nombre ??   // por si viene como materia_nombre
-                k.nombre ??           // por si el view manda nombre
-                '';
+      <div style={styles.grid}>
+        {sortedSemesters.map(sem => {
+          const materias = grouped[sem]
+          // Calculate average
+          const sum = materias.reduce((acc, m) => {
+            const calif = parseFloat(m.calificacion)
+            return acc + (isNaN(calif) ? 0 : calif)
+          }, 0)
+          const count = materias.filter(m => !isNaN(parseFloat(m.calificacion))).length
+          const avg = count > 0 ? (sum / count).toFixed(2) : '0.00'
 
-              // Lógica corregida: 0 a 10, Aprobado >= 6
-              let estado = k.estado ?? k.estatus ?? k.status ?? '';
-              let calif = parseFloat(k.calificacion);
-              let displayCalif = k.calificacion;
-
-              if (!isNaN(calif)) {
-                calif = Math.round(calif);
-                displayCalif = calif;
-                estado = calif >= 6 ? 'Aprobado' : 'Reprobado';
-              }
-
-              return (
-                <tr key={i} style={styles.tableRow}>
-                  <td style={styles.td}>{k.periodo}</td>
-                  <td style={styles.td}>{k.semestre}</td>
-                  <td style={styles.td}>{k.materia_clave}</td>
-                  <td style={styles.td}>{materia}</td>
-                  <td style={styles.td}>{k.creditos}</td>
-                  <td style={styles.td}>{displayCalif}</td>
-                  <td style={styles.td}>{estado}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-
-        </table>
+          return (
+            <div key={sem} style={styles.groupCard} className="card-hover">
+              <div style={styles.cardHeader}>
+                <h3 style={styles.cardTitle}>Semestre {sem}</h3>
+                <span style={styles.inscritosBadge}>Promedio: {avg}</span>
+              </div>
+              <div style={styles.cardBody}>
+                {materias.map((m, idx) => {
+                  const calif = parseFloat(m.calificacion)
+                  const aprobado = !isNaN(calif) && calif >= 6
+                  return (
+                    <div key={idx} style={{ ...styles.cardInfo, justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ color: '#fff', fontWeight: '600', fontSize: '14px' }}>{m.materia || m.materia_nombre}</span>
+                        <span style={{ color: '#6a7aae', fontSize: '12px' }}>{m.materia_clave} • {m.creditos} Créditos</span>
+                      </div>
+                      <span style={{
+                        fontWeight: 'bold',
+                        color: aprobado ? '#4ade80' : '#f87171',
+                        fontSize: '16px'
+                      }}>
+                        {isNaN(calif) ? '—' : Math.round(calif)}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -192,24 +199,26 @@ function Kardex() {
 
 function Horario() {
   const [schedule, setSchedule] = useState([])
-  const [periodos, setPeriodos] = useState([])
-  const [periodo, setPeriodo] = useState('')
+  const [currentPeriod, setCurrentPeriod] = useState('')
 
   useEffect(() => {
     const t = localStorage.getItem('access_token') || ''
+    // First get periods to find the latest one
     fetch(`${API}/alumno/periodos`, { headers: { Authorization: `Bearer ${t}` } })
-      .then(r => r.json()).then(list => {
-        setPeriodos(list || [])
-        if (list?.length) setPeriodo(list[list.length - 1])
-      }).catch(() => setPeriodos([]))
+      .then(r => r.json())
+      .then(list => {
+        if (list && list.length > 0) {
+          const latest = list[list.length - 1]
+          setCurrentPeriod(latest)
+          // Then fetch schedule for that period
+          return fetch(`${API}/alumno/horario?periodo=${latest}`, { headers: { Authorization: `Bearer ${t}` } })
+        }
+        return null
+      })
+      .then(r => r ? r.json() : [])
+      .then(data => setSchedule(data || []))
+      .catch(console.error)
   }, [])
-
-  useEffect(() => {
-    if (!periodo) return
-    const t = localStorage.getItem('access_token') || ''
-    fetch(`${API}/alumno/horario?periodo=${periodo}`, { headers: { Authorization: `Bearer ${t}` } })
-      .then(r => r.json()).then(setSchedule).catch(console.error)
-  }, [periodo])
 
   const grouped = schedule.reduce((acc, item) => {
     const key = item.id_grupo
@@ -223,12 +232,8 @@ function Horario() {
 
   return (
     <div>
-      <h2 style={styles.h2}>Horario</h2>
+      <h2 style={styles.h2}>Horario Actual ({currentPeriod || '...'})</h2>
       <div style={styles.infoBar}>
-        <b>Periodo:</b>
-        <select value={periodo} onChange={e => setPeriodo(e.target.value)} style={styles.select}>
-          {periodos.map(p => <option key={p} value={p}>{p}</option>)}
-        </select>
         <button style={styles.button} onClick={() => window.print()}>Descargar horario</button>
       </div>
 
@@ -263,7 +268,7 @@ function Horario() {
                 })}
               </tr>
             )) : (
-              <tr><td colSpan={8} style={{ ...styles.td, textAlign: 'center' }}>No hay horario disponible para este periodo.</td></tr>
+              <tr><td colSpan={8} style={{ ...styles.td, textAlign: 'center' }}>No hay horario disponible para el periodo actual.</td></tr>
             )}
           </tbody>
         </table>
@@ -279,7 +284,6 @@ function Calificaciones() {
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
 
-  // Cargar lista de periodos del alumno
   useEffect(() => {
     const t = localStorage.getItem('access_token') || ''
     fetch(`${API}/alumno/periodos`, { headers: { Authorization: `Bearer ${t}` } })
@@ -287,12 +291,11 @@ function Calificaciones() {
       .then(list => {
         const arr = list || []
         setPeriodos(arr)
-        if (arr.length) setPeriodo(arr[arr.length - 1]) // último periodo
+        if (arr.length) setPeriodo(arr[arr.length - 1])
       })
       .catch(() => setPeriodos([]))
   }, [])
 
-  // Cargar calificaciones del periodo seleccionado
   useEffect(() => {
     if (!periodo) return
     const t = localStorage.getItem('access_token') || ''
@@ -363,8 +366,6 @@ function Calificaciones() {
                   <td style={styles.td}>
                     {r.final_calc ? Math.round(Number(r.final_calc)) : '—'}
                   </td>
-                  {/* cuando agregues la columna en la vista/consulta del back,
-                      se llenará solo; mientras, se mostrará '—' */}
                   <td style={styles.td}>
                     {r.extraordinario ? Math.round(Number(r.extraordinario)) : '—'}
                   </td>
@@ -378,10 +379,8 @@ function Calificaciones() {
   )
 }
 
-
 function Reinscripcion() {
   const t = () => localStorage.getItem('access_token') || ''
-  // puedes dejarlo fijo por ahora
   const [periodos] = useState(['2025-2', '2025-1', '2024-2', '2024-1'])
   const [periodo, setPeriodo] = useState('2025-2')
 
@@ -392,7 +391,6 @@ function Reinscripcion() {
   const [resumen, setResumen] = useState({ total_creditos: 0, creditos_usados: 0 })
   const [msg, setMsg] = useState('')
 
-  // Cargar lista de periodos
   useEffect(() => {
     fetch(`${API}/alumno/periodos`, { headers: { Authorization: `Bearer ${t()}` } })
       .then(r => r.json())
@@ -403,13 +401,11 @@ function Reinscripcion() {
       .catch(() => setPeriodos([]))
   }, [])
 
-  // Cargar resumen, inscritas y oferta cada que cambian filtros
   useEffect(() => {
     if (!periodo) return
     const hdr = { headers: { Authorization: `Bearer ${t()}` } }
     setMsg('')
 
-    // Resumen
     fetch(`${API}/alumno/reins/resumen?periodo=${periodo}`, hdr)
       .then(async r => {
         if (!r.ok) throw new Error()
@@ -418,7 +414,6 @@ function Reinscripcion() {
       .then(data => setResumen(data || { total_creditos: 0, creditos_usados: 0 }))
       .catch(() => setResumen({ total_creditos: 0, creditos_usados: 0 }))
 
-    // Materias inscritas
     fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr)
       .then(async r => {
         if (!r.ok) throw new Error()
@@ -427,7 +422,6 @@ function Reinscripcion() {
       .then(data => setInscritas(Array.isArray(data) ? data : []))
       .catch(() => setInscritas([]))
 
-    // Oferta
     const qs = new URLSearchParams({
       periodo,
       ...(semestre ? { semestre } : {}),
@@ -470,8 +464,6 @@ function Reinscripcion() {
 
   async function addGrupo(id_grupo) {
     setMsg('')
-
-    // Regla 1 también en front: máximo 6 materias
     if (inscritas.length >= 6) {
       setMsg('No puedes inscribir más de 6 materias en este periodo (máximo 6).')
       return
@@ -479,8 +471,6 @@ function Reinscripcion() {
 
     try {
       const hdr = { Authorization: `Bearer ${t()}` }
-
-      // Choque de horario
       const rChoque = await fetch(`${API}/alumno/reins/conflictos?id_grupo=${id_grupo}`, { headers: hdr })
       const choques = await rChoque.json()
       if (Array.isArray(choques) && choques.length) {
@@ -579,7 +569,6 @@ function Reinscripcion() {
       </div>
       {msg && <p style={styles.error}>{msg}</p>}
 
-      {/* Materias inscritas */}
       <h3 style={styles.h3}>Materias Inscritas</h3>
       <div style={styles.tableWrap}>
         <table style={styles.table}>
@@ -610,7 +599,6 @@ function Reinscripcion() {
         </table>
       </div>
 
-      {/* Oferta */}
       <h3 style={styles.h3}>Oferta</h3>
       <div style={styles.tableWrap}>
         <table style={styles.table}>
@@ -660,7 +648,6 @@ function Reinscripcion() {
   )
 }
 
-
 function Bajas() {
   const t = () => localStorage.getItem('access_token') || '';
   const [periodos, setPeriodos] = useState([]);
@@ -691,13 +678,11 @@ function Bajas() {
     setErr('');
     setMsg('');
 
-    // Materias inscritas en el periodo
     fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr)
       .then(r => r.json())
       .then(setInscritas)
       .catch(() => setErr('Error cargando materias inscritas'));
 
-    // Info de bajas (fecha límite y carga mínima)
     fetch(`${API}/alumno/bajas/info?periodo=${periodo}`, hdr)
       .then(r => r.json())
       .then(data => {
@@ -735,20 +720,13 @@ function Bajas() {
   return (
     <div>
       <h2 style={styles.h2}>Baja de materias</h2>
-
       <div style={styles.infoBar}>
         <div><b>Fecha Límite:</b> {fechaLimite || '—'}</div>
         <div><b>Carga Mínima:</b> {cargaMinima} créditos</div>
         <div>
           <b>Periodo:</b>{' '}
-          <select
-            value={periodo}
-            onChange={e => setPeriodo(e.target.value)}
-            style={styles.select}
-          >
-            {periodos.map(p => (
-              <option key={p} value={p}>{p}</option>
-            ))}
+          <select value={periodo} onChange={e => setPeriodo(e.target.value)} style={styles.select}>
+            {periodos.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
       </div>
@@ -776,11 +754,7 @@ function Bajas() {
                 <td style={styles.td}>{r.profesor || '—'}</td>
                 <td style={styles.td}>{r.creditos}</td>
                 <td style={styles.td}>
-                  <button
-                    onClick={() => darDeBaja(r.id_grupo)}
-                    style={styles.iconBtn}
-                    title="Dar de baja"
-                  >
+                  <button onClick={() => darDeBaja(r.id_grupo)} style={styles.iconBtn} title="Dar de baja">
                     ⊖
                   </button>
                 </td>
@@ -788,15 +762,7 @@ function Bajas() {
             ))}
             {inscritas.length === 0 && (
               <tr>
-                <td
-                  colSpan={5}
-                  style={{
-                    ...styles.td,
-                    textAlign: 'center',
-                    padding: '24px',
-                    color: '#6a7aae'
-                  }}
-                >
+                <td colSpan={5} style={{ ...styles.td, textAlign: 'center', padding: '24px', color: '#6a7aae' }}>
                   No tienes materias inscritas en este periodo.
                 </td>
               </tr>
@@ -807,7 +773,6 @@ function Bajas() {
     </div>
   );
 }
-
 
 function Evaluacion() {
   const t = () => localStorage.getItem('access_token') || ''
@@ -1038,7 +1003,6 @@ function Grupos() {
   )
 }
 
-
 const styles = {
   container: { display: 'flex', minHeight: '100vh', background: 'linear-gradient(135deg, #0f1620 0%, #1a2847 40%, #2d3a6a 100%)', color: '#ffffff', fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', position: 'relative', overflow: 'hidden' },
   floatingShapes: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 },
@@ -1094,5 +1058,12 @@ const styles = {
   filtroLabel: { fontSize: '12px', color: '#d1d5e8' },
   filtroInput: { background: 'rgba(58, 74, 122, 0.6)', border: '1px solid rgba(106, 122, 174, 0.3)', borderRadius: '8px', padding: '8px 12px', color: '#ffffff', fontSize: '14px', outline: 'none', width: '140px' },
   filtroSelect: { background: 'rgba(58, 74, 122, 0.6)', border: '1px solid rgba(106, 122, 174, 0.3)', borderRadius: '8px', padding: '8px 12px', color: '#ffffff', fontSize: '14px', outline: 'none', cursor: 'pointer', width: '140px' },
-  clearBtn: { background: 'rgba(58, 74, 122, 0.4)', border: '1px solid rgba(106, 122, 174, 0.3)', color: '#d1d5e8', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s ease', height: '35px' }
+  clearBtn: { background: 'rgba(58, 74, 122, 0.4)', border: '1px solid rgba(106, 122, 174, 0.3)', color: '#d1d5e8', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s ease', height: '35px' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' },
+  groupCard: { background: 'rgba(30, 43, 79, 0.6)', backdropFilter: 'blur(10px)', borderRadius: '16px', border: '1px solid rgba(106, 122, 174, 0.2)', padding: '24px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' },
+  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
+  cardTitle: { fontSize: '24px', fontWeight: '700', color: '#ffffff', margin: 0, background: 'linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' },
+  inscritosBadge: { background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '4px 12px', borderRadius: '8px', fontSize: '14px', fontWeight: '700' },
+  cardBody: { display: 'flex', flexDirection: 'column', gap: '12px' },
+  cardInfo: { display: 'flex', alignItems: 'center', gap: '10px' }
 }

@@ -436,6 +436,16 @@ router.post('/config', async (req, res) => {
   }
 });
 
+router.post('/config/abrir-inscripciones', async (req, res) => {
+  try {
+    // Set all groups to ABIERTO
+    await pool.query(`UPDATE ${DB_SCHEMA}.grupo SET estado = 'ABIERTO'`);
+    res.json({ message: 'Todas las clases se han abierto para inscripción.' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ---- SOLICITUDES DE CONTRASEÑA ----
 router.get('/solicitudes-pass', async (req, res) => {
   try {

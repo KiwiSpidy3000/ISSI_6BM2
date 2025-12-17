@@ -9,6 +9,7 @@ import { pool } from './db/pool.js';
 import { z } from 'zod';
 import * as db from './db/queries.js';
 import adminRoutes from './admin_routes.js';
+import { initScheduler } from './scheduler.js';
 
 
 const {
@@ -443,6 +444,18 @@ app.post('/auth/solicitar-cambio', async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Error al guardar solicitud' });
+  }
+});
+
+app.post('/auth/check-email', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.json({ exists: false });
+  try {
+    const r = await pool.query(`SELECT 1 FROM ${DB_SCHEMA}.usuario WHERE email = $1`, [email]);
+    res.json({ exists: r.rowCount > 0 });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Error al verificar correo' });
   }
 });
 
@@ -1211,4 +1224,5 @@ app.get('/profesor/grupo/:id_grupo/stats', requireAuth, async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Auth API escuchando en http://localhost:${PORT}`);
+  initScheduler();
 });

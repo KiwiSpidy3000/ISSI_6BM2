@@ -31,6 +31,28 @@ export default function Login() {
   const [forgotErr, setForgotErr] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
 
+  // New States
+  const [emailStatus, setEmailStatus] = useState('neutral') // 'neutral', 'valid', 'invalid'
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showLoginPassword, setShowLoginPassword] = useState(false)
+
+  const handleEmailBlur = async () => {
+    if (!forgotData.email || !forgotData.email.includes('@')) {
+      setEmailStatus('neutral'); return
+    }
+    try {
+      const res = await fetch(`${API}/auth/check-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotData.email })
+      })
+      const data = await res.json()
+      setEmailStatus(data.exists ? 'valid' : 'invalid')
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImage((prev) => (prev + 1) % images.length)
@@ -111,6 +133,7 @@ export default function Login() {
         setShowForgot(false)
         setForgotData({ nombre: '', email: '', rol: 'ALUMNO', new_password: '' })
         setForgotMsg('')
+        setEmailStatus('neutral')
       }, 3000)
     } catch (e) {
       setForgotErr(e.message)
@@ -156,8 +179,39 @@ export default function Login() {
               <div style={styles.inputGroup}>
                 <input style={styles.input} value={login} onChange={e => setLogin(e.target.value)} placeholder={role === 'admin' ? "Usuario Admin" : "Boleta / Usuario"} />
               </div>
-              <div style={styles.inputGroup}>
-                <input style={styles.input} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Contraseña" />
+              <div style={{ ...styles.inputGroup, position: 'relative' }}>
+                <input
+                  style={{ ...styles.input, paddingRight: '40px' }}
+                  type={showLoginPassword ? "text" : "password"}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Contraseña"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  style={{
+                    position: 'absolute', right: '10px', top: '13px',
+                    background: 'none', border: 'none', cursor: 'pointer', color: '#a8b2d1',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}
+                >
+                  {showLoginPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12c0 4 3.5 7 7 7s7-3 7-7" />
+                      <path d="M5 12l-1.5 2.5" />
+                      <path d="M8.5 16.5l-1.5 2.5" />
+                      <path d="M12 19l0 3" />
+                      <path d="M15.5 16.5l1.5 2.5" />
+                      <path d="M19 12l1.5 2.5" />
+                    </svg>
+                  )}
+                </button>
               </div>
               <div style={{ textAlign: 'right', marginTop: '-10px', marginBottom: '4px' }}>
                 <button type="button" style={{ ...styles.link, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '12px' }} onClick={() => setShowForgot(true)}>
@@ -195,14 +249,25 @@ export default function Login() {
                 placeholder="Nombre Completo"
                 required
               />
-              <input
-                style={styles.input}
-                value={forgotData.email}
-                onChange={e => setForgotData({ ...forgotData, email: e.target.value })}
-                placeholder="Correo Electrónico"
-                type="email"
-                required
-              />
+
+              {/* Email con validación */}
+              <div style={{ position: 'relative' }}>
+                <input
+                  style={{ ...styles.input, paddingRight: '30px', borderColor: emailStatus === 'valid' ? '#34d399' : emailStatus === 'invalid' ? '#f87171' : styles.input.borderColor }}
+                  value={forgotData.email}
+                  onChange={e => {
+                    setForgotData({ ...forgotData, email: e.target.value })
+                    setEmailStatus('neutral')
+                  }}
+                  onBlur={handleEmailBlur}
+                  placeholder="Correo Electrónico"
+                  type="email"
+                  required
+                />
+                {emailStatus === 'valid' && <span style={{ position: 'absolute', right: '10px', top: '13px', color: '#34d399' }}>✓</span>}
+                {emailStatus === 'invalid' && <span style={{ position: 'absolute', right: '10px', top: '13px', color: '#f87171' }}>✕</span>}
+              </div>
+
               <select
                 style={styles.input}
                 value={forgotData.rol}
@@ -212,20 +277,49 @@ export default function Login() {
                 <option value="PROFESOR">Profesor</option>
                 <option value="ADMIN">Admin</option>
               </select>
-              <input
-                style={styles.input}
-                value={forgotData.new_password}
-                onChange={e => setForgotData({ ...forgotData, new_password: e.target.value })}
-                placeholder="Nueva Contraseña"
-                type="password"
-                required
-              />
+
+              {/* Password con toggle */}
+              <div style={{ position: 'relative' }}>
+                <input
+                  style={{ ...styles.input, paddingRight: '40px' }}
+                  value={forgotData.new_password}
+                  onChange={e => setForgotData({ ...forgotData, new_password: e.target.value })}
+                  placeholder="Nueva Contraseña"
+                  type={showNewPassword ? "text" : "password"}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  style={{
+                    position: 'absolute', right: '10px', top: '13px',
+                    background: 'none', border: 'none', cursor: 'pointer', color: '#a8b2d1',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}
+                >
+                  {showNewPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12c0 4 3.5 7 7 7s7-3 7-7" />
+                      <path d="M5 12l-1.5 2.5" />
+                      <path d="M8.5 16.5l-1.5 2.5" />
+                      <path d="M12 19l0 3" />
+                      <path d="M15.5 16.5l1.5 2.5" />
+                      <path d="M19 12l1.5 2.5" />
+                    </svg>
+                  )}
+                </button>
+              </div>
 
               {forgotErr && <div style={{ ...styles.error, marginTop: '12px' }}>{forgotErr}</div>}
               {forgotMsg && <div style={{ ...styles.success, marginTop: '12px' }}>{forgotMsg}</div>}
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                <button type="button" onClick={() => { setShowForgot(false); setForgotMsg(''); setForgotErr(''); }} style={{ ...styles.button, background: 'rgba(255,255,255,0.1)', marginTop: 0 }}>Cancelar</button>
+                <button type="button" onClick={() => { setShowForgot(false); setForgotMsg(''); setForgotErr(''); setEmailStatus('neutral'); }} style={{ ...styles.button, background: 'rgba(255,255,255,0.1)', marginTop: 0 }}>Cancelar</button>
                 <button type="submit" style={{ ...styles.button, marginTop: 0 }} disabled={forgotLoading}>{forgotLoading ? 'Enviando...' : 'Enviar Solicitud'}</button>
               </div>
             </form>
