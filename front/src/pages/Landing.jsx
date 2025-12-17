@@ -77,8 +77,8 @@ export default function Landing() {
     <div style={styles.container}>
       <div style={styles.floatingShapes}>
         {[...Array(20)].map((_, i) => (
-          <svg key={i} style={{...styles.floatingSvg, ...styles[`svg${i % 10}`]}} xmlns="http://www.w3.org/2000/svg">
-            <path d="m2.46177,126.39581c10.12618,-0.06577 20.25237,-0.13151 30.37857,-0.19726c0.06666,-10.3997 0.13333,-20.7994 0.19999,-31.19908c10.07782,0 20.15564,0 30.23346,0c0,-10.46351 0,-20.927 0,-31.39051c10.33589,0 20.67178,0 31.00767,0c0,-10.20827 0,-20.41656 0,-30.62485c10.20829,0 20.41656,0 30.62485,0c0,-10.20829 0,-20.41658 0,-30.62487c15.18483,0 30.36965,0 45.55448,0c0,5.10414 0,10.20829 0,15.31243c-10.08071,0 -20.16136,0 -30.24206,0c0,10.33589 0,20.67178 0,31.00769c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33589 0,20.67178 0,31.00767c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33591 0,20.6718 0,31.00767c-10.33589,0 -20.67178,0 -31.00767,0c0,10.46351 0,20.927 0,31.39049c-15.31243,0 -30.62485,0 -45.93728,0c0.68263,-5.07223 -1.16374,-10.79174 0.43769,-15.68938l0,0z" strokeWidth="7" fill="none"/>
+          <svg key={i} style={{ ...styles.floatingSvg, ...styles[`svg${i % 10}`] }} xmlns="http://www.w3.org/2000/svg">
+            <path d="m2.46177,126.39581c10.12618,-0.06577 20.25237,-0.13151 30.37857,-0.19726c0.06666,-10.3997 0.13333,-20.7994 0.19999,-31.19908c10.07782,0 20.15564,0 30.23346,0c0,-10.46351 0,-20.927 0,-31.39051c10.33589,0 20.67178,0 31.00767,0c0,-10.20827 0,-20.41656 0,-30.62485c10.20829,0 20.41656,0 30.62485,0c0,-10.20829 0,-20.41658 0,-30.62487c15.18483,0 30.36965,0 45.55448,0c0,5.10414 0,10.20829 0,15.31243c-10.08071,0 -20.16136,0 -30.24206,0c0,10.33589 0,20.67178 0,31.00769c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33589 0,20.67178 0,31.00767c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33591 0,20.6718 0,31.00767c-10.33589,0 -20.67178,0 -31.00767,0c0,10.46351 0,20.927 0,31.39049c-15.31243,0 -30.62485,0 -45.93728,0c0.68263,-5.07223 -1.16374,-10.79174 0.43769,-15.68938l0,0z" strokeWidth="7" fill="none" />
           </svg>
         ))}
       </div>
@@ -89,26 +89,26 @@ export default function Landing() {
         <div style={styles.logoContainer}>
           <div style={styles.logoGlow} />
           <div style={styles.logo}>
-            <span style={styles.logoAccent}>S</span>AES
+            <span style={styles.logoAccent}>L</span>yte
           </div>
         </div>
       </header>
 
       <main style={styles.main}>
-        <div style={{...styles.content}} className="content-animate">
+        <div style={{ ...styles.content }} className="content-animate">
           <div style={styles.welcomeWrapper}>
             <div style={styles.welcomeLine} />
-            <p style={styles.welcome}>BIENVENIDO AL SAES</p>
+            <p style={styles.welcome}>BIENVENIDO A LYTE</p>
             <div style={styles.welcomeDot} />
           </div>
-          
+
           <h1 style={styles.title}>
             <span style={styles.titleRegular}>Sistema de gestión para</span><br />
             <span className="title-shimmer">consultar materias,</span><br />
             <span className="title-shimmer">horarios y calificaciones.</span>
           </h1>
-          
-          <button style={styles.btnPrimary} onClick={()=>nav('/login')} className="btn-hover">
+
+          <button style={styles.btnPrimary} onClick={() => nav('/login')} className="btn-hover">
             <span style={styles.btnText}>INICIAR SESIÓN</span>
             <span style={styles.btnArrow} className="arrow">→</span>
           </button>
@@ -129,7 +129,7 @@ const styles = {
     overflow: 'hidden',
     fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   },
-  
+
   floatingShapes: {
     position: 'absolute',
     top: 0,
@@ -247,7 +247,7 @@ const styles = {
     zIndex: 2,
     pointerEvents: 'none',
   },
-  
+
   header: {
     display: 'flex',
     justifyContent: 'flex-start',
@@ -272,7 +272,7 @@ const styles = {
     filter: 'blur(20px)',
     zIndex: -1,
   },
-  
+
   logo: {
     fontSize: '36px',
     fontWeight: '800',
@@ -286,7 +286,7 @@ const styles = {
     fontSize: '42px',
     textShadow: '0 0 30px rgba(106, 122, 174, 0.6)',
   },
-  
+
   main: {
     display: 'flex',
     alignItems: 'center',
@@ -296,7 +296,7 @@ const styles = {
     position: 'relative',
     zIndex: 10,
   },
-  
+
   content: {
     maxWidth: '900px',
     zIndex: 2,
@@ -315,7 +315,7 @@ const styles = {
     background: 'linear-gradient(90deg, #6a7aae 0%, transparent 100%)',
     boxShadow: '0 0 10px rgba(106, 122, 174, 0.5)',
   },
-  
+
   welcome: {
     fontSize: '13px',
     letterSpacing: '4px',
@@ -331,7 +331,7 @@ const styles = {
     background: '#6a7aae',
     boxShadow: '0 0 15px rgba(106, 122, 174, 0.8)',
   },
-  
+
   title: {
     fontSize: 'clamp(36px, 5.5vw, 72px)',
     lineHeight: '1.25',
@@ -369,7 +369,7 @@ const styles = {
     fontWeight: '600',
     letterSpacing: '1px',
   },
-  
+
   btnPrimary: {
     background: 'linear-gradient(135deg, #5a6a9e 0%, #6a7aae 100%)',
     border: 'none',
@@ -437,7 +437,7 @@ const styles = {
     height: '40px',
     background: 'linear-gradient(180deg, transparent 0%, rgba(106, 122, 174, 0.3) 50%, transparent 100%)',
   },
-  
+
   bgImage: {
     position: 'fixed',
     top: 0,
