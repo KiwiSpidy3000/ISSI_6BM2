@@ -327,7 +327,7 @@ function Kardex() {
                           color: aprobado ? '#4ade80' : '#f87171',
                           fontSize: '16px'
                         }}>
-                          {isNaN(calif) ? '—' : Math.round(calif)}
+                          {isNaN(calif) ? '—' : (Number.isInteger(calif) ? calif : calif.toFixed(1))}
                         </span>
                       </div>
                     )

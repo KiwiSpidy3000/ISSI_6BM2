@@ -1,4 +1,4 @@
-import { pool, DB_SCHEMA } from './pool.js';
+import { pool, DB_SCHEMA } from '../db/pool.js';
 
 async function createTable() {
     const client = await pool.connect();
