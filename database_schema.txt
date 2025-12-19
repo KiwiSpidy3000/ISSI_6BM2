@@ -1,0 +1,136 @@
+DATABASE SCHEMA: escom_aliz
+
+=========================================================
+1. TABLES & COLUMNS
+=========================================================
+
+Table: usuario
+---------------------------------------------------------
+Description: Base table for all users (students, professors, admins).
+Columns:
+  - id_usuario (PK): Integer, Auto-increment
+  - email: String, Unique
+  - pass_hash: String (Bcrypt hash)
+  - nombre: String
+  - apellido: String
+  - rol: String ('ALUMNO', 'PROFESOR', 'ADMIN')
+  - activo: Boolean
+
+Table: alumno
+---------------------------------------------------------
+Description: Extended profile for students.
+Columns:
+  - id_alumno (PK, FK): Integer (References usuario.id_usuario)
+  - boleta: String, Unique
+  - id_carrera (FK): Integer (References carrera.id_carrera)
+  - semestre: Integer
+
+Table: profesor
+---------------------------------------------------------
+Description: Extended profile for professors.
+Columns:
+  - id_profesor (PK, FK): Integer (References usuario.id_usuario)
+  - num_empleado: String, Unique
+  - departamento: String
+  - nombre: String (Redundant/Cached from usuario)
+  - apellido: String (Redundant/Cached from usuario)
+
+Table: carrera
+---------------------------------------------------------
+Description: Academic programs (e.g., Ingeniería en Inteligencia Artificial).
+Columns:
+  - id_carrera (PK): Integer
+  - clave: String (e.g., 'IIA', 'ISC')
+  - nombre: String
+
+Table: materia
+---------------------------------------------------------
+Description: Subjects or courses available in the curriculum.
+Columns:
+  - id_materia (PK): Integer
+  - clave: String (e.g., 'IIA301')
+  - nombre: String
+  - semestre: Integer
+  - creditos: Float
+  - horas_semana: Integer
+  - id_carrera (FK): Integer (References carrera.id_carrera)
+
+Table: grupo
+---------------------------------------------------------
+Description: A specific class instance for a period.
+Columns:
+  - id_grupo (PK): Integer, Auto-increment
+  - id_materia (FK): Integer (References materia.id_materia)
+  - id_profesor (FK): Integer (References profesor.id_profesor)
+  - periodo: String (e.g., '2025-1')
+  - cupo_max: Integer
+  - turno: String ('M' = Matutino, 'V' = Vespertino)
+  - estado: String ('ABIERTO', 'CERRADO', 'CANCELADO')
+  * Note: This table does NOT have a 'nombre' column.
+
+Table: horario
+---------------------------------------------------------
+Description: Weekly schedule slots for a group.
+Columns:
+  - id_horario (PK): Integer
+  - id_grupo (FK): Integer (References grupo.id_grupo)
+  - dia_semana: Integer (1=Monday, 2=Tuesday, ..., 5=Friday)
+  - hora_ini: Time (e.g., '07:00:00')
+  - hora_fin: Time (e.g., '08:30:00')
+  - aula: String
+
+Table: inscripcion
+---------------------------------------------------------
+Description: Records of students enrolled in groups.
+Columns:
+  - id_inscripcion (PK): Integer
+  - id_grupo (FK): Integer (References grupo.id_grupo)
+  - id_alumno (FK): Integer (References alumno.id_alumno)
+  - estado: String ('INSCRITO', 'PREINSCRITO', 'BAJA')
+  - fecha: Timestamp
+
+Table: calificacion
+---------------------------------------------------------
+Description: Grades for enrolled students.
+Columns:
+  - id_calificacion (PK): Integer
+  - id_grupo (FK): Integer
+  - id_alumno (FK): Integer
+  - p1: Float (Parcial 1)
+  - p2: Float (Parcial 2)
+  - ordinario: Float
+  - final_calc: Float
+  - extraordinario: Float
+
+=========================================================
+2. COMMON SQL OPERATIONS
+=========================================================
+
+--- INSERT NEW STUDENT ---
+BEGIN;
+INSERT INTO escom_aliz.usuario (email, pass_hash, nombre, apellido, rol, activo)
+VALUES ('juan.perez@alumno.com', '$2b$10$...', 'Juan', 'Perez', 'ALUMNO', true)
+RETURNING id_usuario; -- Save this ID
+
+INSERT INTO escom_aliz.alumno (id_alumno, boleta, id_carrera, semestre)
+VALUES (returned_id, '2025640001', 1, 1);
+COMMIT;
+
+--- INSERT NEW GROUP ---
+INSERT INTO escom_aliz.grupo (id_materia, id_profesor, periodo, cupo_max, turno, estado)
+VALUES (
+    (SELECT id_materia FROM escom_aliz.materia WHERE clave = 'IIA301'),
+    (SELECT id_profesor FROM escom_aliz.profesor WHERE num_empleado = '12345'),
+    '2025-2', 30, 'M', 'ABIERTO'
+);
+
+--- ADD SCHEDULE TO GROUP ---
+INSERT INTO escom_aliz.horario (id_grupo, dia_semana, hora_ini, hora_fin, aula)
+VALUES (101, 1, '07:00', '08:30', '1204');
+
+--- DELETE GROUP (Safely) ---
+BEGIN;
+DELETE FROM escom_aliz.horario WHERE id_grupo = 101;
+DELETE FROM escom_aliz.inscripcion WHERE id_grupo = 101;
+DELETE FROM escom_aliz.grupo WHERE id_grupo = 101;
+COMMIT;

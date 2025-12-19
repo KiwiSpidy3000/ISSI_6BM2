@@ -1125,7 +1125,8 @@ function AdminClases() {
     cupo: "",
     inscritos: "",
     estado: "ABIERTO",
-    turno: "M"
+    turno: "M",
+    periodo: "2025-1"
   })
 
   // Local state for adding schedules in the modal
@@ -1153,7 +1154,8 @@ function AdminClases() {
       cupo: "",
       inscritos: "",
       estado: "ABIERTO",
-      turno: "M"
+      turno: "M",
+      periodo: "2025-1"
     })
     setScheduleList([])
     setModalOpen(true)
@@ -1172,7 +1174,8 @@ function AdminClases() {
       cupo: String(clase.cupo ?? ""),
       inscritos: String(clase.inscritos ?? ""),
       estado: clase.estado || "ABIERTO",
-      turno: 'M' // Default as we might not have it in list view yet? (check backup)
+      turno: 'M',
+      periodo: clase.periodo || "2025-1"
     })
     // NOTE: retrieving existing schedules to edit is complex, 
     // for now we only support adding new ones on creation clearly.
@@ -1199,7 +1202,7 @@ function AdminClases() {
     const body = {
       id_materia: claseForm.materia,
       id_profesor: claseForm.profesor,
-      periodo: claseForm.grupo || '2025-1',
+      periodo: claseForm.periodo || '2025-1',
       cupo_max: Number(claseForm.cupo),
       turno: claseForm.turno,
       estado: claseForm.estado
@@ -1321,7 +1324,7 @@ function AdminClases() {
           <tbody>
             {clasesFiltradas.map(c => (
               <tr key={c.id} style={styles.tableRow}>
-                <td style={styles.td}>{c.grupo}</td>
+                <td style={styles.td}>{c.nombreG || c.grupo || c.id}</td>
                 <td style={styles.td}>{c.materia}</td>
                 <td style={styles.td}>{c.profesor}</td>
                 <td style={styles.td}>{c.carrera}</td>
@@ -1390,8 +1393,8 @@ function AdminClases() {
                 </select>
               </div>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Periodo (Grupo)</label>
-                <input style={styles.input} value={claseForm.grupo} onChange={e => handleFormChange("grupo", e.target.value)} placeholder="2025-1" />
+                <label style={styles.label}>Periodo</label>
+                <input style={styles.input} value={claseForm.periodo} onChange={e => handleFormChange("periodo", e.target.value)} placeholder="2025-1" />
               </div>
               <div style={styles.formGroup}>
                 <label style={styles.label}>Turno</label>

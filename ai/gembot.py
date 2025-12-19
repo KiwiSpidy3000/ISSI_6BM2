@@ -50,7 +50,8 @@ TABLE grupo (
     periodo VARCHAR(20),
     cupo_max SMALLINT,
     estado enum('ABIERTO','CERRADO'),
-    turno VARCHAR(1)
+    turno VARCHAR(1),
+    nombreG VARCHAR(20)
 );
 TABLE inscripcion (
     id_inscripcion SERIAL PRIMARY KEY,
@@ -337,6 +338,11 @@ class ChatbotESCOMGemini:
             if cursor:
                 cursor.close()
 
+    def _obtener_periodo_actual(self, cursor):
+        cursor.execute("SELECT MAX(periodo) FROM escom_aliz.grupo")
+        row = cursor.fetchone()
+        return row[0] if row and row[0] else '2025-2'
+
     def _resolver_id_entidad(self, cursor, identificador, role):
         """Devuelve (id_alumno, 'ALUMNO') o (id_profesor, 'PROFESOR') resolviendo email/usuario."""
         if not identificador: return None
@@ -529,20 +535,22 @@ class ChatbotESCOMGemini:
         real_id = self._resolver_id_entidad(cursor, user_id, "PROFESOR")
         if not real_id: return "No se encontró registro de profesor."
 
+        periodo = self._obtener_periodo_actual(cursor)
+
         query = """
         SELECT g.id_grupo, m.nombre, h.dia_semana, h.hora_ini, h.hora_fin, h.aula
         FROM escom_aliz.grupo g
         JOIN escom_aliz.horario h ON g.id_grupo = h.id_grupo
         JOIN escom_aliz.materia m ON g.id_materia = m.id_materia
-        WHERE g.id_profesor = %s AND g.periodo = '2025-2'
+        WHERE g.id_profesor = %s AND g.periodo = %s
         ORDER BY h.dia_semana, h.hora_ini
         """
-        cursor.execute(query, (real_id,))
+        cursor.execute(query, (real_id, periodo))
         rows = cursor.fetchall()
-        if not rows: return "No hay horarios asignados en el periodo actual."
+        if not rows: return f"No hay horarios asignados en el periodo {periodo}."
 
         dias = {1: "Lunes", 2: "Martes", 3: "Miércoles", 4: "Jueves", 5: "Viernes", 6: "Sábado"}
-        res = "Tu horario de enseñanza (2025-2):\n"
+        res = f"Tu horario de enseñanza ({periodo}):\n"
         for gid, mat, d, ini, fin, aula in rows:
              res += f"- {dias.get(d, d)}: {ini}-{fin} | {mat} (Gpo {gid}) | Aula {aula}\n"
         return res

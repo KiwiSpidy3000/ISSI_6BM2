@@ -554,8 +554,9 @@ app.get('/alumno/horario', requireAuth, async (req, res) => {
              WHEN h.dia_semana = 6 THEN 'Sábado'
              ELSE 'Domingo'
            END AS dia_semana,
-           h.hora_ini, h.hora_fin, h.aula,
-           g.id_grupo, -- Added id_grupo
+           h.hora_ini, h.hora_fin,
+           g.id_grupo,
+           g.nombreG AS "nombreG",
            m.clave AS materia_clave,
            m.nombre AS materia_nombre,
            (upu.nombre || ' ' || upu.apellido) AS profesor
@@ -607,7 +608,7 @@ app.get('/alumno/calificaciones', requireAuth, async (req, res) => {
 // resumen: créditos totales y usados en un periodo
 app.get('/alumno/reins/resumen', requireAuth, async (req, res) => {
   const userId = req.user.sub;
-  const { periodo } = req.query;
+  const { periodo = '2025-2' } = req.query;
   const q = `
     WITH usados AS (
       SELECT COALESCE(SUM(m.creditos),0) AS cr
@@ -629,9 +630,9 @@ app.get('/alumno/reins/resumen', requireAuth, async (req, res) => {
 
 // materias inscritas del alumno (periodo)
 app.get('/alumno/reins/inscritas', requireAuth, async (req, res) => {
-  const userId = req.user.sub; const { periodo } = req.query;
+  const userId = req.user.sub; const { periodo = '2025-2' } = req.query;
   const q = `
-    SELECT i.id_grupo, i.estado, m.clave, m.nombre, m.creditos,
+    SELECT i.id_grupo, g.nombreG AS "nombreG", i.estado, m.clave, m.nombre, m.creditos,
            (u.nombre||' '||u.apellido) AS profesor
     FROM ${DB_SCHEMA}.inscripcion i
     JOIN ${DB_SCHEMA}.grupo g ON g.id_grupo=i.id_grupo
@@ -648,7 +649,7 @@ app.get('/alumno/reins/inscritas', requireAuth, async (req, res) => {
 // oferta filtrable (periodo + opcional semestre, turno)
 app.get('/alumno/reins/oferta', requireAuth, async (req, res) => {
   const userId = req.user.sub;
-  const { periodo, semestre, turno } = req.query;
+  const { periodo = '2025-2', semestre, turno } = req.query;
   try {
     const data = await db.getStudentGroupOffer(userId, periodo, semestre, turno);
     res.json(data);

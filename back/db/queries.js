@@ -80,7 +80,7 @@ export async function getGroupOfferIIA(periodo, semestre) {
 export async function getSchedulesByGroup(id_grupo) {
   const query = `
     SELECT h.id_horario, h.id_grupo, m.clave as clave_materia, m.nombre as materia,
-           h.dia_semana, h.hora_ini, h.hora_fin, h.aula
+           h.dia_semana, h.hora_ini, h.hora_fin
     FROM ${DB_SCHEMA}.horario h
     JOIN ${DB_SCHEMA}.grupo g ON h.id_grupo = g.id_grupo
     JOIN ${DB_SCHEMA}.materia m ON g.id_materia = m.id_materia
@@ -105,7 +105,7 @@ export async function getStudents() {
 export async function getEnrollmentsByStudent(id_alumno) {
   const query = `
     SELECT a.boleta, CONCAT(u.nombre, ' ', u.apellido) as alumno_nombre_completo,
-           i.id_grupo, m.clave as clave_materia, m.nombre as materia,
+           i.id_grupo, g.nombreG AS "nombreG", m.clave as clave_materia, m.nombre as materia,
            g.periodo, i.estado as estado_inscripcion, i.fecha
     FROM ${DB_SCHEMA}.inscripcion i
     JOIN ${DB_SCHEMA}.alumno a ON i.id_alumno = a.id_alumno
@@ -165,6 +165,7 @@ export async function getStudentGroupOffer(id_alumno, periodo, semestre, turno) 
   const query = `
     SELECT
       g.id_grupo,
+      g.nombreG AS "nombreG",
       g.periodo,
       g.turno,
       m.semestre,
@@ -191,8 +192,7 @@ export async function getStudentGroupOffer(id_alumno, periodo, semestre, turno) 
             WHEN 6 THEN 'Sa'
             WHEN 7 THEN 'Do'
           END || ' ' ||
-          to_char(h.hora_ini, 'HH24:MI') || '-' || to_char(h.hora_fin, 'HH24:MI') ||
-          COALESCE(' (' || h.aula || ')', ''),
+          to_char(h.hora_ini, 'HH24:MI') || '-' || to_char(h.hora_fin, 'HH24:MI'),
           ', ' ORDER BY h.dia_semana, h.hora_ini
         ),
         ''
@@ -222,7 +222,7 @@ export async function getStudentGroupOffer(id_alumno, periodo, semestre, turno) 
           AND i_curr.estado IN ('INSCRITO', 'PREINSCRITO')
       )
     GROUP BY
-      g.id_grupo, g.periodo, g.turno,
+      g.id_grupo, g.nombreG, g.periodo, g.turno,
       m.semestre, m.clave, m.nombre, m.creditos,
       u.nombre, u.apellido,
       g.cupo_max, g.estado
@@ -358,6 +358,7 @@ export async function getProfessorGroups(id_profesor, periodo) {
   let query = `
     SELECT
       g.id_grupo,
+      g.nombreG AS "nombreG",
       m.nombre AS materia_nombre,
       m.clave  AS materia_clave,
       m.semestre,
@@ -436,6 +437,7 @@ export async function getAllGroupsForOffer() {
   const sql = `
     SELECT
       g.id_grupo,
+      g.nombreG AS "nombreG",
       g.periodo,
       g.turno,
       m.semestre,
@@ -457,8 +459,7 @@ export async function getAllGroupsForOffer() {
             WHEN 6 THEN 'Sa'
             WHEN 7 THEN 'Do'
           END || ' ' ||
-          to_char(h.hora_ini, 'HH24:MI') || '-' || to_char(h.hora_fin, 'HH24:MI') ||
-          COALESCE(' (' || h.aula || ')', ''),
+          to_char(h.hora_ini, 'HH24:MI') || '-' || to_char(h.hora_fin, 'HH24:MI'),
           ', ' ORDER BY h.dia_semana, h.hora_ini
         ),
         ''
@@ -467,11 +468,11 @@ export async function getAllGroupsForOffer() {
     JOIN ${DB_SCHEMA}.materia  m ON g.id_materia  = m.id_materia
     JOIN ${DB_SCHEMA}.carrera  c ON m.id_carrera  = c.id_carrera
     LEFT JOIN ${DB_SCHEMA}.profesor p ON g.id_profesor = p.id_profesor
-    LEFT JOIN ${DB_SCHEMA}.usuario  u ON p.id_profesor = u.id_usuario
+    LEFT JOIN ${DB_SCHEMA}.usuario  u ON u.id_usuario = p.id_profesor
     LEFT JOIN ${DB_SCHEMA}.horario  h ON h.id_grupo   = g.id_grupo
     WHERE g.estado IS NULL OR g.estado <> 'CANCELADO'
     GROUP BY
-      g.id_grupo, g.periodo, g.turno,
+      g.id_grupo, g.nombreG, g.periodo, g.turno,
       m.semestre, m.clave, m.nombre, m.creditos,
       c.clave, c.nombre,
       u.nombre, u.apellido,
@@ -499,8 +500,8 @@ export async function getProfessorSchedule(id_profesor, periodo) {
       h.hora_ini, 
       h.hora_fin, 
       m.nombre AS materia_nombre, 
-      g.id_grupo, 
-      h.aula
+      g.id_grupo,
+      g.nombreG AS "nombreG"
     FROM ${DB_SCHEMA}.horario h
     JOIN ${DB_SCHEMA}.grupo g ON h.id_grupo = g.id_grupo
     JOIN ${DB_SCHEMA}.materia m ON g.id_materia = m.id_materia

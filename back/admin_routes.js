@@ -278,11 +278,12 @@ router.get('/grupos', async (req, res) => {
   try {
     const r = await pool.query(`
       SELECT g.id_grupo AS id,
+             g.nombreG AS "nombreG",
              g.id_materia,
              g.id_profesor,
              g.periodo || ' - ' || m.nombre AS materia,
              m.nombre as materia_nombre,
-             g.periodo as grupo, -- mapping to 'grupo' field in front for display
+             g.nombreG as grupo, -- mapping to 'grupo' field in front for display
              (u.nombre || ' ' || u.apellido) AS profesor,
              c.clave AS carrera,
              m.semestre,
