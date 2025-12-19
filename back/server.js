@@ -572,13 +572,13 @@ app.get('/alumno/stats/trend', requireAuth, async (req, res) => {
   const userId = req.user.sub;
   const q = `
     SELECT 
-      k.periodo,
+      m.semestre as periodo,
       ROUND(AVG(CAST(k.calificacion_final AS NUMERIC)), 2) as promedio
     FROM ${DB_SCHEMA}.vw_kardex k
+    JOIN ${DB_SCHEMA}.materia m ON m.clave = k.materia_clave
     WHERE k.id_alumno = $1
-      AND k.calificacion_final ~ '^[0-9]+(\.[0-9]+)?$' -- Solo calificaciones numéricas
-    GROUP BY k.periodo
-    ORDER BY k.periodo
+    GROUP BY m.semestre
+    ORDER BY m.semestre
   `;
   try {
     const { rows } = await pool.query(q, [userId]);

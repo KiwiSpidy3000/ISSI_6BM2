@@ -304,6 +304,7 @@ router.get('/grupos', async (req, res) => {
       JOIN ${DB_SCHEMA}.carrera c ON c.id_carrera = m.id_carrera
       LEFT JOIN ${DB_SCHEMA}.profesor p ON p.id_profesor = g.id_profesor
       LEFT JOIN ${DB_SCHEMA}.usuario u ON u.id_usuario = p.id_profesor
+      WHERE g.nombreG NOT LIKE 'HIST-%'
       ORDER BY g.id_grupo DESC
     `);
     res.json(r.rows);
@@ -439,8 +440,8 @@ router.post('/config', async (req, res) => {
 
 router.post('/config/abrir-inscripciones', async (req, res) => {
   try {
-    // Set all groups to ABIERTO
-    await pool.query(`UPDATE ${DB_SCHEMA}.grupo SET estado = 'ABIERTO'`);
+    // Set all groups to ABIERTO, excluding HIST- ones using regex or like
+    await pool.query(`UPDATE ${DB_SCHEMA}.grupo SET estado = 'ABIERTO' WHERE nombreG NOT LIKE 'HIST-%'`);
     res.json({ message: 'Todas las clases se han abierto para inscripción.' });
   } catch (e) {
     res.status(500).json({ error: e.message });

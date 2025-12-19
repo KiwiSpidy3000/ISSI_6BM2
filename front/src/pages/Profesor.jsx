@@ -279,7 +279,7 @@ function Grupos({ onGroupClick }) {
               onClick={() => onGroupClick && onGroupClick({ id_grupo: g.id_grupo, periodo: g.periodo })}
             >
               <div style={styles.cardHeader}>
-                <h3 style={styles.cardTitle}>{g.id_grupo}</h3>
+                <h3 style={styles.cardTitle}>{g.nombreG || g.id_grupo}</h3>
                 <span style={{
                   ...styles.cardBadge,
                   background: g.turno === 'M' ? 'rgba(251, 191, 36, 0.2)' : 'rgba(129, 140, 248, 0.2)',
@@ -469,6 +469,9 @@ function Horario({ profile, initialPeriod }) {
                           {fmtTime(clase.hora_ini)} - {fmtTime(clase.hora_fin)}
                         </div>
                         <div style={styles.className}>{clase.materia_nombre}</div>
+                        <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '4px' }}>
+                          {clase.nombreG || clase.id_grupo}
+                        </div>
                       </div>
                     ))
                   )}
