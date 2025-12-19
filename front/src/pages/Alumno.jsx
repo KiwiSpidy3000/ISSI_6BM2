@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts'
 import { useNavigate } from 'react-router-dom'
 import ChatComponent from '../components/ChatComponent'
 
@@ -41,9 +42,9 @@ export default function Alumno() {
   return (
     <div style={styles.container}>
       <div style={styles.floatingShapes}>
-        {[...Array(5)].map((_, i) => (
-          <svg key={i} style={{ ...styles.floatingSvg, ...styles[`svg${i}`] }} xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="40" strokeWidth="4" fill="none" />
+        {[...Array(15)].map((_, i) => (
+          <svg key={i} style={{ ...styles.floatingSvg, ...styles[`svg${i % 10}`] }} xmlns="http://www.w3.org/2000/svg">
+            <path d="m2.46177,126.39581c10.12618,-0.06577 20.25237,-0.13151 30.37857,-0.19726c0.06666,-10.3997 0.13333,-20.7994 0.19999,-31.19908c10.07782,0 20.15564,0 30.23346,0c0,-10.46351 0,-20.927 0,-31.39051c10.33589,0 20.67178,0 31.00767,0c0,-10.20827 0,-20.41656 0,-30.62485c10.20829,0 20.41656,0 30.62485,0c0,-10.20829 0,-20.41658 0,-30.62487c15.18483,0 30.36965,0 45.55448,0c0,5.10414 0,10.20829 0,15.31243c-10.08071,0 -20.16136,0 -30.24206,0c0,10.33589 0,20.67178 0,31.00769c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33589 0,20.67178 0,31.00767c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33591 0,20.6718 0,31.00767c-10.33589,0 -20.67178,0 -31.00767,0c0,10.46351 0,20.927 0,31.39049c-15.31243,0 -30.62485,0 -45.93728,0c0.68263,-5.07223 -1.16374,-10.79174 0.43769,-15.68938l0,0z" strokeWidth="7" fill="none" />
           </svg>
         ))}
       </div>
@@ -61,14 +62,15 @@ export default function Alumno() {
         </div>
 
         <nav style={styles.sidebarNav}>
-          <button style={styles.pill} className="pill-hover" onClick={() => setView('perfil')}>Datos Personales</button>
-          <button style={styles.pill} className="pill-hover" onClick={() => setView('kardex')}>Kardex</button>
-          <button style={styles.pill} className="pill-hover" onClick={() => setView('horario')}>Horario</button>
-          <button style={styles.pill} className="pill-hover" onClick={() => setView('calificaciones')}>Calificaciones</button>
-          <button style={styles.pill} className="pill-hover" onClick={() => setView('reins')}>Reinscripción</button>
-          <button style={styles.pill} className="pill-hover" onClick={() => setView('bajas')}>Bajas</button>
-          <button style={styles.pill} className="pill-hover" onClick={() => setView('evaluacion')}>Evaluación Docente</button>
-          <button style={styles.pill} className="pill-hover" onClick={() => setView('grupos')}>Oferta</button>
+          <button style={{ ...styles.pill, ...(view === 'dashboard' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('dashboard')}>Rendimiento Académico</button>
+          <button style={{ ...styles.pill, ...(view === 'perfil' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('perfil')}>Datos Personales</button>
+          <button style={{ ...styles.pill, ...(view === 'kardex' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('kardex')}>Kardex</button>
+          <button style={{ ...styles.pill, ...(view === 'horario' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('horario')}>Horario</button>
+          <button style={{ ...styles.pill, ...(view === 'calificaciones' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('calificaciones')}>Calificaciones</button>
+          <button style={{ ...styles.pill, ...(view === 'reins' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('reins')}>Reinscripción</button>
+          <button style={{ ...styles.pill, ...(view === 'bajas' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('bajas')}>Bajas</button>
+          <button style={{ ...styles.pill, ...(view === 'evaluacion' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('evaluacion')}>Evaluación Docente</button>
+          <button style={{ ...styles.pill, ...(view === 'grupos' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('grupos')}>Oferta</button>
         </nav>
 
         <div style={styles.sidebarBottom}>
@@ -89,6 +91,7 @@ export default function Alumno() {
             userRole="Alumno"
           />
         )}
+        {view === 'dashboard' && <Dashboard />}
         {view === 'perfil' && <DatosPersonales />}
         {view === 'kardex' && <Kardex />}
         {view === 'horario' && <Horario />}
@@ -1307,6 +1310,86 @@ function Grupos() {
   )
 }
 
+
+function Dashboard() {
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const t = localStorage.getItem('access_token') || ''
+
+    // Fetch stats
+    fetch(`${API}/alumno/stats/trend`, {
+      headers: { Authorization: `Bearer ${t}` }
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (Array.isArray(d)) {
+          // Convertir promedio a float para recharts
+          const formatted = d.map(item => ({
+            ...item,
+            promedio: parseFloat(item.promedio)
+          }))
+          setData(formatted)
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <div style={styles.loading}>Cargando estadísticas...</div>
+
+  return (
+    <div>
+      <h2 style={styles.h2}>Rendimiento Académico</h2>
+
+      <div style={styles.card}>
+        <h3 style={{ ...styles.cardTitle, marginBottom: '10px' }}>Tendencia de Promedio por Semestre</h3>
+        <p style={{ color: '#aaa', marginBottom: '30px', fontSize: '14px' }}>
+          Evolución de tu desempeño académico a través de los periodos cursados.
+        </p>
+
+        <div style={{ height: 400, width: '100%' }}>
+          {data.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorPromedio" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#818cf8" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#818cf8" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="periodo" stroke="#6a7aae" />
+                <YAxis domain={[0, 10]} stroke="#6a7aae" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(106, 122, 174, 0.2)" />
+                <Tooltip
+                  contentStyle={{ backgroundColor: 'rgba(30, 43, 79, 0.9)', border: '1px solid rgba(106, 122, 174, 0.3)', borderRadius: '8px' }}
+                  itemStyle={{ color: '#fff' }}
+                  labelStyle={{ color: '#a8b2d1' }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="promedio"
+                  stroke="#818cf8"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorPromedio)"
+                  activeDot={{ r: 8, strokeWidth: 0 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#6a7aae', flexDirection: 'column', gap: '10px' }}>
+              <span style={{ fontSize: '40px' }}>📊</span>
+              <span>No hay datos suficientes para mostrar la gráfica.</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const styles = {
   container: { display: 'flex', minHeight: '100vh', background: 'linear-gradient(135deg, #0f1620 0%, #1a2847 40%, #2d3a6a 100%)', color: '#ffffff', fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', position: 'relative', overflow: 'hidden' },
   floatingShapes: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 },
@@ -1316,6 +1399,7 @@ const styles = {
   svg2: { width: '160px', height: '160px', left: '40%', bottom: '-22%', animation: 'float3 24s infinite ease-in-out', opacity: 0.25 },
   svg3: { width: '120px', height: '120px', left: '60%', bottom: '-18%', animation: 'float4 18s infinite ease-in-out', opacity: 0.5 },
   svg4: { width: '150px', height: '150px', left: '75%', bottom: '-21%', animation: 'float1 21s infinite ease-in-out', opacity: 0.35 },
+  svg5: { width: '130px', height: '130px', left: '85%', bottom: '-19%', animation: 'float2 23s infinite ease-in-out', opacity: 0.45 },
   sidebar: { width: '280px', background: 'linear-gradient(180deg, rgba(30, 43, 79, 0.95) 0%, rgba(42, 54, 88, 0.95) 100%)', backdropFilter: 'blur(20px)', borderRight: '1px solid rgba(106, 122, 174, 0.2)', display: 'flex', flexDirection: 'column', padding: '32px 20px', position: 'relative', zIndex: 10, boxShadow: '4px 0 24px rgba(0, 0, 0, 0.3)' },
   sidebarHeader: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '40px', position: 'relative' },
   avatarGlow: { position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)', width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(106, 122, 174, 0.4) 0%, transparent 70%)', filter: 'blur(25px)', zIndex: -1 },
