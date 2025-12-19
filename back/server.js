@@ -38,7 +38,11 @@ app.use(cors({
   origin: ALLOWED_ORIGIN ? [ALLOWED_ORIGIN] : true,
   credentials: true
 }));
-app.use(rateLimit({ windowMs: 60_000, max: 30 }));
+app.use(rateLimit({
+  windowMs: 60_000,
+  max: 300,
+  message: { error: 'Demasiadas peticiones, por favor intenta más tarde.' }
+}));
 
 // Mount admin routes AFTER middleware (CORS, JSON)
 app.use('/admin', requireAuth, adminRoutes);

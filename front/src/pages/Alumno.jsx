@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import { useNavigate } from 'react-router-dom'
 import ChatComponent from '../components/ChatComponent'
 
@@ -375,11 +377,47 @@ function Horario() {
   const rows = Object.values(grouped)
   const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
 
+  const downloadPDF = () => {
+    const doc = new jsPDF()
+
+    // Header logic
+    doc.setFontSize(18)
+    doc.text('Instituto Politécnico Nacional', 14, 20)
+    doc.setFontSize(14)
+    doc.text('Escuela Superior de Cómputo', 14, 28)
+    doc.setFontSize(12)
+    doc.text(`Horario de Clases - Periodo ${currentPeriod}`, 14, 36)
+
+    const tableBody = rows.map(r => {
+      const rowData = [
+        r.nombreG || r.id_grupo,
+        r.materia_nombre,
+        r.profesor
+      ]
+      days.forEach(d => {
+        const dayData = r.days[d]
+        rowData.push(dayData ? `${dayData.hora_ini?.slice(0, 5)} - ${dayData.hora_fin?.slice(0, 5)}` : '—')
+      })
+      return rowData
+    })
+
+    autoTable(doc, {
+      head: [['Grupo', 'Materia', 'Profesor', ...days]],
+      body: tableBody,
+      startY: 45,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [26, 40, 71] },
+      theme: 'grid'
+    })
+
+    doc.save(`horario_${currentPeriod}.pdf`)
+  }
+
   return (
     <div>
       <h2 style={styles.h2}>Horario Actual ({currentPeriod || '...'})</h2>
       <div style={styles.infoBar}>
-        <button style={styles.button} onClick={() => window.print()}>Descargar horario</button>
+        <button style={styles.button} onClick={downloadPDF}>📄 Descargar Horario PDF</button>
       </div>
 
       <div style={styles.tableWrap}>
@@ -405,7 +443,6 @@ function Horario() {
                       {dayData ? (
                         <div style={{ fontSize: '12px' }}>
                           <div>{dayData.hora_ini?.slice(0, 5)} - {dayData.hora_fin?.slice(0, 5)}</div>
-
                         </div>
                       ) : '—'}
                     </td>
@@ -604,19 +641,32 @@ function Reinscripcion() {
 
     fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr)
       .then(r => r.json())
-      .then(data => setInscritas(Array.isArray(data) ? data : []))
+      .then(data => {
+        // Solo actualizar si hay cambios reales para evitar re-renders innecesarios (optimización básica)
+        setInscritas(prev => JSON.stringify(prev) !== JSON.stringify(data) ? (Array.isArray(data) ? data : []) : prev)
+      })
       .catch(() => setInscritas([]))
 
     fetch(`${API}/alumno/reins/oferta?${qs.toString()}`, hdr)
       .then(r => r.json())
-      .then(data => setOferta(Array.isArray(data) ? data : []))
+      .then(data => {
+        // Igual aquí, evitar set si es idéntico
+        setOferta(prev => JSON.stringify(prev) !== JSON.stringify(data) ? (Array.isArray(data) ? data : []) : prev)
+      })
       .catch(() => setOferta([]))
 
     fetch(`${API}/alumno/horario?periodo=${periodo}`, hdr)
       .then(r => r.json())
-      .then(setHorarioData)
+      .then(data => setHorarioData(prev => JSON.stringify(prev) !== JSON.stringify(data) ? (data || []) : prev))
       .catch(() => setHorarioData([]))
   }
+
+  // Polling: Actualizar datos cada 10 segundos para mantener sesión sincronizada
+  useEffect(() => {
+    if (!periodo) return;
+    const interval = setInterval(refresh, 10000);
+    return () => clearInterval(interval);
+  }, [periodo, semestre, turno]);
 
 
 
@@ -640,23 +690,36 @@ function Reinscripcion() {
 
     try {
       const hdr = { Authorization: `Bearer ${t()}` }
+
+      // 1. Validar choque de horario
       const rChoque = await fetch(`${API}/alumno/reins/conflictos?id_grupo=${id_grupo}`, { headers: hdr })
+      if (!rChoque.ok) throw new Error('Error validando conflictos')
+
       const choques = await rChoque.json()
       if (Array.isArray(choques) && choques.length) {
         setMsg('Choque de horario con otra materia.')
         return
       }
 
+      // 2. Intentar preinscribir
       const res = await fetch(`${API}/alumno/reins/preinscribir`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t()}` },
         body: JSON.stringify({ id_grupo })
       })
 
-      const data = await res.json().catch(() => ({}))
+      // Leer respuesta como texto primero para evitar JSON parse error
+      const text = await res.text()
+      let data = {}
+      try {
+        data = text ? JSON.parse(text) : {}
+      } catch (e) {
+        // Si falla el parseo, asumimos error del servidor (posiblemente HTML o texto plano)
+        throw new Error(text || 'Error desconocido del servidor (respuesta no válida)')
+      }
 
       if (!res.ok) {
-        setMsg(data.error || 'No se pudo agregar el grupo.')
+        setMsg(data.error || text || 'No se pudo agregar el grupo.')
         return
       }
 
@@ -664,7 +727,7 @@ function Reinscripcion() {
       refresh()
     } catch (e) {
       console.error('Error al agregar grupo:', e);
-      setMsg(`Error al agregar grupo: ${e.message || 'Error de red'}`);
+      setMsg(`Error: ${e.message}`);
     }
   }
 
