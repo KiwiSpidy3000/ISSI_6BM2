@@ -1,4 +1,6 @@
 ﻿import { useEffect, useRef, useState } from 'react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts'
 import ChatComponent from '../components/ChatComponent'
 
@@ -376,12 +378,63 @@ function Horario({ profile, initialPeriod }) {
   // Helper to format time
   const fmtTime = (t) => t ? t.slice(0, 5) : ''
 
+  const downloadPDF = () => {
+    const doc = new jsPDF()
+
+    // Header logic
+    doc.setFontSize(18)
+    doc.text('Instituto Politécnico Nacional', 14, 20)
+    doc.setFontSize(14)
+    doc.text('Escuela Superior de Cómputo', 14, 28)
+    doc.setFontSize(12)
+    doc.text(`Horario de Profesor - Periodo ${periodo}`, 14, 36)
+    doc.text(`Docente: ${profile?.nombre_completo || ''}`, 14, 44)
+
+    // Data processing
+    const grouped = {}
+    rows.forEach(r => {
+      // Use composite key to handle same subject in different groups
+      const key = r.id_grupo + '|' + r.materia_nombre
+      if (!grouped[key]) {
+        grouped[key] = {
+          id_grupo: r.id_grupo,
+          nombreG: r.nombreG, // Capture Human Readable Group Name
+          materia: r.materia_nombre,
+          days: {}
+        }
+      }
+      grouped[key].days[r.dia_semana] = r
+    })
+
+    const tableRows = Object.values(grouped).map(g => {
+      // Use nombreG if available, fallback to id_grupo
+      const row = [g.materia, g.nombreG || g.id_grupo]
+      const diasIds = [1, 2, 3, 4, 5]
+      diasIds.forEach(d => {
+        const session = g.days[d]
+        row.push(session ? `${fmtTime(session.hora_ini)} - ${fmtTime(session.hora_fin)}` : '—')
+      })
+      return row
+    })
+
+    autoTable(doc, {
+      head: [['Materia', 'Grupo', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie']],
+      body: tableRows,
+      startY: 50,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [26, 40, 71] },
+      theme: 'grid'
+    })
+
+    doc.save(`horario_profesor_${periodo}.pdf`)
+  }
+
   return (
     <div>
       <h2 style={styles.h2}>Horario Semanal</h2>
 
       <div style={styles.infoBar}>
-        <div><b>Docente:</b> {profile?.nombre_completo || 'â€”'}</div>
+        <div><b>Docente:</b> {profile?.nombre_completo || '—'}</div>
         <div>
           <b>Periodo:</b>{' '}
           <select value={periodo} onChange={e => setPeriodo(e.target.value)} style={styles.select}>
@@ -389,6 +442,7 @@ function Horario({ profile, initialPeriod }) {
             {periodos.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
+        <button style={styles.button} onClick={downloadPDF}>📄 Descargar Horario PDF</button>
       </div>
 
       {dataLoading ? (
@@ -687,7 +741,7 @@ const styles = {
   },
   container: {
     display: 'flex',
-    minHeight: '100vh',
+    height: '100vh',
     background: 'linear-gradient(135deg, #0f1620 0%, #1a2847 40%, #2d3a6a 100%)',
     color: '#ffffff',
     fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
@@ -764,7 +818,10 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     padding: '32px 20px',
-    position: 'relative',
+    position: 'sticky',
+    top: 0,
+    height: '100vh',
+    overflowY: 'auto',
     zIndex: 10,
     boxShadow: '4px 0 24px rgba(0, 0, 0, 0.3)',
   },

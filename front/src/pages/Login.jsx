@@ -155,7 +155,7 @@ export default function Login() {
       <div style={styles.roleRow}>
         <button type="button" onClick={() => setRole('alumno')} style={role === 'alumno' ? styles.roleBtnActive : styles.roleBtn}>Soy Alumno</button>
         <button type="button" onClick={() => setRole('profesor')} style={role === 'profesor' ? styles.roleBtnActive : styles.roleBtn}>Soy Profesor</button>
-        <button type="button" onClick={() => setRole('admin')} style={role === 'admin' ? styles.roleBtnSmallActive : styles.roleBtnSmall}>admin</button>
+        <button type="button" onClick={() => setRole('admin')} style={role === 'admin' ? styles.roleBtnActive : styles.roleBtn}>Soy Admin</button>
       </div>
 
       <div style={styles.card}>
@@ -171,7 +171,7 @@ export default function Login() {
         <div style={styles.rightPanel}>
           <div style={styles.formContainer}>
             <div style={styles.header}>
-              <h2 style={styles.title}>{role === 'admin' ? 'Admin Access' : role === 'profesor' ? 'Acceso Profesor' : 'Acceso Alumno'}</h2>
+              <h2 style={styles.title}>{role === 'admin' ? 'Acceso Admin' : role === 'profesor' ? 'Acceso Profesor' : 'Acceso Alumno'}</h2>
               <p style={styles.subtitle}>Sistema de Gestión Académica</p>
             </div>
 
@@ -381,8 +381,7 @@ const styles = {
   roleRow: { display: 'flex', gap: '10px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap', zIndex: 20 },
   roleBtn: { background: 'rgba(106,122,174,0.1)', color: '#a8b2d1', border: '1px solid rgba(106,122,174,0.3)', borderRadius: '10px', padding: '10px 14px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' },
   roleBtnActive: { background: 'linear-gradient(135deg, #4a5a8e 0%, #5a6a9e 100%)', color: '#fff', border: '1px solid #5a6a9e', borderRadius: '10px', padding: '10px 14px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 0 15px rgba(90, 106, 158, 0.5)', transform: 'scale(1.05)', transition: 'all 0.2s' },
-  roleBtnSmall: { background: 'rgba(106,122,174,0.05)', color: '#6a7aae', border: '1px solid rgba(106,122,174,0.2)', borderRadius: '999px', padding: '6px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', marginLeft: 'auto' },
-  roleBtnSmallActive: { background: '#6a7aae', color: '#fff', border: '1px solid #6a7aae', borderRadius: '999px', padding: '6px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 0 10px rgba(106,122,174,0.5)' },
+
 
   modalOverlay: {
     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',

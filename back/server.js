@@ -38,7 +38,11 @@ app.use(cors({
   origin: ALLOWED_ORIGIN ? [ALLOWED_ORIGIN] : true,
   credentials: true
 }));
-app.use(rateLimit({ windowMs: 60_000, max: 30 }));
+app.use(rateLimit({
+  windowMs: 60_000,
+  max: 300,
+  message: { error: 'Demasiadas peticiones, por favor intenta más tarde.' }
+}));
 
 // Mount admin routes AFTER middleware (CORS, JSON)
 app.use('/admin', requireAuth, adminRoutes);
@@ -558,6 +562,27 @@ app.get('/alumno/kardex', requireAuth, async (req, res) => {
     res.json(rows);
   } catch (e) {
     console.error('DB kardex:', e);
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
+app.get('/alumno/stats/trend', requireAuth, async (req, res) => {
+  const userId = req.user.sub;
+  const q = `
+    SELECT 
+      k.periodo,
+      ROUND(AVG(CAST(k.calificacion_final AS NUMERIC)), 2) as promedio
+    FROM ${DB_SCHEMA}.vw_kardex k
+    WHERE k.id_alumno = $1
+      AND k.calificacion_final ~ '^[0-9]+(\.[0-9]+)?$' -- Solo calificaciones numéricas
+    GROUP BY k.periodo
+    ORDER BY k.periodo
+  `;
+  try {
+    const { rows } = await pool.query(q, [userId]);
+    res.json(rows);
+  } catch (e) {
+    console.error('DB stats trend:', e);
     res.status(500).json({ error: String(e.message || e) });
   }
 });

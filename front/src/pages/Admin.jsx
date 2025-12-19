@@ -19,30 +19,14 @@ export default function Admin() {
     // animaciones como Alumno / Profesor
     const style = document.createElement("style")
     style.textContent = `
-      @keyframes float1 {
-        0%,100% { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
-        25% { transform: translate3d(80px,-140vh,250px) rotate(120deg) scale(1.3); }
-        50% { transform: translate3d(-60px,-160vh,400px) rotate(240deg) scale(0.9); }
-        75% { transform: translate3d(100px,-180vh,300px) rotate(360deg) scale(1.1); }
-      }
-      @keyframes float2 {
-        0%,100% { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
-        25% { transform: translate3d(-90px,-130vh,280px) rotate(-120deg) scale(1.2); }
-        50% { transform: translate3d(70px,-155vh,350px) rotate(-240deg) scale(1.4); }
-        75% { transform: translate3d(-80px,-175vh,320px) rotate(-360deg) scale(0.95); }
-      }
-      @keyframes float3 {
-        0%,100% { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
-        25% { transform: translate3d(85px,-145vh,260px) rotate(110deg) scale(1.15); }
-        50% { transform: translate3d(-75px,-165vh,380px) rotate(220deg) scale(1.35); }
-        75% { transform: translate3d(65px,-185vh,290px) rotate(330deg) scale(1.05); }
-      }
-      @keyframes float4 {
-        0%,100% { transform: translate3d(0,0,0) rotate(0deg) scale(1); }
-        25% { transform: translate3d(-95px,-135vh,310px) rotate(-110deg) scale(1.25); }
-        50% { transform: translate3d(90px,-150vh,370px) rotate(-220deg) scale(0.85); }
-        75% { transform: translate3d(-70px,-170vh,340px) rotate(-330deg) scale(1.4); }
-      }
+      @keyframes float1 { 0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); } 25% { transform: translate3d(80px, -140vh, 250px) rotate(120deg) scale(1.3); } 50% { transform: translate3d(-60px, -160vh, 400px) rotate(240deg) scale(0.9); } 75% { transform: translate3d(100px, -180vh, 300px) rotate(360deg) scale(1.1); } }
+      @keyframes float2 { 0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); } 25% { transform: translate3d(-90px, -130vh, 280px) rotate(-120deg) scale(1.2); } 50% { transform: translate3d(70px, -155vh, 350px) rotate(-240deg) scale(1.4); } 75% { transform: translate3d(-80px, -175vh, 320px) rotate(-360deg) scale(0.95); } }
+      @keyframes float3 { 0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); } 25% { transform: translate3d(85px, -145vh, 260px) rotate(110deg) scale(1.15); } 50% { transform: translate3d(-75px, -165vh, 380px) rotate(220deg) scale(1.35); } 75% { transform: translate3d(65px, -185vh, 290px) rotate(330deg) scale(1.05); } }
+      @keyframes float4 { 0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); } 25% { transform: translate3d(-95px, -135vh, 310px) rotate(-110deg) scale(1.25); } 50% { transform: translate3d(90px, -150vh, 370px) rotate(-220deg) scale(0.85); } 75% { transform: translate3d(-70px, -170vh, 340px) rotate(-330deg) scale(1.4); } }
+      .pill-hover:hover { transform: translateX(8px); background: rgba(106, 122, 174, 0.3); box-shadow: 0 4px 20px rgba(106, 122, 174, 0.4); }
+      .danger-hover:hover { background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); box-shadow: 0 8px 24px rgba(220, 38, 38, 0.5); }
+      .card-hover { transition: all 0.3s ease; cursor: pointer; }
+      .card-hover:hover { transform: translateY(-5px); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); border-color: rgba(106, 122, 174, 0.5); }
     `
     document.head.appendChild(style)
     return () => document.head.removeChild(style)
@@ -59,13 +43,9 @@ export default function Admin() {
     <div style={styles.container}>
       {/* figuras flotantes */}
       <div style={styles.floatingShapes}>
-        {[0, 1, 2, 3, 4].map(i => (
-          <svg
-            key={i}
-            xmlns="http://www.w3.org/2000/svg"
-            style={{ ...styles.floatingSvg, ...styles[`svg${i}`] }}
-          >
-            <circle cx="50" cy="50" r="40" strokeWidth="4" fill="none" />
+        {[...Array(15)].map((_, i) => (
+          <svg key={i} style={{ ...styles.floatingSvg, ...styles[`svg${i % 10}`] }} xmlns="http://www.w3.org/2000/svg">
+            <path d="m2.46177,126.39581c10.12618,-0.06577 20.25237,-0.13151 30.37857,-0.19726c0.06666,-10.3997 0.13333,-20.7994 0.19999,-31.19908c10.07782,0 20.15564,0 30.23346,0c0,-10.46351 0,-20.927 0,-31.39051c10.33589,0 20.67178,0 31.00767,0c0,-10.20827 0,-20.41656 0,-30.62485c10.20829,0 20.41656,0 30.62485,0c0,-10.20829 0,-20.41658 0,-30.62487c15.18483,0 30.36965,0 45.55448,0c0,5.10414 0,10.20829 0,15.31243c-10.08071,0 -20.16136,0 -30.24206,0c0,10.33589 0,20.67178 0,31.00769c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33589 0,20.67178 0,31.00767c-10.20829,0 -20.41656,0 -30.62485,0c0,10.33591 0,20.6718 0,31.00767c-10.33589,0 -20.67178,0 -31.00767,0c0,10.46351 0,20.927 0,31.39049c-15.31243,0 -30.62485,0 -45.93728,0c0.68263,-5.07223 -1.16374,-10.79174 0.43769,-15.68938l0,0z" strokeWidth="7" fill="none" />
           </svg>
         ))}
       </div>
@@ -172,339 +152,78 @@ export default function Admin() {
 }
 
 const styles = {
-  container: {
-    display: "flex",
-    minHeight: "100vh",
-    background: "#0f0c15",
-    color: "#fff",
-    fontFamily: "'Inter', sans-serif",
-    position: "relative",
-    overflow: "hidden"
-  },
+  container: { display: 'flex', height: '100vh', background: 'linear-gradient(135deg, #0f1620 0%, #1a2847 40%, #2d3a6a 100%)', color: '#ffffff', fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', position: 'relative', overflow: 'hidden' },
   // Floating Background Shapes
-  floatingShapes: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    pointerEvents: "none",
-    zIndex: 0
-  },
-  floatingSvg: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    opacity: 0.15
-  },
-  svg0: { stroke: "#a855f7", animation: "float1 25s infinite ease-in-out" },
-  svg1: { stroke: "#3b82f6", animation: "float2 28s infinite ease-in-out" },
-  svg2: { stroke: "#ec4899", animation: "float3 30s infinite ease-in-out" },
-  svg3: { stroke: "#14b8a6", animation: "float4 32s infinite ease-in-out" },
-  svg4: { stroke: "#f59e0b", animation: "float1 29s infinite ease-in-out" },
+  floatingShapes: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 },
+  floatingSvg: { position: 'absolute', stroke: '#4a5a8e', transformStyle: 'preserve-3d' },
+  svg0: { width: '180px', height: '180px', left: '5%', bottom: '-25%', animation: 'float1 20s infinite ease-in-out', opacity: 0.3 },
+  svg1: { width: '140px', height: '140px', left: '20%', bottom: '-20%', animation: 'float2 22s infinite ease-in-out', opacity: 0.4 },
+  svg2: { width: '160px', height: '160px', left: '40%', bottom: '-22%', animation: 'float3 24s infinite ease-in-out', opacity: 0.25 },
+  svg3: { width: '120px', height: '120px', left: '60%', bottom: '-18%', animation: 'float4 18s infinite ease-in-out', opacity: 0.5 },
+  svg4: { width: '150px', height: '150px', left: '75%', bottom: '-21%', animation: 'float1 21s infinite ease-in-out', opacity: 0.35 },
+  svg5: { width: '130px', height: '130px', left: '85%', bottom: '-19%', animation: 'float2 23s infinite ease-in-out', opacity: 0.45 },
 
   // Sidebar
-  sidebar: {
-    width: "260px",
-    background: "rgba(20, 20, 25, 0.6)",
-    backdropFilter: "blur(12px)",
-    borderRight: "1px solid rgba(255,255,255,0.08)",
-    display: "flex",
-    flexDirection: "column",
-    padding: "24px",
-    zIndex: 10
-  },
-  sidebarHeader: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    marginBottom: "40px",
-    position: "relative"
-  },
-  avatar: {
-    width: "64px",
-    height: "64px",
-    borderRadius: "50%",
-    background: "linear-gradient(135deg, #3b82f6, #9333ea)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "32px",
-    marginBottom: "12px",
-    boxShadow: "0 0 20px rgba(147, 51, 234, 0.5)",
-    zIndex: 2
-  },
-  avatarGlow: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: "100px",
-    height: "100px",
-    background: "radial-gradient(circle, rgba(59,130,246,0.3) 0%, transparent 70%)",
-    zIndex: 1
-  },
-  sidebarTitle: {
-    fontSize: "18px",
-    fontWeight: "700",
-    color: "#e2e8f0"
-  },
-  sidebarSubtitle: {
-    fontSize: "14px",
-    color: "#94a3b8",
-    marginTop: "4px"
-  },
-  sidebarNav: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-    flex: 1
-  },
-  sidebarBottom: {
-    marginTop: "auto",
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px"
-  },
+  sidebar: { width: '280px', background: 'linear-gradient(180deg, rgba(30, 43, 79, 0.95) 0%, rgba(42, 54, 88, 0.95) 100%)', backdropFilter: 'blur(20px)', borderRight: '1px solid rgba(106, 122, 174, 0.2)', display: 'flex', flexDirection: 'column', padding: '32px 20px', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', zIndex: 10, boxShadow: '4px 0 24px rgba(0, 0, 0, 0.3)' },
+  sidebarHeader: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '40px', position: 'relative' },
+  avatarGlow: { position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)', width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(106, 122, 174, 0.4) 0%, transparent 70%)', filter: 'blur(25px)', zIndex: -1 },
+  avatar: { width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #5a6a9e 0%, #6a7aae 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', marginBottom: '16px', border: '3px solid rgba(106, 122, 174, 0.3)', boxShadow: '0 8px 32px rgba(106, 122, 174, 0.4)' },
+  sidebarTitle: { fontSize: '20px', fontWeight: '700', color: '#ffffff', letterSpacing: '1px' },
+  sidebarSubtitle: { fontSize: '14px', color: '#a8b2d1', marginTop: '4px' },
+  sidebarNav: { display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 },
+  sidebarBottom: { display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(106, 122, 174, 0.2)' },
 
   // Navigation Pills
-  pill: {
-    padding: "12px 16px",
-    borderRadius: "12px",
-    background: "transparent",
-    border: "none",
-    color: "#cbd5e1",
-    textAlign: "left",
-    cursor: "pointer",
-    fontSize: "15px",
-    fontWeight: "500",
-    transition: "all 0.2s",
-    display: "flex",
-    alignItems: "center",
-    gap: "10px"
-  },
-  pillActive: {
-    background: "rgba(255, 255, 255, 0.1)",
-    color: "#fff",
-    boxShadow: "0 0 10px rgba(255,255,255,0.05)"
-  },
-  pillDanger: {
-    padding: "12px 16px",
-    borderRadius: "12px",
-    background: "rgba(239, 68, 68, 0.1)",
-    border: "1px solid rgba(239, 68, 68, 0.2)",
-    color: "#f87171",
-    textAlign: "center",
-    cursor: "pointer",
-    fontSize: "14px",
-    fontWeight: "600",
-    transition: "all 0.2s"
-  },
+  pill: { background: 'rgba(58, 74, 122, 0.4)', border: '1px solid rgba(106, 122, 174, 0.3)', color: '#d1d5e8', padding: '14px 20px', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.3s ease', fontSize: '14px', fontWeight: '500', textAlign: 'left', outline: 'none' },
+  pillActive: { background: 'linear-gradient(135deg, rgba(106, 122, 174, 0.4) 0%, rgba(90, 106, 158, 0.4) 100%)', border: '1px solid rgba(106, 122, 174, 0.5)', boxShadow: '0 4px 20px rgba(106, 122, 174, 0.3)' },
+  pillDanger: { background: 'linear-gradient(135deg, rgba(185, 28, 28, 0.3) 0%, rgba(220, 38, 38, 0.3) 100%)', border: '1px solid rgba(220, 38, 38, 0.4)', color: '#ffb3b3', padding: '14px 20px', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.3s ease', fontSize: '14px', fontWeight: '600', textAlign: 'left', outline: 'none' },
 
   // Main Content
-  main: {
-    flex: 1,
-    padding: "40px",
-    overflowY: "auto",
-    zIndex: 5,
-    position: "relative"
-  },
-  h2: {
-    fontSize: "28px",
-    fontWeight: "700",
-    marginBottom: "24px",
-    background: "linear-gradient(to right, #fff, #cbd5e1)",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent"
-  },
-  card: {
-    background: "rgba(30, 41, 59, 0.6)",
-    backdropFilter: "blur(16px)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "20px",
-    padding: "32px",
-    boxShadow: "0 4px 30px rgba(0,0,0,0.3)"
-  },
+  main: { flex: 1, padding: '40px', overflowY: 'auto', position: 'relative', zIndex: 10 },
+  h2: { fontSize: '32px', fontWeight: '700', marginBottom: '28px', background: 'linear-gradient(135deg, #ffffff 0%, #6a7aae 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '-1px' },
+  card: { background: 'rgba(30, 43, 79, 0.6)', backdropFilter: 'blur(20px)', borderRadius: '20px', border: '1px solid rgba(106, 122, 174, 0.2)', padding: '32px', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)' },
 
   // Forms
-  formGrid2: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "24px"
-  },
-  formGrid1: {
-    display: "grid",
-    gridTemplateColumns: "1fr",
-    gap: "20px"
-  },
-  formGroup: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px"
-  },
-  label: {
-    fontSize: "14px",
-    color: "#94a3b8",
-    fontWeight: "500"
-  },
-  input: {
-    background: "rgba(15, 23, 42, 0.8)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "10px",
-    padding: "12px 16px",
-    color: "#fff",
-    fontSize: "15px",
-    outline: "none",
-    transition: "border-color 0.2s"
-  },
-  select: {
-    background: "rgba(15, 23, 42, 0.8)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "10px",
-    padding: "12px 16px",
-    color: "#fff",
-    fontSize: "15px",
-    outline: "none"
-  },
+  formGrid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' },
+  formGrid1: { display: 'grid', gridTemplateColumns: '1fr', gap: '20px' },
+  formGroup: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  label: { color: '#6a7aae', fontSize: '13px', fontWeight: '600', marginBottom: '6px', letterSpacing: '0.5px' },
+  input: { background: 'rgba(58, 74, 122, 0.6)', border: '1px solid rgba(106, 122, 174, 0.3)', borderRadius: '8px', padding: '10px 14px', color: '#ffffff', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s', width: '100%' },
+  select: { background: 'rgba(58, 74, 122, 0.6)', border: '1px solid rgba(106, 122, 174, 0.3)', borderRadius: '8px', padding: '10px 14px', color: '#ffffff', fontSize: '14px', outline: 'none', cursor: 'pointer', width: '100%' },
 
   // Buttons
-  buttonPrimary: {
-    background: "linear-gradient(135deg, #3b82f6, #2563eb)",
-    border: "none",
-    borderRadius: "10px",
-    padding: "10px 24px",
-    color: "#fff",
-    fontSize: "15px",
-    fontWeight: "600",
-    cursor: "pointer",
-    boxShadow: "0 4px 15px rgba(37, 99, 235, 0.4)",
-    transition: "transform 0.1s"
-  },
-  buttonSmall: {
-    background: "rgba(59, 130, 246, 0.15)",
-    border: "1px solid rgba(59, 130, 246, 0.3)",
-    borderRadius: "8px",
-    padding: "6px 12px",
-    color: "#60a5fa",
-    fontSize: "13px",
-    fontWeight: "600",
-    cursor: "pointer"
-  },
-  buttonGhost: {
-    background: "transparent",
-    border: "1px solid rgba(255,255,255,0.2)",
-    borderRadius: "10px",
-    padding: "10px 24px",
-    color: "#e2e8f0",
-    fontSize: "15px",
-    fontWeight: "500",
-    cursor: "pointer"
-  },
-  buttonDanger: {
-    background: "rgba(220, 38, 38, 0.2)",
-    border: "1px solid rgba(220, 38, 38, 0.4)",
-    borderRadius: "10px",
-    padding: "10px 24px",
-    color: "#f87171",
-    fontSize: "15px",
-    fontWeight: "600",
-    cursor: "pointer"
-  },
+  buttonPrimary: { background: 'linear-gradient(135deg, #5a6a9e 0%, #6a7aae 100%)', border: 'none', color: '#ffffff', padding: '12px 28px', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', transition: 'all 0.3s ease', boxShadow: '0 4px 16px rgba(106, 122, 174, 0.4)' },
+  buttonSmall: { background: 'rgba(58, 74, 122, 0.6)', border: '1px solid rgba(106, 122, 174, 0.3)', borderRadius: '8px', padding: '6px 12px', color: '#ffffff', fontSize: '13px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s ease' },
+  buttonGhost: { background: 'transparent', border: '1px solid rgba(106, 122, 174, 0.3)', borderRadius: '10px', padding: '10px 24px', color: '#d1d5e8', fontSize: '14px', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s ease' },
+  buttonDanger: { background: 'rgba(185, 28, 28, 0.2)', border: '1px solid rgba(220, 38, 38, 0.4)', borderRadius: '10px', padding: '10px 24px', color: '#ffb3b3', fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s ease' },
 
   // Filter Bar
-  filtersBar: {
-    display: "flex",
-    gap: "12px",
-    marginBottom: "24px",
-    background: "rgba(30, 41, 59, 0.4)",
-    padding: "16px",
-    borderRadius: "16px",
-    border: "1px solid rgba(255,255,255,0.05)"
-  },
+  filtersBar: { display: 'flex', gap: '12px', marginBottom: '24px', background: 'rgba(30, 43, 79, 0.6)', backdropFilter: 'blur(20px)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(106, 122, 174, 0.2)', flexWrap: 'wrap', alignItems: 'center' },
 
   // Table
-  tableWrap: {
-    background: "rgba(30, 41, 59, 0.4)",
-    backdropFilter: "blur(12px)",
-    borderRadius: "16px",
-    border: "1px solid rgba(255,255,255,0.05)",
-    overflow: "hidden"
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse"
-  },
-  tableHeaderRow: {
-    background: "rgba(15, 23, 42, 0.6)",
-    borderBottom: "1px solid rgba(255,255,255,0.05)"
-  },
-  th: {
-    padding: "16px",
-    textAlign: "left",
-    fontSize: "13px",
-    fontWeight: "600",
-    color: "#94a3b8",
-    textTransform: "uppercase",
-    letterSpacing: "0.5px"
-  },
-  tableRow: {
-    borderBottom: "1px solid rgba(255,255,255,0.02)"
-  },
-  td: {
-    padding: "16px",
-    fontSize: "14px",
-    color: "#cbd5e1"
-  },
+  tableWrap: { background: 'rgba(30, 43, 79, 0.6)', backdropFilter: 'blur(20px)', borderRadius: '16px', border: '1px solid rgba(106, 122, 174, 0.2)', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)' },
+  table: { width: '100%', borderCollapse: 'collapse' },
+  tableHeaderRow: { background: 'rgba(58, 74, 122, 0.5)' },
+  th: { padding: '16px 20px', textAlign: 'left', color: '#6a7aae', fontWeight: '700', fontSize: '13px', letterSpacing: '1px', textTransform: 'uppercase', borderBottom: '2px solid rgba(106, 122, 174, 0.3)' },
+  tableRow: { borderBottom: '1px solid rgba(106, 122, 174, 0.1)', transition: 'background 0.2s ease' },
+  td: { padding: '16px 20px', color: '#d1d5e8', fontSize: '14px' },
 
   // Badges
-  badge: {
-    padding: "4px 10px",
-    borderRadius: "20px",
-    fontSize: "12px",
-    fontWeight: "600"
-  },
-  badgeAlumno: { background: "rgba(52, 211, 153, 0.15)", color: "#34d399" },
-  badgeMaestro: { background: "rgba(251, 191, 36, 0.15)", color: "#fbbf24" },
-  badgeAdmin: { background: "rgba(167, 139, 250, 0.15)", color: "#a78bfa" },
-  badgeActivo: { background: "rgba(59, 130, 246, 0.15)", color: "#60a5fa" },
-  badgeInactivo: { background: "rgba(148, 163, 184, 0.2)", color: "#94a3b8" },
+  badge: { padding: '6px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: '600', display: 'inline-block' },
+  badgeAlumno: { background: 'rgba(52, 211, 153, 0.2)', color: '#4ade80', border: '1px solid rgba(52, 211, 153, 0.3)' },
+  badgeMaestro: { background: 'rgba(251, 191, 36, 0.2)', color: '#fbbf24', border: '1px solid rgba(251, 191, 36, 0.3)' },
+  badgeAdmin: { background: 'rgba(167, 139, 250, 0.2)', color: '#a78bfa', border: '1px solid rgba(167, 139, 250, 0.3)' },
+  badgeActivo: { background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)' },
+  badgeInactivo: { background: 'rgba(148, 163, 184, 0.2)', color: '#94a3b8', border: '1px solid rgba(148, 163, 184, 0.3)' },
 
   // Modal
-  modalOverlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    background: "rgba(0,0,0,0.6)",
-    backdropFilter: "blur(4px)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 50
-  },
-  modalCard: {
-    width: "500px",
-    maxHeight: "90vh",
-    overflowY: "auto",
-    background: "#1e293b",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "20px",
-    padding: "32px",
-    boxShadow: "0 20px 50px rgba(0,0,0,0.5)"
-  },
-  modalTitle: {
-    fontSize: "22px",
-    fontWeight: "700",
-    marginBottom: "24px",
-    color: "#fff"
-  },
-  modalButtons: {
-    display: "flex",
-    gap: "12px",
-    marginTop: "32px",
-    justifyContent: "flex-end"
-  }
+  modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(15, 22, 32, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 },
+  modalCard: { width: '500px', maxHeight: '90vh', overflowY: 'auto', background: 'rgba(30, 43, 79, 0.95)', border: '1px solid rgba(106, 122, 174, 0.3)', borderRadius: '24px', padding: '32px', boxShadow: '0 24px 64px rgba(0, 0, 0, 0.5)' },
+  modalTitle: { fontSize: '24px', fontWeight: '700', marginBottom: '24px', color: '#ffffff' },
+  modalButtons: { display: 'flex', gap: '12px', marginTop: '32px', justifyContent: 'flex-end' },
+
+  // Chat
+  chatSection: { background: 'rgba(30, 43, 79, 0.6)', backdropFilter: 'blur(20px)', borderRadius: '20px', border: '1px solid rgba(106, 122, 174, 0.2)', padding: '24px', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)', maxWidth: '900px', margin: '0 auto' }
 }
 
 /* ------------------ SUBVISTAS ------------------ */
@@ -1503,11 +1222,17 @@ function AdminReinscripcion() {
         if (!r.ok) throw new Error('Error al guardar')
         return r.json()
       })
-      .then(() => {
-        setMsg('Configuración guardada correctamente')
+      // Chained call to open inscriptions as per user request
+      .then(() => fetch(`${API}/admin/config/abrir-inscripciones`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${t}` }
+      }))
+      .then(r => r.json())
+      .then((d) => {
+        setMsg('Configuración guardada y se han abierto las inscripciones para todos los grupos.')
         loadConfig()
       })
-      .catch(() => setMsg('Error al guardar la configuración'))
+      .catch(() => setMsg('Error al guardar la configuración o abrir inscripciones'))
   }
 
   return (
@@ -1589,22 +1314,7 @@ function AdminReinscripcion() {
           <button style={styles.buttonPrimary} onClick={saveConfig}>Guardar Configuración</button>
         </div>
 
-        <div style={{ marginTop: "24px", borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
-          <h4 style={{ color: '#fff', marginBottom: '10px' }}>Acciones Rápidas</h4>
-          <button
-            style={{ ...styles.buttonPrimary, background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
-            onClick={() => {
-              if (!confirm('¿Estás seguro? Esto abrirá todos los grupos para inscripción.')) return;
-              const t = localStorage.getItem("access_token");
-              fetch(`${API}/admin/config/abrir-inscripciones`, { method: 'POST', headers: { Authorization: `Bearer ${t}` } })
-                .then(r => r.json())
-                .then(d => alert(d.message || d.error))
-                .catch(e => alert(e.message));
-            }}
-          >
-            Abrir Inscripciones (Todos los grupos)
-          </button>
-        </div>
+
 
         {msg && <div style={{ marginTop: '10px', color: '#bbf7d0', textAlign: 'right' }}>{msg}</div>}
       </div>
