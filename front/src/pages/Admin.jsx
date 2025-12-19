@@ -553,9 +553,9 @@ function AdminUsuarios() {
               <tr key={u.id} style={styles.tableRow}>
                 <td style={styles.td}>{u.id}</td>
                 <td style={styles.td}>{u.nombre} {u.apellido}</td>
-                <td style={styles.td}>{u.carrera || "—"}</td>
-                <td style={styles.td}>{u.grupo || "—"}</td>
-                <td style={styles.td}>{u.semestre || "—"}</td>
+                <td style={styles.td}>{u.carrera || "-"}</td>
+                <td style={styles.td}>{u.grupo || "-"}</td>
+                <td style={styles.td}>{u.semestre || "-"}</td>
                 <td style={styles.td}>
                   <span
                     style={{

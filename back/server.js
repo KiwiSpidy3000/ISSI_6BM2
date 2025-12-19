@@ -910,20 +910,29 @@ app.delete('/alumno/inscripcion/baja/:id_grupo', requireAuth, async (req, res) =
     // 1. Validar ventana de bajas
     await checkDropWindow();
 
-    // 2. Validar carga mínima
+    // 2. Validar carga mínima y periodo
     const minCreds = parseInt(await getConfig('MIN_CREDITOS') || '30');
 
-    // Calcular carga si se quita esta materia
-    // Primero obtenemos creditos de la materia a bajar
+    // Obtenemos el periodo más reciente (periodo actual del sistema)
+    const { rows: pRows } = await pool.query(`SELECT periodo FROM ${DB_SCHEMA}.grupo ORDER BY id_grupo DESC LIMIT 1`);
+    const currentPeriod = pRows[0]?.periodo;
+
+    // Primero obtenemos datos de la materia a bajar
     const gRes = await pool.query(`
-      SELECT m.creditos 
+      SELECT m.creditos, g.periodo 
       FROM ${DB_SCHEMA}.grupo g
       JOIN ${DB_SCHEMA}.materia m ON m.id_materia = g.id_materia
       WHERE g.id_grupo = $1
     `, [id_grupo]);
 
     if (!gRes.rows.length) return res.status(404).json({ error: 'Grupo no encontrado' });
-    const dropCredits = parseFloat(gRes.rows[0].creditos);
+
+    const { creditos: dropCredits, periodo: grupoPeriodo } = gRes.rows[0];
+
+    // 🔹 Regla de NEGOCIO: Solo se pueden dar de baja materias del periodo actual
+    if (grupoPeriodo !== currentPeriod) {
+      throw new Error(`No puedes dar de baja materias de un periodo pasado (${grupoPeriodo}).`);
+    }
 
     // Obtenemos carga total actual
     const lRes = await pool.query(`
@@ -931,13 +940,13 @@ app.delete('/alumno/inscripcion/baja/:id_grupo', requireAuth, async (req, res) =
       FROM ${DB_SCHEMA}.inscripcion i
       JOIN ${DB_SCHEMA}.grupo g ON g.id_grupo = i.id_grupo
       JOIN ${DB_SCHEMA}.materia m ON m.id_materia = g.id_materia
-      WHERE i.id_alumno = $1 AND i.estado IN ('INSCRITO')
-    `, [userId]);
+      WHERE i.id_alumno = $1 AND i.estado IN ('INSCRITO') AND g.periodo = $2
+    `, [userId, currentPeriod]);
     const currentLoad = parseFloat(lRes.rows[0].total);
 
     // Regla de Negocio: Carga Mínima
     if (currentLoad - dropCredits < minCreds) {
-      throw new Error(`No puedes dar de baja: quedarías con menos de ${minCreds} créditos (Mínimo requerido).`);
+      throw new Error(`No puedes dar de baja: quedarías con menos de ${minCreds} créditos en el periodo ${currentPeriod}.`);
     }
 
     // 3. Ejecutar baja
@@ -1328,7 +1337,11 @@ app.get('/alumno/bajas/info', requireAuth, async (req, res) => {
     const fechaLimite = await getConfig('FIN_BAJA');
     const cargaMinima = parseInt(await getConfig('MIN_CREDITOS') || '30', 10);
 
+    const { rows: pRows } = await pool.query(`SELECT periodo FROM ${DB_SCHEMA}.grupo ORDER BY id_grupo DESC LIMIT 1`);
+    const currentPeriod = pRows[0]?.periodo;
+
     res.json({
+      periodo_actual: currentPeriod,
       fecha_limite: fechaLimite || null,
       carga_minima: Number.isNaN(cargaMinima) ? 0 : cargaMinima
     });

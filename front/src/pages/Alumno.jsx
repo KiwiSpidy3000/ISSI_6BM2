@@ -232,7 +232,7 @@ function DatosPersonales() {
                 placeholder="Ingrese su CURP"
               />
             ) : (
-              <div style={styles.dataValue}>{profile.curp || <span style={{ opacity: 0.5, fontStyle: 'italic' }}>—</span>}</div>
+              <div style={styles.dataValue}>{profile.curp || <span style={{ opacity: 0.5, fontStyle: 'italic' }}>-</span>}</div>
             )}
           </div>
 
@@ -247,7 +247,7 @@ function DatosPersonales() {
                 placeholder="55 1234 5678"
               />
             ) : (
-              <div style={styles.dataValue}>{profile.telefono || <span style={{ opacity: 0.5, fontStyle: 'italic' }}>—</span>}</div>
+              <div style={styles.dataValue}>{profile.telefono || <span style={{ opacity: 0.5, fontStyle: 'italic' }}>-</span>}</div>
             )}
           </div>
 
@@ -263,7 +263,7 @@ function DatosPersonales() {
               />
             ) : (
               <div style={{ ...styles.dataValue, lineHeight: '1.5' }}>
-                {profile.direccion || <span style={{ opacity: 0.5, fontStyle: 'italic' }}>—</span>}
+                {profile.direccion || <span style={{ opacity: 0.5, fontStyle: 'italic' }}>-</span>}
               </div>
             )}
           </div>
@@ -332,7 +332,7 @@ function Kardex() {
                           color: aprobado ? '#4ade80' : '#f87171',
                           fontSize: '16px'
                         }}>
-                          {isNaN(calif) ? '—' : (Number.isInteger(calif) ? calif : calif.toFixed(1))}
+                          {isNaN(calif) ? '-' : (Number.isInteger(calif) ? calif : calif.toFixed(1))}
                         </span>
                       </div>
                     )
@@ -399,7 +399,7 @@ function Horario() {
       ]
       days.forEach(d => {
         const dayData = r.days[d]
-        rowData.push(dayData ? `${dayData.hora_ini?.slice(0, 5)} - ${dayData.hora_fin?.slice(0, 5)}` : '—')
+        rowData.push(dayData ? `${dayData.hora_ini?.slice(0, 5)} - ${dayData.hora_fin?.slice(0, 5)}` : '-')
       })
       return rowData
     })
@@ -447,7 +447,7 @@ function Horario() {
                         <div style={{ fontSize: '12px' }}>
                           <div>{dayData.hora_ini?.slice(0, 5)} - {dayData.hora_fin?.slice(0, 5)}</div>
                         </div>
-                      ) : '—'}
+                      ) : '-'}
                     </td>
                   )
                 })}
@@ -549,10 +549,10 @@ function Calificaciones() {
                   <td style={styles.td}>{r.materia_clave}</td>
                   <td style={styles.td}>{r.materia_nombre}</td>
                   <td style={styles.td}>
-                    {r.final_calc ? Math.round(Number(r.final_calc)) : '—'}
+                    {r.final_calc != null ? Math.round(Number(r.final_calc)) : '-'}
                   </td>
                   <td style={styles.td}>
-                    {r.extraordinario ? Math.round(Number(r.extraordinario)) : '—'}
+                    {r.extraordinario != null ? Math.round(Number(r.extraordinario)) : '-'}
                   </td>
                 </tr>
               ))
@@ -858,7 +858,7 @@ function Reinscripcion() {
               <tr key={i} style={styles.tableRow}>
                 <td style={styles.td}>{r.nombreG || r.id_grupo}</td>
                 <td style={styles.td}>{`${r.clave} ${r.nombre}`}</td>
-                <td style={styles.td}>{r.profesor || '—'}</td>
+                <td style={styles.td}>{r.profesor || '-'}</td>
                 <td style={styles.td}>{r.creditos}</td>
                 <td style={styles.td}>
                   {r.estado === 'PREINSCRITO' && (
@@ -890,8 +890,8 @@ function Reinscripcion() {
               <tr key={i} style={styles.tableRow}>
                 <td style={styles.td}>{r.nombreG || r.id_grupo}</td>
                 <td style={styles.td}>{`${r.clave} ${r.nombre}`}</td>
-                <td style={styles.td}>{r.profesor || '—'}</td>
-                <td style={styles.td}><small>{r.horario || '—'}</small></td>
+                <td style={styles.td}>{r.profesor || '-'}</td>
+                <td style={styles.td}><small>{r.horario || '-'}</small></td>
                 <td style={styles.td}>{r.creditos}</td>
                 <td style={styles.td}>{r.lugares_disponibles}</td>
                 <td style={styles.td}>
@@ -901,7 +901,7 @@ function Reinscripcion() {
                     disabled={materiasPeriodo >= 6}
                     title={materiasPeriodo >= 6 ? 'Límite de 6 materias alcanzado' : 'Agregar'}
                   >
-                    ＋
+                    +
                   </button>
                 </td>
               </tr>
@@ -922,7 +922,6 @@ function Reinscripcion() {
 
 function Bajas() {
   const t = () => localStorage.getItem('access_token') || ''
-  const [periodos, setPeriodos] = useState([])
   const [periodo, setPeriodo] = useState('')
   const [inscritas, setInscritas] = useState([])
   const [fechaLimite, setFechaLimite] = useState('')
@@ -931,13 +930,15 @@ function Bajas() {
   const [err, setErr] = useState('')
 
   useEffect(() => {
-    fetch(`${API}/alumno/periodos`, { headers: { Authorization: `Bearer ${t()}` } })
+    const hdr = { headers: { Authorization: `Bearer ${t()}` } }
+    fetch(`${API}/alumno/bajas/info`, hdr)
       .then(r => r.json())
-      .then(list => {
-        setPeriodos(list || [])
-        if (list?.length) setPeriodo(list[list.length - 1])
+      .then(data => {
+        setFechaLimite(data.fecha_limite || '-')
+        setCargaMinima(data.carga_minima ?? 0)
+        if (data.periodo_actual) setPeriodo(data.periodo_actual)
       })
-      .catch(() => setErr('Error cargando periodos'))
+      .catch(() => setErr('Error cargando información de bajas'))
   }, [])
 
   useEffect(() => {
@@ -955,14 +956,14 @@ function Bajas() {
       .then(setInscritas)
       .catch(() => setErr('Error cargando materias inscritas'))
 
-    fetch(`${API}/alumno/bajas/info?periodo=${periodo}`, hdr)
+    fetch(`${API}/alumno/bajas/info`, hdr)
       .then(r => r.json())
       .then(data => {
-        setFechaLimite(data.fecha_limite || '—')
+        setFechaLimite(data.fecha_limite || '-')
         setCargaMinima(data.carga_minima ?? 0)
       })
       .catch(() => {
-        setFechaLimite('—')
+        setFechaLimite('-')
         setCargaMinima(0)
       })
   }
@@ -994,7 +995,7 @@ function Bajas() {
     <div>
       <h2 style={styles.h2}>Baja de materias</h2>
       <div style={styles.infoBar}>
-        <div><b>Fecha Límite:</b> {fechaLimite || '—'}</div>
+        <div><b>Fecha Límite:</b> {fechaLimite || '-'}</div>
         <div><b>Carga Mínima:</b> {cargaMinima} créditos</div>
       </div>
 
@@ -1018,7 +1019,7 @@ function Bajas() {
               <tr key={i} style={styles.tableRow}>
                 <td style={styles.td}>{r.nombreG || r.id_grupo}</td>
                 <td style={styles.td}>{`${r.clave} ${r.nombre}`}</td>
-                <td style={styles.td}>{r.profesor || '—'}</td>
+                <td style={styles.td}>{r.profesor || '-'}</td>
                 <td style={styles.td}>{r.creditos}</td>
                 <td style={styles.td}>
                   <button
@@ -1075,7 +1076,7 @@ function Evaluacion() {
   }, [periodo])
 
   function refresh() {
-    fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, { headers: { Authorization: `Bearer ${t()}` } })
+    fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}&estado=INSCRITO`, { headers: { Authorization: `Bearer ${t()}` } })
       .then(r => r.json())
       .then(setInscritas)
       .catch(() => setInscritas([]))
@@ -1291,10 +1292,10 @@ function Grupos() {
               <tr key={i} style={styles.tableRow}>
                 <td style={styles.td}>{g.nombreG || g.grupo || g.id_grupo}</td>
                 <td style={styles.td}>{(g.materia_clave || g.clave) + ' ' + (g.materia_nombre || g.nombre)}</td>
-                <td style={styles.td}>{g.profesor || '—'}</td>
+                <td style={styles.td}>{g.profesor || '-'}</td>
                 <td style={styles.td}>{g.creditos}</td>
                 <td style={styles.td}>{g.cupo || g.lugares_disponibles || g.cupo_max || 30}</td>
-                <td style={styles.td}>{g.horario || '—'}</td>
+                <td style={styles.td}>{g.horario || '-'}</td>
               </tr>
             ))}
             {filteredGrupos.length === 0 && (

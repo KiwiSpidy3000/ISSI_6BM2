@@ -665,7 +665,7 @@ function Calificaciones({ context }) {
                         />
                       ) : (
                         <span onDoubleClick={() => handleEdit(a.boleta, 'p1', a.p1 || '')} style={styles.editableCell}>
-                          {a.p1 ?? 'â€”'}
+                          {a.p1 ?? '-'}
                         </span>
                       )}
                     </td>
@@ -684,7 +684,7 @@ function Calificaciones({ context }) {
                         />
                       ) : (
                         <span onDoubleClick={() => handleEdit(a.boleta, 'p2', a.p2 || '')} style={styles.editableCell}>
-                          {a.p2 ?? 'â€”'}
+                          {a.p2 ?? '-'}
                         </span>
                       )}
                     </td>
@@ -703,7 +703,7 @@ function Calificaciones({ context }) {
                         />
                       ) : (
                         <span onDoubleClick={() => handleEdit(a.boleta, 'ordinario', a.ordinario || '')} style={styles.editableCell}>
-                          {a.ordinario ?? 'â€”'}
+                          {a.ordinario ?? '-'}
                         </span>
                       )}
                     </td>
@@ -715,7 +715,7 @@ function Calificaciones({ context }) {
         </div>
       )}
       <p style={styles.helpText}>
-        Doble clic en una celda para editar. La calificaciÃ³n se guarda al salir del campo.
+        Doble clic en una celda para editar. La calificación se guarda al salir del campo.
       </p>
     </div>
   )
