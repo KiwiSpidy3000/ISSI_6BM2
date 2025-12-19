@@ -142,6 +142,7 @@ export async function getStudentGroupOffer(id_alumno, periodo, semestre, turno) 
   let where = `
     WHERE a.id_alumno = $1
       AND a.id_carrera = m.id_carrera
+      AND g.nombreG NOT LIKE 'HIST-%'
   `;
 
   if (periodo) {
@@ -470,7 +471,8 @@ export async function getAllGroupsForOffer() {
     LEFT JOIN ${DB_SCHEMA}.profesor p ON g.id_profesor = p.id_profesor
     LEFT JOIN ${DB_SCHEMA}.usuario  u ON u.id_usuario = p.id_profesor
     LEFT JOIN ${DB_SCHEMA}.horario  h ON h.id_grupo   = g.id_grupo
-    WHERE g.estado IS NULL OR g.estado <> 'CANCELADO'
+    WHERE (g.estado IS NULL OR g.estado <> 'CANCELADO')
+      AND g.nombreG NOT LIKE 'HIST-%'
     GROUP BY
       g.id_grupo, g.nombreG, g.periodo, g.turno,
       m.semestre, m.clave, m.nombre, m.creditos,
