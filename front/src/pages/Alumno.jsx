@@ -102,24 +102,167 @@ export default function Alumno() {
 
 function DatosPersonales() {
   const [profile, setProfile] = useState(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [formData, setFormData] = useState({})
+  const [saving, setSaving] = useState(false)
+
   useEffect(() => {
     const t = localStorage.getItem('access_token') || ''
     fetch(`${API}/alumno/profile`, { headers: { Authorization: `Bearer ${t}` } })
-      .then(r => r.json()).then(setProfile).catch(console.error)
+      .then(r => r.json())
+      .then(d => {
+        setProfile(d)
+        setFormData(d)
+      })
+      .catch(console.error)
   }, [])
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    })
+  }
+
+  const handleSave = () => {
+    setSaving(true)
+    const t = localStorage.getItem('access_token') || ''
+    fetch(`${API}/alumno/profile`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${t}`
+      },
+      body: JSON.stringify({
+        curp: formData.curp,
+        telefono: formData.telefono,
+        direccion: formData.direccion
+      })
+    })
+      .then(async r => {
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}))
+          throw new Error(err.error || 'Error al guardar cambios')
+        }
+        setProfile({ ...profile, ...formData })
+        setIsEditing(false)
+      })
+      .catch(e => alert(e.message))
+      .finally(() => setSaving(false))
+  }
 
   if (!profile) return <div style={styles.loading}>Cargando...</div>
 
+  // Override style for inputs to fit card width properly
+  const profileInputStyle = {
+    ...styles.input,
+    width: '100%',
+    boxSizing: 'border-box',
+    minHeight: '42px',
+    fontSize: '15px',
+    background: 'rgba(58, 74, 122, 0.4)'
+  }
+
   return (
     <div>
-      <h2 style={styles.h2}>Datos Personales</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div>
+          <h2 style={{ ...styles.h2, marginBottom: 0 }}>Datos Personales</h2>
+          <p style={{ color: '#6a7aae', marginTop: '6px', fontSize: '14px', margin: '4px 0 0 0' }}>
+            Información del alumno y contacto
+          </p>
+        </div>
+
+        {!isEditing ? (
+          <button
+            style={styles.button}
+            onClick={() => setIsEditing(true)}
+          >
+            ✏️ Editar Información
+          </button>
+        ) : (
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              style={{ ...styles.button, background: 'transparent', border: '1px solid rgba(106, 122, 174, 0.5)' }}
+              onClick={() => { setIsEditing(false); setFormData(profile); }}
+            >
+              Cancelar
+            </button>
+            <button style={styles.button} onClick={handleSave} disabled={saving}>
+              {saving ? 'Guardando...' : '💾 Guardar Cambios'}
+            </button>
+          </div>
+        )}
+      </div>
+
       <div style={styles.card}>
         <div style={styles.dataGrid}>
-          <div style={styles.dataItem}><span style={styles.dataLabel}>Boleta</span><div style={styles.dataValue}>{profile.boleta}</div></div>
-          <div style={styles.dataItem}><span style={styles.dataLabel}>Nombre</span><div style={styles.dataValue}>{profile.nombre_completo}</div></div>
-          <div style={styles.dataItem}><span style={styles.dataLabel}>Carrera</span><div style={styles.dataValue}>{profile.carrera}</div></div>
-          <div style={styles.dataItem}><span style={styles.dataLabel}>CURP</span><div style={styles.dataValue}>{profile.curp}</div></div>
-          <div style={styles.dataItem}><span style={styles.dataLabel}>Email</span><div style={styles.dataValue}>{profile.email}</div></div>
+          {/* Read Only Fields */}
+          <div style={styles.dataItem}>
+            <span style={styles.dataLabel}>Boleta</span>
+            <div style={styles.dataValue}>{profile.boleta}</div>
+          </div>
+          <div style={styles.dataItem}>
+            <span style={styles.dataLabel}>Nombre Completo</span>
+            <div style={styles.dataValue}>{profile.nombre_completo}</div>
+          </div>
+          <div style={styles.dataItem}>
+            <span style={styles.dataLabel}>Carrera</span>
+            <div style={styles.dataValue}>{profile.carrera}</div>
+          </div>
+          <div style={styles.dataItem}>
+            <span style={styles.dataLabel}>Correo Institucional</span>
+            <div style={styles.dataValue}>{profile.email}</div>
+          </div>
+
+          {/* Editable Fields */}
+          <div style={styles.dataItem}>
+            <span style={styles.dataLabel}>CURP</span>
+            {isEditing ? (
+              <input
+                style={profileInputStyle}
+                name="curp"
+                value={formData.curp || ''}
+                onChange={handleChange}
+                placeholder="Ingrese su CURP"
+              />
+            ) : (
+              <div style={styles.dataValue}>{profile.curp || <span style={{ opacity: 0.5, fontStyle: 'italic' }}>—</span>}</div>
+            )}
+          </div>
+
+          <div style={styles.dataItem}>
+            <span style={styles.dataLabel}>Teléfono de Contacto</span>
+            {isEditing ? (
+              <input
+                style={profileInputStyle}
+                name="telefono"
+                value={formData.telefono || ''}
+                onChange={handleChange}
+                placeholder="55 1234 5678"
+              />
+            ) : (
+              <div style={styles.dataValue}>{profile.telefono || <span style={{ opacity: 0.5, fontStyle: 'italic' }}>—</span>}</div>
+            )}
+          </div>
+
+          <div style={{ ...styles.dataItem, gridColumn: '1 / -1' }}>
+            <span style={styles.dataLabel}>Dirección Particular</span>
+            {isEditing ? (
+              <textarea
+                style={{ ...profileInputStyle, minHeight: '80px', resize: 'vertical', paddingTop: '10px' }}
+                name="direccion"
+                value={formData.direccion || ''}
+                onChange={handleChange}
+                placeholder="Calle, Número, Colonia, Alcaldía/Municipio, C.P."
+              />
+            ) : (
+              <div style={{ ...styles.dataValue, lineHeight: '1.5' }}>
+                {profile.direccion || <span style={{ opacity: 0.5, fontStyle: 'italic' }}>—</span>}
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
     </div>
@@ -825,7 +968,7 @@ function Evaluacion() {
 
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error')
-      
+
       setMsg('Evaluación enviada, gracias.')
       setSelectedGrupo(null)
       setComentario('')
@@ -897,7 +1040,7 @@ function Evaluacion() {
               <label>Comentario: </label>
               <input value={comentario} onChange={e => setComentario(e.target.value)} style={{ ...styles.input, width: '100%' }} />
             </div>
-            
+
             <div style={{ display: 'flex', gap: '10px' }}>
               <button type="submit" style={styles.button}>Enviar</button>
               <button type="button" onClick={() => setSelectedGrupo(null)} style={{ ...styles.button, background: '#ccc', color: '#333' }}>Cancelar</button>
