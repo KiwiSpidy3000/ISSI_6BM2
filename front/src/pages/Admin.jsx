@@ -152,7 +152,7 @@ export default function Admin() {
 }
 
 const styles = {
-  container: { display: 'flex', minHeight: '100vh', background: 'linear-gradient(135deg, #0f1620 0%, #1a2847 40%, #2d3a6a 100%)', color: '#ffffff', fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', position: 'relative', overflow: 'hidden' },
+  container: { display: 'flex', height: '100vh', background: 'linear-gradient(135deg, #0f1620 0%, #1a2847 40%, #2d3a6a 100%)', color: '#ffffff', fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', position: 'relative', overflow: 'hidden' },
   // Floating Background Shapes
   floatingShapes: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 },
   floatingSvg: { position: 'absolute', stroke: '#4a5a8e', transformStyle: 'preserve-3d' },
@@ -164,7 +164,7 @@ const styles = {
   svg5: { width: '130px', height: '130px', left: '85%', bottom: '-19%', animation: 'float2 23s infinite ease-in-out', opacity: 0.45 },
 
   // Sidebar
-  sidebar: { width: '280px', background: 'linear-gradient(180deg, rgba(30, 43, 79, 0.95) 0%, rgba(42, 54, 88, 0.95) 100%)', backdropFilter: 'blur(20px)', borderRight: '1px solid rgba(106, 122, 174, 0.2)', display: 'flex', flexDirection: 'column', padding: '32px 20px', position: 'relative', zIndex: 10, boxShadow: '4px 0 24px rgba(0, 0, 0, 0.3)' },
+  sidebar: { width: '280px', background: 'linear-gradient(180deg, rgba(30, 43, 79, 0.95) 0%, rgba(42, 54, 88, 0.95) 100%)', backdropFilter: 'blur(20px)', borderRight: '1px solid rgba(106, 122, 174, 0.2)', display: 'flex', flexDirection: 'column', padding: '32px 20px', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', zIndex: 10, boxShadow: '4px 0 24px rgba(0, 0, 0, 0.3)' },
   sidebarHeader: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '40px', position: 'relative' },
   avatarGlow: { position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)', width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(106, 122, 174, 0.4) 0%, transparent 70%)', filter: 'blur(25px)', zIndex: -1 },
   avatar: { width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #5a6a9e 0%, #6a7aae 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', marginBottom: '16px', border: '3px solid rgba(106, 122, 174, 0.3)', boxShadow: '0 8px 32px rgba(106, 122, 174, 0.4)' },
