@@ -470,9 +470,12 @@ app.get('/alumno/profile', requireAuth, async (req, res) => {
            a.boleta,
            (u.nombre || ' ' || u.apellido) AS nombre_completo,
            u.email,
+           u.telefono,
+           u.direccion,
            c.nombre AS carrera,
            c.clave  AS carrera_clave,
-           a.semestre
+           a.semestre,
+           a.curp
     FROM ${DB_SCHEMA}.alumno a
     JOIN ${DB_SCHEMA}.usuario u ON u.id_usuario = a.id_alumno
     JOIN ${DB_SCHEMA}.carrera c ON c.id_carrera = a.id_carrera
@@ -486,6 +489,50 @@ app.get('/alumno/profile', requireAuth, async (req, res) => {
   } catch (e) {
     console.error('DB profile:', e);
     res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
+app.patch('/alumno/profile', requireAuth, async (req, res) => {
+  const userId = req.user.sub;
+  const { curp, direccion, telefono } = req.body;
+
+  try {
+    // 1. Update usuario table (contact info)
+    if (direccion !== undefined || telefono !== undefined) {
+      const fields = [];
+      const values = [];
+      let idx = 1;
+
+      if (direccion !== undefined) {
+        fields.push(`direccion = $${idx++}`);
+        values.push(direccion);
+      }
+      if (telefono !== undefined) {
+        fields.push(`telefono = $${idx++}`);
+        values.push(telefono);
+      }
+
+      if (fields.length > 0) {
+        values.push(userId);
+        await pool.query(
+          `UPDATE ${DB_SCHEMA}.usuario SET ${fields.join(', ')} WHERE id_usuario = $${idx}`,
+          values
+        );
+      }
+    }
+
+    // 2. Update alumno table (CURP)
+    if (curp !== undefined) {
+      await pool.query(
+        `UPDATE ${DB_SCHEMA}.alumno SET curp = $1 WHERE id_alumno = $2`,
+        [curp, userId]
+      );
+    }
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('Update profile error:', e);
+    res.status(500).json({ error: e.message });
   }
 });
 
