@@ -171,7 +171,7 @@ export default function Login() {
         <div style={styles.rightPanel}>
           <div style={styles.formContainer}>
             <div style={styles.header}>
-              <h2 style={styles.title}>{role === 'admin' ? 'AccesoAdmin' : role === 'profesor' ? 'Acceso Profesor' : 'Acceso Alumno'}</h2>
+              <h2 style={styles.title}>{role === 'admin' ? 'Acceso Admin' : role === 'profesor' ? 'Acceso Profesor' : 'Acceso Alumno'}</h2>
               <p style={styles.subtitle}>Sistema de Gestión Académica</p>
             </div>
 
