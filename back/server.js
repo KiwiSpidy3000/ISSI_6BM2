@@ -720,7 +720,7 @@ app.post('/alumno/reins/preinscribir', requireAuth, async (req, res) => {
       throw new Error('No puedes inscribir más de 6 materias en este periodo.');
     }
 
-    // 🔹 REGLA 2: no meter materia ya cursada (aparezca en el kardex)
+    // 🔹 REGLA 2: no meter materia ya cursada (aparezca en el kardex)hola
     const kRes = await pool.query(`
       SELECT 1
       FROM ${DB_SCHEMA}.vw_kardex k

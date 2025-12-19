@@ -10,8 +10,8 @@ Description: Base table for all users (students, professors, admins).
 Columns:
   - id_usuario (PK): Integer, Auto-increment
   - email: String, Unique
-  - pass_hash: String (Bcrypt hash)
-  - nombre: String
+  - ass_hash: String (Bcrypt hash)
+  - nombre: Stringp
   - apellido: String
   - rol: String ('ALUMNO', 'PROFESOR', 'ADMIN')
   - activo: Boolean

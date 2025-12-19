@@ -392,6 +392,7 @@ function Reinscripcion() {
   const [oferta, setOferta] = useState([])
   const [resumen, setResumen] = useState({ total_creditos: 0, creditos_usados: 0 })
   const [msg, setMsg] = useState('')
+  const [horarioData, setHorarioData] = useState([])
 
   useEffect(() => {
     fetch(`${API}/alumno/periodos`, { headers: { Authorization: `Bearer ${t()}` } })
@@ -437,6 +438,11 @@ function Reinscripcion() {
         setOferta(Array.isArray(data) ? data : [])
       })
       .catch(() => setOferta([]))
+
+    fetch(`${API}/alumno/horario?periodo=${periodo}`, hdr)
+      .then(r => r.json())
+      .then(setHorarioData)
+      .catch(() => setHorarioData([]))
   }, [periodo, semestre, turno])
 
   function refresh() {
@@ -462,7 +468,14 @@ function Reinscripcion() {
       .then(r => r.json())
       .then(data => setOferta(Array.isArray(data) ? data : []))
       .catch(() => setOferta([]))
+
+    fetch(`${API}/alumno/horario?periodo=${periodo}`, hdr)
+      .then(r => r.json())
+      .then(setHorarioData)
+      .catch(() => setHorarioData([]))
   }
+
+
 
   async function addGrupo(id_grupo) {
     setMsg('')
@@ -470,6 +483,17 @@ function Reinscripcion() {
       setMsg('No puedes inscribir más de 6 materias en este periodo (máximo 6).')
       return
     }
+
+    // Check for duplicate key (subject already registered)
+    const grupoToAdd = oferta.find(g => g.id_grupo === id_grupo)
+    if (grupoToAdd) {
+      const alreadyRegistered = inscritas.some(i => i.clave === grupoToAdd.clave)
+      if (alreadyRegistered) {
+        setMsg('Esta materia ya está inscrita en otro grupo.')
+        return
+      }
+    }
+
 
     try {
       const hdr = { Authorization: `Bearer ${t()}` }
@@ -541,6 +565,15 @@ function Reinscripcion() {
 
   const materiasPeriodo = inscritas.length
 
+  const dias = [
+    { id: 1, name: 'Lunes' },
+    { id: 2, name: 'Martes' },
+    { id: 3, name: 'Miércoles' },
+    { id: 4, name: 'Jueves' },
+    { id: 5, name: 'Viernes' }
+  ]
+  const fmtTime = (t) => t ? t.slice(0, 5) : ''
+
   return (
     <div>
       <h2 style={styles.h2}>Reinscripción</h2>
@@ -548,12 +581,6 @@ function Reinscripcion() {
         <div><b>Créditos totales:</b> {resumen.total_creditos?.toFixed?.(2) ?? resumen.total_creditos}</div>
         <div><b>Créditos utilizados:</b> {resumen.creditos_usados?.toFixed?.(2) ?? resumen.creditos_usados}</div>
         <div><b>Materias inscritas:</b> {materiasPeriodo} / 6</div>
-
-
-
-
-
-
         <div>
           <b>Semestre:</b>{' '}
           <input value={semestre} onChange={e => setSemestre(e.target.value)} placeholder="1..12" style={styles.input} />
@@ -569,7 +596,40 @@ function Reinscripcion() {
         </div>
         <button style={styles.button} onClick={confirmar}>Confirmar</button>
       </div>
-      {msg && <p style={styles.error}>{msg}</p>}
+
+      {msg && <p style={msg.includes('correctamente') || msg.includes('agregado') ? styles.success : styles.error}>{msg}</p>}
+
+      <h3 style={styles.h3}>Horario Preliminar</h3>
+      <div style={styles.weekGrid}>
+        {dias.map(day => {
+          const clasesDelDia = horarioData
+            .filter(r => r.dia_semana === day.name)
+            .sort((a, b) => (a.hora_ini || '').localeCompare(b.hora_ini || ''))
+
+          return (
+            <div key={day.id} style={styles.dayColumn}>
+              <div style={styles.dayHeader}>{day.name}</div>
+              <div style={styles.dayContent}>
+                {clasesDelDia.length === 0 ? (
+                  <div style={styles.emptySlot}>-</div>
+                ) : (
+                  clasesDelDia.map((clase, idx) => (
+                    <div key={idx} style={styles.classCard}>
+                      <div style={styles.classTime}>
+                        {fmtTime(clase.hora_ini)} - {fmtTime(clase.hora_fin)}
+                      </div>
+                      <div style={styles.className}>
+                        {clase.materia_nombre}<br />
+                        <small style={{ opacity: 0.7, fontSize: '11px' }}>{clase.profesor}</small>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
 
       <h3 style={styles.h3}>Materias Inscritas</h3>
       <div style={styles.tableWrap}>
@@ -825,7 +885,7 @@ function Evaluacion() {
 
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error')
-      
+
       setMsg('Evaluación enviada, gracias.')
       setSelectedGrupo(null)
       setComentario('')
@@ -897,7 +957,7 @@ function Evaluacion() {
               <label>Comentario: </label>
               <input value={comentario} onChange={e => setComentario(e.target.value)} style={{ ...styles.input, width: '100%' }} />
             </div>
-            
+
             <div style={{ display: 'flex', gap: '10px' }}>
               <button type="submit" style={styles.button}>Enviar</button>
               <button type="button" onClick={() => setSelectedGrupo(null)} style={{ ...styles.button, background: '#ccc', color: '#333' }}>Cancelar</button>
@@ -1103,5 +1163,13 @@ const styles = {
   cardTitle: { fontSize: '24px', fontWeight: '700', color: '#ffffff', margin: 0, background: 'linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' },
   inscritosBadge: { background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '4px 12px', borderRadius: '8px', fontSize: '14px', fontWeight: '700' },
   cardBody: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  cardInfo: { display: 'flex', alignItems: 'center', gap: '10px' }
+  cardInfo: { display: 'flex', alignItems: 'center', gap: '10px' },
+  weekGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '20px', marginTop: '20px', overflowX: 'auto', paddingBottom: '20px' },
+  dayColumn: { background: 'rgba(30, 43, 79, 0.4)', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', border: '1px solid rgba(106, 122, 174, 0.2)', minHeight: '400px' },
+  dayHeader: { padding: '16px', background: 'rgba(106, 122, 174, 0.15)', textAlign: 'center', fontWeight: '700', color: '#ffffff', borderBottom: '1px solid rgba(106, 122, 174, 0.2)', fontSize: '15px', textTransform: 'uppercase', letterSpacing: '1px' },
+  dayContent: { padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 },
+  classCard: { background: 'rgba(63, 81, 181, 0.2)', border: '1px solid rgba(129, 140, 248, 0.3)', borderRadius: '12px', padding: '16px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', transition: 'transform 0.2s ease' },
+  classTime: { fontSize: '13px', color: '#818cf8', fontWeight: '700', marginBottom: '6px', display: 'block', background: 'rgba(0, 0, 0, 0.2)', padding: '4px 8px', borderRadius: '6px', width: 'fit-content' },
+  className: { fontSize: '14px', color: '#ffffff', fontWeight: '600', lineHeight: '1.4' },
+  emptySlot: { textAlign: 'center', color: 'rgba(106, 122, 174, 0.4)', fontSize: '24px', marginTop: '40px', fontWeight: '300' }
 }
