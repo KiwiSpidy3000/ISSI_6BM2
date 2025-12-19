@@ -213,7 +213,9 @@ async function checkLoadLimit(userId, materiaId) {
     FROM ${DB_SCHEMA}.inscripcion i
     JOIN ${DB_SCHEMA}.grupo g ON g.id_grupo = i.id_grupo
     JOIN ${DB_SCHEMA}.materia m ON m.id_materia = g.id_materia
-    WHERE i.id_alumno = $1 AND i.estado IN ('INSCRITO', 'PREINSCRITO')
+    WHERE i.id_alumno = $1 
+      AND i.estado IN ('INSCRITO', 'PREINSCRITO')
+      AND g.periodo = '2025-2'
   `, [userId]);
 
   const currentLoad = parseFloat(lRes.rows[0].total);
@@ -600,6 +602,7 @@ app.get('/alumno/periodos', requireAuth, async (req, res) => {
     FROM ${DB_SCHEMA}.inscripcion i
     JOIN ${DB_SCHEMA}.grupo g ON g.id_grupo = i.id_grupo
     WHERE i.id_alumno = $1
+      AND i.estado = 'INSCRITO'
     ORDER BY g.periodo;
   `;
   try {
@@ -640,6 +643,7 @@ app.get('/alumno/horario', requireAuth, async (req, res) => {
     LEFT JOIN ${DB_SCHEMA}.usuario  upu ON upu.id_usuario = p.id_profesor
     WHERE i.id_alumno = $1
       AND ($2::text IS NULL OR g.periodo = $2)
+      AND i.estado = 'INSCRITO'
     ORDER BY h.dia_semana, h.hora_ini, m.clave;
   `;
   try {
@@ -647,6 +651,48 @@ app.get('/alumno/horario', requireAuth, async (req, res) => {
     res.json(rows);
   } catch (e) {
     console.error('DB horario:', e);
+    res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
+// === HORARIO PRELIMINAR (Reinscripcion) ===
+app.get('/alumno/reins/horario_preliminar', requireAuth, async (req, res) => {
+  const userId = req.user.sub;
+  const { periodo } = req.query;
+  // Similar to Horario but includes PREINSCRITO
+  const q = `
+    SELECT 
+           CASE 
+             WHEN h.dia_semana = 1 THEN 'Lunes'
+             WHEN h.dia_semana = 2 THEN 'Martes'
+             WHEN h.dia_semana = 3 THEN 'Miércoles'
+             WHEN h.dia_semana = 4 THEN 'Jueves'
+             WHEN h.dia_semana = 5 THEN 'Viernes'
+             WHEN h.dia_semana = 6 THEN 'Sábado'
+             ELSE 'Domingo'
+           END AS dia_semana,
+           h.hora_ini, h.hora_fin,
+           g.id_grupo,
+           g.nombreG AS "nombreG", -- Fixed case matching
+           m.clave AS materia_clave,
+           m.nombre AS materia_nombre,
+           (upu.nombre || ' ' || upu.apellido) AS profesor
+    FROM ${DB_SCHEMA}.inscripcion i
+    JOIN ${DB_SCHEMA}.grupo g       ON g.id_grupo  = i.id_grupo
+    JOIN ${DB_SCHEMA}.horario h     ON h.id_grupo  = g.id_grupo
+    JOIN ${DB_SCHEMA}.materia m     ON m.id_materia= g.id_materia
+    LEFT JOIN ${DB_SCHEMA}.profesor p   ON p.id_profesor = g.id_profesor
+    LEFT JOIN ${DB_SCHEMA}.usuario  upu ON upu.id_usuario = p.id_profesor
+    WHERE i.id_alumno = $1
+      AND g.periodo = $2
+      AND i.estado IN ('INSCRITO', 'PREINSCRITO')
+    ORDER BY h.dia_semana, h.hora_ini, m.clave;
+  `;
+  try {
+    const { rows } = await pool.query(q, [userId, periodo]);
+    res.json(rows);
+  } catch (e) {
+    console.error('DB horario prelim:', e);
     res.status(500).json({ error: String(e.message || e) });
   }
 });
@@ -666,6 +712,7 @@ app.get('/alumno/calificaciones', requireAuth, async (req, res) => {
     LEFT JOIN ${DB_SCHEMA}.calificacion c ON c.id_alumno = i.id_alumno AND c.id_grupo = g.id_grupo
     WHERE i.id_alumno = $1
       AND ($2::text IS NULL OR g.periodo = $2)
+      AND i.estado = 'INSCRITO'
     ORDER BY m.clave;
   `;
   try {
@@ -701,21 +748,30 @@ app.get('/alumno/reins/resumen', requireAuth, async (req, res) => {
 });
 
 // materias inscritas del alumno (periodo)
+// materias inscritas del alumno (periodo)
 app.get('/alumno/reins/inscritas', requireAuth, async (req, res) => {
-  const userId = req.user.sub; const { periodo = '2025-2' } = req.query;
-  const q = `
-    SELECT i.id_grupo, g.nombreG AS "nombreG", i.estado, m.clave, m.nombre, m.creditos,
-           (u.nombre||' '||u.apellido) AS profesor
-    FROM ${DB_SCHEMA}.inscripcion i
-    JOIN ${DB_SCHEMA}.grupo g ON g.id_grupo=i.id_grupo
-    JOIN ${DB_SCHEMA}.materia m ON m.id_materia=g.id_materia
-    LEFT JOIN ${DB_SCHEMA}.profesor p ON p.id_profesor=g.id_profesor
-    LEFT JOIN ${DB_SCHEMA}.usuario u ON u.id_usuario=p.id_profesor
-    WHERE i.id_alumno=$1 AND g.periodo=$2 AND i.estado IN ('PREINSCRITO','INSCRITO')
-    ORDER BY m.clave;
-  `;
-  const { rows } = await pool.query(q, [userId, periodo]);
-  res.json(rows);
+  try {
+    const userId = req.user.sub;
+    const { periodo = '2025-2', estado } = req.query;
+    const q = `
+      SELECT i.id_grupo, g.nombreG AS "nombreG", i.estado, m.clave, m.nombre, m.creditos,
+             (u.nombre||' '||u.apellido) AS profesor
+      FROM ${DB_SCHEMA}.inscripcion i
+      JOIN ${DB_SCHEMA}.grupo g ON g.id_grupo=i.id_grupo
+      JOIN ${DB_SCHEMA}.materia m ON m.id_materia=g.id_materia
+      LEFT JOIN ${DB_SCHEMA}.profesor p ON p.id_profesor=g.id_profesor
+      LEFT JOIN ${DB_SCHEMA}.usuario u ON u.id_usuario=p.id_profesor
+      WHERE i.id_alumno=$1 AND g.periodo=$2 
+        AND ($3::text IS NULL OR i.estado::text = $3)
+        AND i.estado IN ('PREINSCRITO','INSCRITO')
+      ORDER BY m.clave;
+    `;
+    const { rows } = await pool.query(q, [userId, periodo, estado || null]);
+    res.json(rows);
+  } catch (e) {
+    console.error('Error in /alumno/reins/inscritas:', e);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // oferta filtrable (periodo + opcional semestre, turno)
@@ -879,11 +935,10 @@ app.delete('/alumno/inscripcion/baja/:id_grupo', requireAuth, async (req, res) =
     `, [userId]);
     const currentLoad = parseFloat(lRes.rows[0].total);
 
-    //IMPORTANTE, CUANDO SEA LA PRESENTACION FINAL ACTIVAR DE VUELTA LA REGLA DE NEGOCIO DE ABAJO
-
-    //if (currentLoad - dropCredits < minCreds) {
-    //  throw new Error(`No puedes dar de baja: quedarías con menos de ${minCreds} créditos.`);
-    // }
+    // Regla de Negocio: Carga Mínima
+    if (currentLoad - dropCredits < minCreds) {
+      throw new Error(`No puedes dar de baja: quedarías con menos de ${minCreds} créditos (Mínimo requerido).`);
+    }
 
     // 3. Ejecutar baja
     const result = await pool.query(`

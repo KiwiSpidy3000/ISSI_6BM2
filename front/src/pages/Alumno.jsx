@@ -622,7 +622,8 @@ function Reinscripcion() {
       })
       .catch(() => setOferta([]))
 
-    fetch(`${API}/alumno/horario?periodo=${periodo}`, hdr)
+    // We want PRELIMINARY schedule for preview (shows Preinscrito + Inscrito)
+    fetch(`${API}/alumno/reins/horario_preliminar?periodo=${periodo}`, hdr)
       .then(r => r.json())
       .then(setHorarioData)
       .catch(() => setHorarioData([]))
@@ -658,7 +659,7 @@ function Reinscripcion() {
       })
       .catch(() => setOferta([]))
 
-    fetch(`${API}/alumno/horario?periodo=${periodo}`, hdr)
+    fetch(`${API}/alumno/reins/horario_preliminar?periodo=${periodo}`, hdr)
       .then(r => r.json())
       .then(data => setHorarioData(prev => JSON.stringify(prev) !== JSON.stringify(data) ? (data || []) : prev))
       .catch(() => setHorarioData([]))
@@ -949,7 +950,7 @@ function Bajas() {
     setErr('')
     setMsg('')
 
-    fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr)
+    fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}&estado=INSCRITO`, hdr)
       .then(r => r.json())
       .then(setInscritas)
       .catch(() => setErr('Error cargando materias inscritas'))

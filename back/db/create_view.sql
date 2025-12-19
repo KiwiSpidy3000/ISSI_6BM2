@@ -15,4 +15,5 @@ FROM escom_aliz.inscripcion i
 JOIN escom_aliz.grupo g ON i.id_grupo = g.id_grupo
 JOIN escom_aliz.materia m ON g.id_materia = m.id_materia
 LEFT JOIN escom_aliz.calificacion c ON i.id_alumno = c.id_alumno AND i.id_grupo = c.id_grupo
-WHERE i.estado IN ('INSCRITO');
+WHERE i.estado IN ('INSCRITO') 
+  AND g.periodo != '2025-2';
