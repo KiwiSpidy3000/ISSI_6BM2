@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react'
+﻿﻿﻿﻿import { useEffect, useRef, useState } from 'react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts'
@@ -137,6 +137,12 @@ export default function Profesor() {
           <button style={{ ...styles.pill, ...(view === 'calificaciones' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('calificaciones')}>
             Calificaciones
           </button>
+          <button style={{ ...styles.pill, ...(view === 'ets' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('ets')}>
+            Exámenes ETS
+          </button>
+          <button style={{ ...styles.pill, ...(view === 'evaluaciones' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('evaluaciones')}>
+            Evaluaciones
+          </button>
         </nav>
 
         <div style={styles.sidebarBottom}>
@@ -155,6 +161,8 @@ export default function Profesor() {
         {view === 'horario' && <Horario profile={profile} initialPeriod={navContext?.periodo} />}
         {view === 'calificaciones' && <Calificaciones context={navContext} />}
         {view === 'reportes' && <Reportes />}
+        {view === 'ets' && <ProfesorETS />}
+        {view === 'evaluaciones' && <EvaluacionesDocentes />}
         {view === 'chat' && (
           <ChatComponent
             userIdentifier={profile?.num_empleado || profile?.rfc}
@@ -163,6 +171,158 @@ export default function Profesor() {
           />
         )}
       </main>
+    </div>
+  )
+}
+
+function ProfesorETS() {
+  const [reqs, setReqs] = useState([])
+  const [califs, setCalifs] = useState({})
+
+  useEffect(() => { load() }, [])
+
+  const load = () => {
+    const t = localStorage.getItem('access_token')
+    fetch(`${API}/profesor/solicitudes-ets`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json())
+      .then(d => Array.isArray(d) ? setReqs(d) : setReqs([]))
+      .catch(console.error)
+  }
+
+  const validar = (id) => {
+    const t = localStorage.getItem('access_token')
+    fetch(`${API}/profesor/solicitudes-ets/${id}/validar`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${t}` }
+    }).then(() => load())
+  }
+
+  const calificar = (id) => {
+    const val = califs[id]
+    if (!val) return
+    const t = localStorage.getItem('access_token')
+    fetch(`${API}/profesor/solicitudes-ets/${id}/calificar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+      body: JSON.stringify({ calificacion: val })
+    }).then(() => load())
+  }
+
+  return (
+    <div>
+      <h2 style={styles.h2}>Gestión de Exámenes a Título</h2>
+      <div style={styles.tableWrap}>
+        <table style={styles.table}>
+          <thead>
+            <tr style={styles.tableHeaderRow}>
+              <th style={styles.th}>Alumno</th>
+              <th style={styles.th}>Materia</th>
+              <th style={styles.th}>Estado</th>
+              <th style={styles.th}>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reqs.map(r => (
+              <tr key={r.id} style={styles.tableRow}>
+                <td style={styles.td}>{r.alumno_nombre}</td>
+                <td style={styles.td}>{r.materia}</td>
+                <td style={styles.td}>{r.estado}</td>
+                <td style={styles.td}>
+                  {r.estado === 'PENDIENTE_PROFESOR' && (
+                    <button style={styles.button} onClick={() => validar(r.id)}>Validar Inscripción</button>
+                  )}
+                  {r.estado === 'INSCRITO' && (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="number"
+                        style={{ ...styles.inputCalif, width: '60px' }}
+                        placeholder="0-10"
+                        value={califs[r.id] || ''}
+                        onChange={e => setCalifs({ ...califs, [r.id]: e.target.value })}
+                      />
+                      <button style={styles.button} onClick={() => calificar(r.id)}>Calificar</button>
+                    </div>
+                  )}
+                  {r.estado === 'CALIFICADO' && <span>Calificación: {r.calificacion}</span>}
+                </td>
+              </tr>
+            ))}
+            {reqs.length === 0 && <tr><td colSpan={4} style={{ ...styles.td, textAlign: 'center' }}>No hay solicitudes pendientes.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function EvaluacionesDocentes() {
+  const [evals, setEvals] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const t = localStorage.getItem('access_token')
+    fetch(`${API}/profesor/evaluaciones`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json())
+      .then(d => Array.isArray(d) ? setEvals(d) : setEvals([]))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  const averages = [0, 0, 0, 0, 0]
+  if (evals.length > 0) {
+    evals.forEach(e => {
+      averages[0] += e.i1 || 0
+      averages[1] += e.i2 || 0
+      averages[2] += e.i3 || 0
+      averages[3] += e.i4 || 0
+      averages[4] += e.i5 || 0
+    })
+    for (let i = 0; i < 5; i++) averages[i] = (averages[i] / evals.length).toFixed(1)
+  }
+
+  const questions = [
+    'Dominio del tema',
+    'Claridad y precisión',
+    'Fomento a la participación',
+    'Respeto y accesibilidad',
+    'Métodos de evaluación'
+  ]
+
+  if (loading) return <div style={styles.loading}>Cargando evaluaciones...</div>
+
+  return (
+    <div>
+      <h2 style={styles.h2}>Resultados de Evaluación Docente</h2>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+        {questions.map((q, i) => (
+          <div key={i} style={{...styles.card, textAlign: 'center'}}>
+            <div style={{ fontSize: '13px', color: '#a8b2d1', marginBottom: '8px' }}>{q}</div>
+            <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#fff' }}>
+              {evals.length > 0 ? averages[i] : '-'} 
+              <span style={{ fontSize: '14px', color: '#6a7aae', marginLeft: '4px' }}>/ 5</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h3 style={styles.h3}>Comentarios de Alumnos</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {evals.filter(e => e.comentario).map((e, i) => (
+          <div key={i} style={styles.card}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+              <span style={{ fontWeight: 'bold', color: '#818cf8' }}>{e.materia} <span style={{color: '#a8b2d1', fontWeight: 'normal'}}>({e.nombreG})</span></span>
+              <span style={{ fontSize: '12px', color: '#6a7aae' }}>{e.periodo}</span>
+            </div>
+            <p style={{ color: '#d1d5e8', fontStyle: 'italic', lineHeight: '1.5' }}>"{e.comentario}"</p>
+          </div>
+        ))}
+        {evals.filter(e => e.comentario).length === 0 && (
+          <div style={{...styles.card, textAlign: 'center', color: '#aaa'}}>
+            No hay comentarios registrados aún.
+          </div>
+        )}
+      </div>
     </div>
   )
 }

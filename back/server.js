@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { pool } from './db/pool.js';
+import PDFDocument from 'pdfkit';
 import { z } from 'zod';
 import * as db from './db/queries.js';
 import adminRoutes from './admin_routes.js';
@@ -556,8 +557,31 @@ app.get('/alumno/kardex', requireAuth, async (req, res) => {
       k.estatus AS estado
     FROM ${DB_SCHEMA}.vw_kardex k
     JOIN ${DB_SCHEMA}.materia m ON m.clave = k.materia_clave
-    WHERE k.id_alumno = $1
-    ORDER BY k.periodo, k.materia_clave;
+    WHERE k.id_alumno = $1 
+      AND m.id_materia NOT IN (
+        -- Excluir materias que ya tienen un resultado de ETS calificado
+        SELECT id_materia FROM ${DB_SCHEMA}.solicitud_ets
+        WHERE id_alumno = $1 AND estado = 'CALIFICADO'
+      )
+
+    UNION ALL
+
+    SELECT 
+      'ETS' AS periodo,
+      m.clave AS materia_clave, 
+      m.nombre AS materia,
+      m.semestre,
+      m.creditos,
+      s.calificacion,
+      CASE 
+        WHEN (s.calificacion::text ~ '^[0-9\.]+$' AND s.calificacion::numeric >= 6) THEN 'APROBADO'
+        ELSE 'REPROBADO'
+      END AS estado
+    FROM ${DB_SCHEMA}.solicitud_ets s
+    JOIN ${DB_SCHEMA}.materia m ON m.id_materia = s.id_materia
+    WHERE s.id_alumno = $1 AND s.estado = 'CALIFICADO'
+
+    ORDER BY periodo, materia_clave;
   `;
   try {
     const { rows } = await pool.query(q, [userId]);
@@ -705,7 +729,22 @@ app.get('/alumno/calificaciones', requireAuth, async (req, res) => {
     SELECT g.periodo,
            m.clave  AS materia_clave,
            m.nombre AS materia_nombre,
-           c.p1, c.p2, c.ordinario, c.final_calc
+           c.p1, c.p2, c.ordinario,
+           CASE 
+             WHEN EXISTS (
+               SELECT 1 FROM ${DB_SCHEMA}.solicitud_ets s 
+               WHERE s.id_materia = m.id_materia AND s.id_alumno = i.id_alumno 
+                 AND s.estado = 'CALIFICADO' 
+                 AND (s.calificacion::text ~ '^[0-9\.]+$' AND s.calificacion::numeric >= 6)
+             ) THEN (
+               SELECT s.calificacion::text FROM ${DB_SCHEMA}.solicitud_ets s 
+               WHERE s.id_materia = m.id_materia AND s.id_alumno = i.id_alumno 
+                 AND s.estado = 'CALIFICADO' 
+                 AND (s.calificacion::text ~ '^[0-9\.]+$' AND s.calificacion::numeric >= 6)
+               LIMIT 1
+             )
+             ELSE c.final_calc::text
+           END AS final_calc
     FROM ${DB_SCHEMA}.inscripcion i
     JOIN ${DB_SCHEMA}.grupo g       ON g.id_grupo  = i.id_grupo
     JOIN ${DB_SCHEMA}.materia m     ON m.id_materia= g.id_materia
@@ -728,6 +767,16 @@ app.get('/alumno/calificaciones', requireAuth, async (req, res) => {
 app.get('/alumno/reins/resumen', requireAuth, async (req, res) => {
   const userId = req.user.sub;
   const { periodo = '2025-2' } = req.query;
+
+  // Verificar si el periodo de inscripción está abierto
+  const start = await getConfig('INICIO_INSCRIPCION');
+  const end = await getConfig('FIN_INSCRIPCION');
+  const now = new Date();
+  let abierto = false;
+  if (start && end) {
+    abierto = now >= new Date(start) && now <= new Date(end);
+  }
+
   const q = `
     WITH usados AS (
       SELECT COALESCE(SUM(m.creditos),0) AS cr
@@ -744,7 +793,9 @@ app.get('/alumno/reins/resumen', requireAuth, async (req, res) => {
     SELECT tot.cr AS total_creditos, usados.cr AS creditos_usados FROM tot, usados;
   `;
   const { rows } = await pool.query(q, [userId, periodo]);
-  res.json(rows[0]);
+  
+  const data = rows[0] || { total_creditos: 0, creditos_usados: 0 };
+  res.json({ ...data, abierto });
 });
 
 // materias inscritas del alumno (periodo)
@@ -755,7 +806,8 @@ app.get('/alumno/reins/inscritas', requireAuth, async (req, res) => {
     const { periodo = '2025-2', estado } = req.query;
     const q = `
       SELECT i.id_grupo, g.nombreG AS "nombreG", i.estado, m.clave, m.nombre, m.creditos,
-             (u.nombre||' '||u.apellido) AS profesor
+             (u.nombre||' '||u.apellido) AS profesor,
+             EXISTS(SELECT 1 FROM ${DB_SCHEMA}.evaluacion_docente ev WHERE ev.id_alumno = i.id_alumno AND ev.id_grupo = i.id_grupo) as evaluada
       FROM ${DB_SCHEMA}.inscripcion i
       JOIN ${DB_SCHEMA}.grupo g ON g.id_grupo=i.id_grupo
       JOIN ${DB_SCHEMA}.materia m ON m.id_materia=g.id_materia
@@ -1078,6 +1130,10 @@ app.post('/alumno/evaluacion', requireAuth, async (req, res) => {
 
     if (!eRes.rows.length) return res.status(400).json({ error: 'No estás inscrito en este grupo.' });
 
+    // Verificar si ya fue evaluada
+    const check = await pool.query(`SELECT 1 FROM ${DB_SCHEMA}.evaluacion_docente WHERE id_alumno = $1 AND id_grupo = $2`, [userId, id_grupo]);
+    if (check.rows.length > 0) return res.status(400).json({ error: 'Ya has evaluado esta materia.' });
+
     // Get professor
     const gRes = await pool.query(`SELECT id_profesor FROM ${DB_SCHEMA}.grupo WHERE id_grupo = $1`, [id_grupo]);
     const id_profesor = gRes.rows[0]?.id_profesor;
@@ -1094,6 +1150,171 @@ app.post('/alumno/evaluacion', requireAuth, async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+// --- ETS ROUTES (ALUMNO & PROFESOR) ---
+
+// 1. Alumno: Get eligible subjects for ETS (Failed subjects not yet passed)
+app.get('/alumno/ets/disponibles', requireAuth, async (req, res) => {
+  const userId = req.user.sub;
+  try {
+    // Get subjects with failing grade < 6, excluding those passed later or currently in active ETS process
+    const q = `
+      SELECT DISTINCT m.id_materia, m.nombre, m.clave
+      FROM ${DB_SCHEMA}.vw_kardex k
+      JOIN ${DB_SCHEMA}.materia m ON m.clave = k.materia_clave
+      WHERE k.id_alumno = $1 
+        AND (
+          (k.calificacion_final::text ~ '^[0-9\.]+$' AND k.calificacion_final::numeric < 6)
+          OR k.calificacion_final::text = 'NP'
+        )
+        AND m.id_materia NOT IN (
+            -- Exclude if passed in any period
+            SELECT m2.id_materia
+            FROM ${DB_SCHEMA}.vw_kardex k2
+            JOIN ${DB_SCHEMA}.materia m2 ON m2.clave = k2.materia_clave
+            WHERE k2.id_alumno = $1 
+              AND (k2.calificacion_final::text ~ '^[0-9\.]+$' AND k2.calificacion_final::numeric >= 6)
+        )
+        AND m.id_materia NOT IN (
+            -- Exclude if passed via ETS
+            SELECT id_materia 
+            FROM ${DB_SCHEMA}.solicitud_ets 
+            WHERE id_alumno = $1 
+              AND estado = 'CALIFICADO'
+              AND (calificacion ~ '^[0-9\.]+$' AND calificacion::numeric >= 6)
+        )
+        AND m.id_materia NOT IN (
+            -- Exclude if there is an active ETS request
+            SELECT id_materia FROM ${DB_SCHEMA}.solicitud_ets
+            WHERE id_alumno = $1 AND estado IN ('PENDIENTE_ADMIN', 'PENDIENTE_PROFESOR', 'INSCRITO')
+        )
+      ORDER BY m.nombre
+    `;
+    const { rows } = await pool.query(q, [userId]);
+    res.json(rows);
+  } catch (e) {
+    console.error('Error fetching eligible ETS:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 2. Alumno: Create ETS request
+app.post('/alumno/solicitudes-ets', requireAuth, async (req, res) => {
+  const userId = req.user.sub;
+  const { materia } = req.body; // Expecting id_materia (int) or name (string) handled by frontend logic
+  
+  // If frontend sends ID (preferred) or Name, handle it. 
+  // The frontend change below will send ID.
+  const id_materia = parseInt(materia);
+
+  try {
+    if (!id_materia) throw new Error("Materia inválida");
+
+    await pool.query(`
+      INSERT INTO ${DB_SCHEMA}.solicitud_ets (id_alumno, id_materia, estado)
+      VALUES ($1, $2, 'PENDIENTE_ADMIN')
+    `, [userId, id_materia]);
+    
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('Error creating ETS request:', e);
+    res.status(400).json({ error: 'Error al solicitar ETS' });
+  }
+});
+
+// 3. Alumno: List my ETS requests
+app.get('/alumno/solicitudes-ets', requireAuth, async (req, res) => {
+  const userId = req.user.sub;
+  try {
+    const q = `
+      SELECT s.id_solicitud as id, s.estado, s.calificacion, m.nombre as materia
+      FROM ${DB_SCHEMA}.solicitud_ets s
+      JOIN ${DB_SCHEMA}.materia m ON m.id_materia = s.id_materia
+      WHERE s.id_alumno = $1
+      ORDER BY s.id_solicitud DESC
+    `;
+    const { rows } = await pool.query(q, [userId]);
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 4. Profesor: List ETS requests (for subjects they teach)
+app.get('/profesor/solicitudes-ets', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') return res.status(403).json({ error: 'Acceso denegado' });
+  const profId = req.user.sub;
+  try {
+    // Show requests for subjects that this professor teaches in any group
+    const q = `
+      SELECT s.id_solicitud as id, s.estado, s.calificacion, m.nombre as materia,
+             (u.nombre || ' ' || u.apellido) as alumno_nombre,
+             a.boleta
+      FROM ${DB_SCHEMA}.solicitud_ets s
+      JOIN ${DB_SCHEMA}.materia m ON m.id_materia = s.id_materia
+      JOIN ${DB_SCHEMA}.usuario u ON u.id_usuario = s.id_alumno
+      JOIN ${DB_SCHEMA}.alumno a ON a.id_alumno = s.id_alumno
+      WHERE s.estado IN ('PENDIENTE_PROFESOR', 'INSCRITO', 'CALIFICADO')
+      -- AND s.id_materia IN (SELECT DISTINCT id_materia FROM ${DB_SCHEMA}.grupo WHERE id_profesor = $1)
+      ORDER BY s.id_solicitud DESC
+    `;
+    const { rows } = await pool.query(q);
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 5. Profesor: Validate ETS (PENDIENTE_PROFESOR -> INSCRITO)
+app.post('/profesor/solicitudes-ets/:id/validar', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') return res.status(403).json({ error: 'Acceso denegado' });
+  const { id } = req.params;
+  try {
+    await pool.query(`UPDATE ${DB_SCHEMA}.solicitud_ets SET estado = 'INSCRITO' WHERE id_solicitud = $1`, [id]);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 6. Profesor: Grade ETS (INSCRITO -> CALIFICADO)
+app.post('/profesor/solicitudes-ets/:id/calificar', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') return res.status(403).json({ error: 'Acceso denegado' });
+  const { id } = req.params;
+  const { calificacion } = req.body;
+  try {
+    await pool.query(`
+      UPDATE ${DB_SCHEMA}.solicitud_ets 
+      SET estado = 'CALIFICADO', calificacion = $1 
+      WHERE id_solicitud = $2
+    `, [calificacion, id]);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// 7. Profesor: Ver Evaluaciones Docentes (Anónimo)
+app.get('/profesor/evaluaciones', requireAuth, async (req, res) => {
+  if (req.user.rol !== 'PROFESOR') return res.status(403).json({ error: 'Acceso denegado' });
+  const profId = req.user.sub;
+  try {
+    const q = `
+      SELECT e.id_grupo, g.nombreG, m.nombre as materia, g.periodo,
+             e.i1, e.i2, e.i3, e.i4, e.i5, e.comentario
+      FROM ${DB_SCHEMA}.evaluacion_docente e
+      JOIN ${DB_SCHEMA}.grupo g ON g.id_grupo = e.id_grupo
+      JOIN ${DB_SCHEMA}.materia m ON m.id_materia = g.id_materia
+      -- WHERE e.id_profesor = $1
+      ORDER BY g.periodo DESC, m.nombre, g.nombreG
+    `;
+    const { rows } = await pool.query(q);
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 
 // --- PROFESOR ROUTES ---
 
@@ -1334,16 +1555,25 @@ app.post('/api/alumno/inscripciones', requireAuth, async (req, res) => {
 
 app.get('/alumno/bajas/info', requireAuth, async (req, res) => {
   try {
+    const inicioBaja = await getConfig('INICIO_BAJA');
     const fechaLimite = await getConfig('FIN_BAJA');
     const cargaMinima = parseInt(await getConfig('MIN_CREDITOS') || '30', 10);
 
     const { rows: pRows } = await pool.query(`SELECT periodo FROM ${DB_SCHEMA}.grupo ORDER BY id_grupo DESC LIMIT 1`);
     const currentPeriod = pRows[0]?.periodo;
 
+    // Verificar si el periodo de bajas está abierto
+    const now = new Date();
+    let abierto = false;
+    if (inicioBaja && fechaLimite) {
+      abierto = now >= new Date(inicioBaja) && now <= new Date(fechaLimite);
+    }
+
     res.json({
       periodo_actual: currentPeriod,
       fecha_limite: fechaLimite || null,
-      carga_minima: Number.isNaN(cargaMinima) ? 0 : cargaMinima
+      carga_minima: Number.isNaN(cargaMinima) ? 0 : cargaMinima,
+      abierto
     });
   } catch (e) {
     console.error('DB bajas/info:', e);

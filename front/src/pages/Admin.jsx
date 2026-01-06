@@ -109,6 +109,15 @@ export default function Admin() {
           >
             Solicitudes Pass
           </button>
+          <button
+            style={{
+              ...styles.pill,
+              ...(view === "ets" ? styles.pillActive : {})
+            }}
+            onClick={() => setView("ets")}
+          >
+            Solicitudes ETS
+          </button>
         </nav>
 
         <div style={styles.sidebarBottom}>
@@ -138,6 +147,8 @@ export default function Admin() {
         {view === "reinscripcion" && <AdminReinscripcion />}
 
         {view === "solicitudes" && <AdminSolicitudes />}
+
+        {view === "ets" && <AdminETS />}
 
         {view === "chat" && (
           <ChatComponent
@@ -1432,7 +1443,89 @@ function AdminSolicitudes() {
   )
 }
 
+function AdminETS() {
+  const [reqs, setReqs] = useState([])
+  const [filter, setFilter] = useState('TODOS')
+
+  useEffect(() => { load() }, [])
+
+  const load = () => {
+    const t = localStorage.getItem('access_token')
+    fetch(`${API}/admin/solicitudes-ets`, { headers: { Authorization: `Bearer ${t}` }, cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        if (d.error) {
+          console.error(d.error)
+          alert('Error al cargar solicitudes: ' + d.error)
+        }
+        Array.isArray(d) ? setReqs(d) : setReqs([])
+      })
+      .catch(console.error)
+  }
+
+  const aprobar = (id) => {
+    const t = localStorage.getItem('access_token')
+    fetch(`${API}/admin/solicitudes-ets/${id}/aprobar`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${t}` }
+    }).then(() => load())
+  }
+
+  const filtered = reqs.filter(r => filter === 'TODOS' || r.estado === filter)
+
+  return (
+    <>
+      <h2 style={styles.h2}>Gestión de Solicitudes ETS</h2>
+      <div style={styles.filtersBar}>
+        <select style={styles.select} value={filter} onChange={e => setFilter(e.target.value)}>
+          <option value="TODOS">Todos los estados</option>
+          <option value="PENDIENTE_ADMIN">Pendiente Admin</option>
+          <option value="PENDIENTE_PROFESOR">Pendiente Profesor</option>
+          <option value="INSCRITO">Inscrito</option>
+          <option value="CALIFICADO">Calificado</option>
+        </select>
+        <button style={styles.buttonGhost} onClick={load}>🔄 Actualizar</button>
+      </div>
+      <div style={styles.tableWrap}>
+        <table style={styles.table}>
+          <thead>
+            <tr style={styles.tableHeaderRow}>
+              <th style={styles.th}>Alumno</th>
+              <th style={styles.th}>Materia</th>
+              <th style={styles.th}>Estado</th>
+              <th style={styles.th}>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(r => (
+              <tr key={r.id} style={styles.tableRow}>
+                <td style={styles.td}>{r.alumno_nombre} ({r.boleta})</td>
+                <td style={styles.td}>{r.materia}</td>
+                <td style={styles.td}>
+                  <span style={{
+                    ...styles.badge,
+                    background: r.estado === 'PENDIENTE_ADMIN' ? 'rgba(251, 191, 36, 0.2)' :
+                      r.estado === 'CALIFICADO' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(96, 165, 250, 0.2)',
+                    color: r.estado === 'PENDIENTE_ADMIN' ? '#fbbf24' :
+                      r.estado === 'CALIFICADO' ? '#4ade80' : '#60a5fa'
+                  }}>
+                    {r.estado}
+                  </span>
+                  {r.calificacion && <div style={{ fontSize: '12px', marginTop: '4px', color: '#ccc' }}>Calif: {r.calificacion}</div>}
+                </td>
+                <td style={styles.td}>
+                  {r.estado === 'PENDIENTE_ADMIN' && (
+                    <button style={styles.buttonSmall} onClick={() => aprobar(r.id)}>Aprobar Inscripción</button>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {filtered.length === 0 && <tr><td colSpan={4} style={{ ...styles.td, textAlign: 'center' }}>No hay solicitudes.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )
+}
+
 /* ------------------ ESTILOS COMPARTIDOS ------------------ */
-
-
-

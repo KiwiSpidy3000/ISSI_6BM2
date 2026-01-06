@@ -71,6 +71,7 @@ export default function Alumno() {
           <button style={{ ...styles.pill, ...(view === 'bajas' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('bajas')}>Bajas</button>
           <button style={{ ...styles.pill, ...(view === 'evaluacion' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('evaluacion')}>Evaluación Docente</button>
           <button style={{ ...styles.pill, ...(view === 'grupos' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('grupos')}>Oferta</button>
+          <button style={{ ...styles.pill, ...(view === 'ets' ? styles.pillActive : {}) }} className="pill-hover" onClick={() => setView('ets')}>Solicitud ETS</button>
         </nav>
 
         <div style={styles.sidebarBottom}>
@@ -100,6 +101,7 @@ export default function Alumno() {
         {view === 'bajas' && <Bajas />}
         {view === 'evaluacion' && <Evaluacion />}
         {view === 'grupos' && <Grupos />}
+        {view === 'ets' && <SolicitudETS />}
       </main>
     </div>
   )
@@ -332,7 +334,7 @@ function Kardex() {
                           color: aprobado ? '#4ade80' : '#f87171',
                           fontSize: '16px'
                         }}>
-                          {isNaN(calif) ? '-' : (Number.isInteger(calif) ? calif : calif.toFixed(1))}
+                          {isNaN(calif) ? '-' : Math.round(calif)}
                         </span>
                       </div>
                     )
@@ -573,7 +575,7 @@ function Reinscripcion() {
   const [turno, setTurno] = useState('')
   const [inscritas, setInscritas] = useState([])
   const [oferta, setOferta] = useState([])
-  const [resumen, setResumen] = useState({ total_creditos: 0, creditos_usados: 0 })
+  const [resumen, setResumen] = useState({ total_creditos: 0, creditos_usados: 0, abierto: null })
   const [msg, setMsg] = useState('')
   const [horarioData, setHorarioData] = useState([])
 
@@ -597,8 +599,8 @@ function Reinscripcion() {
         if (!r.ok) throw new Error()
         return r.json()
       })
-      .then(data => setResumen(data || { total_creditos: 0, creditos_usados: 0 }))
-      .catch(() => setResumen({ total_creditos: 0, creditos_usados: 0 }))
+      .then(data => setResumen(data || { total_creditos: 0, creditos_usados: 0, abierto: false }))
+      .catch(() => setResumen({ total_creditos: 0, creditos_usados: 0, abierto: false }))
 
     fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr)
       .then(async r => {
@@ -640,8 +642,8 @@ function Reinscripcion() {
 
     fetch(`${API}/alumno/reins/resumen?periodo=${periodo}`, hdr)
       .then(r => r.json())
-      .then(data => setResumen(data || { total_creditos: 0, creditos_usados: 0 }))
-      .catch(() => setResumen({ total_creditos: 0, creditos_usados: 0 }))
+      .then(data => setResumen(data || { total_creditos: 0, creditos_usados: 0, abierto: false }))
+      .catch(() => setResumen({ total_creditos: 0, creditos_usados: 0, abierto: false }))
 
     fetch(`${API}/alumno/reins/inscritas?periodo=${periodo}`, hdr)
       .then(r => r.json())
@@ -783,6 +785,25 @@ function Reinscripcion() {
     { id: 5, name: 'Viernes' }
   ]
   const fmtTime = (t) => t ? t.slice(0, 5) : ''
+
+  if (resumen.abierto === null) return <div style={styles.loading}>Verificando periodo de inscripción...</div>
+
+  if (resumen.abierto === false) {
+    return (
+      <div>
+        <h2 style={styles.h2}>Reinscripción</h2>
+        <div style={{...styles.card, textAlign: 'center', padding: '40px', border: '1px solid rgba(248, 113, 113, 0.3)', background: 'rgba(248, 113, 113, 0.1)'}}>
+          <h3 style={{marginTop: 0, color: '#f87171', fontSize: '24px'}}>Periodo Cerrado</h3>
+          <p style={{color: '#ffb3b3', fontSize: '16px'}}>
+            Aún no es periodo de modificación de horario y materias.
+          </p>
+          <p style={{color: '#a8b2d1', fontSize: '14px', marginTop: '10px'}}>
+            Por favor consulta el calendario académico o espera a las fechas asignadas por la administración.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -928,6 +949,7 @@ function Bajas() {
   const [cargaMinima, setCargaMinima] = useState(0)
   const [msg, setMsg] = useState('')
   const [err, setErr] = useState('')
+  const [abierto, setAbierto] = useState(null)
 
   useEffect(() => {
     const hdr = { headers: { Authorization: `Bearer ${t()}` } }
@@ -937,8 +959,12 @@ function Bajas() {
         setFechaLimite(data.fecha_limite || '-')
         setCargaMinima(data.carga_minima ?? 0)
         if (data.periodo_actual) setPeriodo(data.periodo_actual)
+        setAbierto(data.abierto)
       })
-      .catch(() => setErr('Error cargando información de bajas'))
+      .catch(() => {
+        setErr('Error cargando información de bajas')
+        setAbierto(false)
+      })
   }, [])
 
   useEffect(() => {
@@ -961,6 +987,7 @@ function Bajas() {
       .then(data => {
         setFechaLimite(data.fecha_limite || '-')
         setCargaMinima(data.carga_minima ?? 0)
+        if (data.abierto !== undefined) setAbierto(data.abierto)
       })
       .catch(() => {
         setFechaLimite('-')
@@ -989,6 +1016,25 @@ function Bajas() {
     } catch (e) {
       setErr('Error de red al dar de baja la materia')
     }
+  }
+
+  if (abierto === null) return <div style={styles.loading}>Verificando periodo de bajas...</div>
+
+  if (abierto === false) {
+    return (
+      <div>
+        <h2 style={styles.h2}>Baja de materias</h2>
+        <div style={{...styles.card, textAlign: 'center', padding: '40px', border: '1px solid rgba(248, 113, 113, 0.3)', background: 'rgba(248, 113, 113, 0.1)'}}>
+          <h3 style={{marginTop: 0, color: '#f87171', fontSize: '24px'}}>Periodo Cerrado</h3>
+          <p style={{color: '#ffb3b3', fontSize: '16px'}}>
+            Aún no es periodo de baja de materias.
+          </p>
+          <p style={{color: '#a8b2d1', fontSize: '14px', marginTop: '10px'}}>
+            Por favor consulta el calendario académico o espera a las fechas asignadas por la administración.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -1106,6 +1152,14 @@ function Evaluacion() {
     }
   }
 
+  const preguntas = [
+    '1. El profesor demuestra dominio de los temas de la materia.',
+    '2. El profesor es claro y preciso en sus explicaciones.',
+    '3. El profesor fomenta la participación y el pensamiento crítico en clase.',
+    '4. El profesor es respetuoso, accesible y resuelve dudas de manera efectiva.',
+    '5. Los métodos de evaluación (exámenes, tareas, proyectos) son claros y justos.'
+  ]
+
   return (
     <div>
       <h2 style={styles.h2}>Evaluación Docente</h2>
@@ -1135,43 +1189,63 @@ function Evaluacion() {
                   <td style={styles.td}>{r.nombre}</td>
                   <td style={styles.td}>{r.profesor}</td>
                   <td style={styles.td}>
-                    <button onClick={() => setSelectedGrupo(r.id_grupo)} style={styles.pill}>Evaluar</button>
+                    {r.evaluada ? (
+                      <span style={{ color: '#a8b2d1', fontSize: '13px', fontStyle: 'italic' }}>Evaluada ✓</span>
+                    ) : (
+                      <button onClick={() => setSelectedGrupo(r.id_grupo)} style={styles.pill}>Evaluar</button>
+                    )}
                   </td>
                 </tr>
               ))}
+              {inscritas.length === 0 && !err && (
+                <tr>
+                  <td colSpan="3" style={{...styles.td, textAlign: 'center', color: '#a8b2d1'}}>
+                    No hay materias inscritas en el periodo actual para evaluar.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       ) : (
         <div style={styles.card}>
           <h3 style={styles.h3}>Evaluando Grupo {inscritas.find(g => g.id_grupo === selectedGrupo)?.nombreG || selectedGrupo}</h3>
+          <p style={{ color: '#a8b2d1', fontSize: '14px', marginBottom: '20px' }}>
+            Evalúa los siguientes aspectos del desempeño docente, donde 1 es "Totalmente en desacuerdo" y 5 es "Totalmente de acuerdo".
+          </p>
           <form onSubmit={enviarEvaluacion}>
-            {[0, 1, 2, 3, 4].map(i => (
-              <div key={i} style={{ marginBottom: 10 }}>
-                <label>Pregunta {i + 1} (1 - 5): </label>
+            {preguntas.map((pregunta, i) => (
+              <div key={i} style={{ ...styles.dataItem, marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ ...styles.dataLabel, marginBottom: 0, flex: 1 }}>{pregunta}</label>
                 <input
                   type="number"
                   min="1"
                   max="5"
+                  required
                   value={respuestas[i]}
                   onChange={e => {
                     const n = [...respuestas]
                     n[i] = parseInt(e.target.value)
                     setRespuestas(n)
                   }}
-                  style={styles.input}
+                  style={{ ...styles.input, width: '80px' }}
                 />
               </div>
             ))}
 
-            <div style={{ marginBottom: 10 }}>
-              <label>Comentario: </label>
-              <input value={comentario} onChange={e => setComentario(e.target.value)} style={{ ...styles.input, width: '100%' }} />
+            <div style={{ ...styles.dataItem, marginBottom: '16px' }}>
+              <label style={styles.dataLabel}>Comentarios adicionales (opcional)</label>
+              <textarea
+                value={comentario}
+                onChange={e => setComentario(e.target.value)}
+                style={{ ...styles.textarea, minHeight: '80px', width: '100%', boxSizing: 'border-box' }}
+                placeholder="Añade cualquier comentario que consideres relevante..."
+              />
             </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button type="submit" style={styles.button}>Enviar</button>
-              <button type="button" onClick={() => setSelectedGrupo(null)} style={{ ...styles.button, background: '#ccc', color: '#333' }}>Cancelar</button>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+              <button type="button" onClick={() => setSelectedGrupo(null)} style={{ ...styles.button, background: 'transparent', border: '1px solid rgba(106, 122, 174, 0.5)' }}>Cancelar</button>
+              <button type="submit" style={styles.button}>Enviar Evaluación</button>
             </div>
           </form>
         </div>
@@ -1386,6 +1460,144 @@ function Dashboard() {
               <span>No hay datos suficientes para mostrar la gráfica.</span>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SolicitudETS() {
+  const [solicitudes, setSolicitudes] = useState([])
+  const [disponibles, setDisponibles] = useState([])
+  const [materia, setMateria] = useState('')
+  const [msg, setMsg] = useState('')
+
+  useEffect(() => {
+    loadSolicitudes()
+    loadDisponibles()
+  }, [])
+
+  const loadDisponibles = () => {
+    const t = localStorage.getItem('access_token')
+    fetch(`${API}/alumno/ets/disponibles`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json())
+      .then(d => Array.isArray(d) ? setDisponibles(d) : setDisponibles([]))
+      .catch(console.error)
+  }
+
+  const loadSolicitudes = () => {
+    const t = localStorage.getItem('access_token')
+    fetch(`${API}/alumno/solicitudes-ets`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => r.json())
+      .then(d => Array.isArray(d) ? setSolicitudes(d) : setSolicitudes([]))
+      .catch(console.error)
+  }
+
+  const solicitar = () => {
+    if (!materia) return
+    const t = localStorage.getItem('access_token')
+    fetch(`${API}/alumno/solicitudes-ets`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+      body: JSON.stringify({ materia })
+    })
+      .then(async r => {
+        if (r.ok) {
+          setMsg('Solicitud enviada al administrador.')
+          setMateria('')
+          loadSolicitudes()
+          loadDisponibles()
+        } else {
+          const d = await r.json()
+          setMsg(d.error || 'Error al solicitar')
+        }
+      })
+      .catch(() => setMsg('Error de red'))
+  }
+
+  const descargarComprobante = (id) => {
+    const t = localStorage.getItem('access_token')
+    fetch(`${API}/alumno/solicitudes-ets/${id}/comprobante`, {
+      headers: { Authorization: `Bearer ${t}` }
+    })
+      .then(async r => {
+        if (r.ok) return r.blob()
+        const txt = await r.text()
+        throw new Error(txt)
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `comprobante_ets_${id}.pdf`
+        a.click()
+      })
+      .catch(e => alert('No se pudo descargar: ' + e.message))
+  }
+
+  return (
+    <div>
+      <h2 style={styles.h2}>Solicitud de Examen a Título de Suficiencia</h2>
+      <div style={styles.card}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginBottom: '20px' }}>
+          <div style={{ flex: 1 }}>
+            <label style={styles.dataLabel}>Materia a Solicitar</label>
+            <select
+              style={{ ...styles.select, width: '100%' }}
+              value={materia}
+              onChange={e => setMateria(e.target.value)}
+            >
+              <option value="">Selecciona una materia reprobada...</option>
+              {disponibles.map(d => (
+                <option key={d.id_materia} value={d.id_materia}>
+                  {d.clave} - {d.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button style={styles.button} onClick={solicitar} disabled={!materia}>Solicitar ETS</button>
+        </div>
+        {msg && <p style={{ color: msg.includes('Error') ? '#f87171' : '#4ade80', marginBottom: '20px' }}>{msg}</p>}
+
+        <h3 style={styles.h3}>Mis Solicitudes</h3>
+        <div style={styles.tableWrap}>
+          <table style={styles.table}>
+            <thead>
+              <tr style={styles.tableHeaderRow}>
+                <th style={styles.th}>Fecha</th>
+                <th style={styles.th}>Materia</th>
+                <th style={styles.th}>Estado</th>
+                <th style={styles.th}>Calificación</th>
+                <th style={styles.th}>Comprobante</th>
+              </tr>
+            </thead>
+            <tbody>
+              {solicitudes.map((s, i) => (
+                <tr key={i} style={styles.tableRow}>
+                  <td style={styles.td}>{s.fecha ? new Date(s.fecha).toLocaleDateString() : '-'}</td>
+                  <td style={styles.td}>{s.materia}</td>
+                  <td style={styles.td}>
+                    <span style={{
+                      ...styles.badge,
+                      background: s.estado === 'CALIFICADO' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(251, 191, 36, 0.2)',
+                      color: s.estado === 'CALIFICADO' ? '#4ade80' : '#fbbf24'
+                    }}>
+                      {s.estado}
+                    </span>
+                  </td>
+                  <td style={styles.td}>{s.calificacion || '-'}</td>
+                  <td style={styles.td}>
+                    {['PENDIENTE_PROFESOR', 'INSCRITO', 'CALIFICADO'].includes(s.estado) && (
+                      <button style={styles.buttonSmall} onClick={() => descargarComprobante(s.id)}>
+                        📄 Descargar
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {solicitudes.length === 0 && <tr><td colSpan={4} style={{ ...styles.td, textAlign: 'center' }}>No hay solicitudes.</td></tr>}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

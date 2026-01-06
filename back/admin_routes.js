@@ -506,4 +506,30 @@ router.delete('/solicitudes-pass/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ---- SOLICITUDES ETS ----
+router.get('/solicitudes-ets', async (req, res) => {
+  try {
+    const q = `
+      SELECT s.id_solicitud as id, s.estado, s.calificacion, m.nombre as materia,
+             (u.nombre || ' ' || u.apellido) as alumno_nombre,
+             COALESCE(a.boleta, 'Sin Boleta') as boleta
+      FROM ${DB_SCHEMA}.solicitud_ets s
+      JOIN ${DB_SCHEMA}.materia m ON m.id_materia = s.id_materia
+      LEFT JOIN ${DB_SCHEMA}.alumno a ON a.id_alumno = s.id_alumno
+      JOIN ${DB_SCHEMA}.usuario u ON u.id_usuario = s.id_alumno
+      ORDER BY s.id_solicitud DESC
+    `;
+    const { rows } = await pool.query(q);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/solicitudes-ets/:id/aprobar', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query(`UPDATE ${DB_SCHEMA}.solicitud_ets SET estado = 'PENDIENTE_PROFESOR' WHERE id_solicitud = $1`, [id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 export default router;
