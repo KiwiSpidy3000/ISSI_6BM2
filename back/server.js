@@ -1181,7 +1181,7 @@ app.get('/alumno/ets/disponibles', requireAuth, async (req, res) => {
             FROM ${DB_SCHEMA}.solicitud_ets 
             WHERE id_alumno = $1 
               AND estado = 'CALIFICADO'
-              AND (calificacion ~ '^[0-9\.]+$' AND calificacion::numeric >= 6)
+              AND (calificacion::text ~ '^[0-9\.]+$' AND calificacion::numeric >= 6)
         )
         AND m.id_materia NOT IN (
             -- Exclude if there is an active ETS request
