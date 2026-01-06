@@ -1213,6 +1213,8 @@ app.post('/alumno/solicitudes-ets', requireAuth, async (req, res) => {
     await pool.query(`
       INSERT INTO ${DB_SCHEMA}.solicitud_ets (id_alumno, id_materia, estado)
       VALUES ($1, $2, 'PENDIENTE_ADMIN')
+      ON CONFLICT (id_alumno, id_materia)
+      DO UPDATE SET estado = 'PENDIENTE_ADMIN', calificacion = NULL
     `, [userId, id_materia]);
     
     res.json({ ok: true });
